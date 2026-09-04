@@ -13,6 +13,8 @@ import {
 } from "./schema";
 import { ActionResult, Trip } from "./types";
 
+import { syncUserProfile } from "@/lib/auth/sync-profile";
+
 /**
  * Helper to get the authenticated user and ensure profile exists in database.
  */
@@ -27,21 +29,8 @@ async function getAuthenticatedUser() {
     return null;
   }
 
-  // Ensure profile row exists in Postgres (mirrors Supabase auth.users)
-  const profile = await db.profile.upsert({
-    where: { id: user.id },
-    create: {
-      id: user.id,
-      email: user.email ?? "",
-      fullName: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-      avatarUrl: user.user_metadata?.avatar_url ?? null,
-    },
-    update: {
-      email: user.email ?? "",
-      fullName: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-      avatarUrl: user.user_metadata?.avatar_url ?? null,
-    },
-  });
+  // Ensure profile row exists in Postgres safely without email unique constraint collisions
+  const profile = await syncUserProfile(user);
 
   return { user, profile };
 }

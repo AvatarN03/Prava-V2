@@ -77,6 +77,9 @@ export function CreateTripDialog({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
+  const lastSearchedDest = React.useRef<string>("");
+  const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   // Fetch tour-vibe cover images from server action
   const fetchCoverImages = useCallback(async (destination: string, page: number = 1) => {
     try {
@@ -92,23 +95,37 @@ export function CreateTripDialog({
     }
   }, []);
 
-  // Initial load of tour vibe images when dialog opens
+  // Initial load of tour vibe images once when dialog opens
   useEffect(() => {
     if (isOpen && images.length === 0) {
       fetchCoverImages(formData.destination, 1);
     }
   }, [isOpen, fetchCoverImages, formData.destination, images.length]);
 
-  // Debounced search when destination text changes
+  // Clean up timer on unmount
   useEffect(() => {
-    if (!isOpen) return;
-    const timer = setTimeout(() => {
-      setImagePage(1);
-      fetchCoverImages(formData.destination, 1);
-    }, 600);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [formData.destination, isOpen, fetchCoverImages]);
+  // Trigger search only when user finishes typing and leaves the destination input (onBlur / Enter)
+  const triggerDestinationSearch = useCallback((dest: string) => {
+    const trimmed = dest.trim();
+    if (trimmed === lastSearchedDest.current) return;
+    lastSearchedDest.current = trimmed;
+    setImagePage(1);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      fetchCoverImages(trimmed, 1);
+    }, 350);
+  }, [fetchCoverImages]);
 
   const handleRefreshImages = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -128,6 +145,10 @@ export function CreateTripDialog({
     });
     setSelectedImageUrl(null);
     setImagePage(1);
+    lastSearchedDest.current = "";
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
     setError(null);
     setFieldErrors({});
   };
@@ -239,6 +260,13 @@ export function CreateTripDialog({
                 placeholder="e.g., Kyoto, Japan or Amalfi Coast"
                 value={formData.destination}
                 onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                onBlur={() => triggerDestinationSearch(formData.destination)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    triggerDestinationSearch(formData.destination);
+                  }
+                }}
                 disabled={isPending}
                 className="h-10 text-sm focus-visible:ring-[#2D9BF0]"
               />

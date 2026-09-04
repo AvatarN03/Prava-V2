@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+import { syncUserProfile } from "@/lib/auth/sync-profile";
 
 export async function verifyTripOwnership(tripId: string) {
   if (!tripId || typeof tripId !== "string") {
@@ -33,24 +34,11 @@ export async function verifyTripOwnership(tripId: string) {
     return { authorized: false as const, user: null, trip: null, isOwner: false };
   }
 
-  // Ensure profile row exists in Postgres (syncs Supabase auth.users)
+  // Ensure profile row exists in Postgres safely without email unique constraint collisions
   try {
-    await db.profile.upsert({
-      where: { id: user.id },
-      create: {
-        id: user.id,
-        email: user.email ?? "",
-        fullName: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-        avatarUrl: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null,
-      },
-      update: {
-        email: user.email ?? "",
-        fullName: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-        avatarUrl: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null,
-      },
-    });
+    await syncUserProfile(user);
   } catch (err) {
-    console.error("Error upserting profile in auth-check:", err);
+    console.error("Error syncing profile in auth-check:", err);
   }
 
   // First check if user is owner
@@ -78,4 +66,5 @@ export async function verifyTripOwnership(tripId: string) {
   }
 
   return { authorized: false as const, user, trip: null, isOwner: false };
+  
 }
