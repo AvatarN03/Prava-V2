@@ -1,0 +1,250 @@
+// Prisma Schema for Prava AI V2
+// Source of truth: docs/03-system-architecture.md & docs/implementation-roadmap.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  fullName  String?  @map("full_name")
+  username  String?  @unique
+  bio       String?
+  avatarUrl String?  @map("avatar_url")
+  isPublic  Boolean  @default(false) @map("is_public")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  trips           Trip[]
+  aiConversations AiConversation[]
+  blogPosts       BlogPost[]
+
+  @@map("profiles")
+}
+
+enum TripStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model Trip {
+  id          String     @id @default(uuid()) @db.Uuid
+  profileId   String     @map("profile_id") @db.Uuid
+  title       String
+  description String?
+  destination String?
+  startDate   DateTime?  @map("start_date")
+  endDate     DateTime?  @map("end_date")
+  status      TripStatus @default(PLANNING)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  isPublic      Boolean    @default(false) @map("is_public")
+  isTemplate    Boolean    @default(false) @map("is_template")
+  coverImageUrl String?    @map("cover_image_url")
+
+  profile         Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  itinerary       ItineraryItem[]
+  accommodations  Accommodation[]
+  expenses        Expense[]
+  notes           Note[]
+  checklistItems  ChecklistItem[]
+  links           Link[]
+  aiConversations AiConversation[]
+  aiProposals     AiProposal[]
+  linkedBlogPosts BlogPost[]
+
+  @@map("trips")
+}
+
+model ItineraryItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  tripId      String    @map("trip_id") @db.Uuid
+  dayNumber   Int?      @map("day_number")
+  date        DateTime?
+  time        String?
+  title       String
+  description String?
+  location    String?
+  category    String?   @default("Activity")
+  cost        Float?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("itinerary_items")
+}
+
+model Accommodation {
+  id               String    @id @default(uuid()) @db.Uuid
+  tripId           String    @map("trip_id") @db.Uuid
+  name             String
+  type             String?   @default("Hotel")
+  address          String?
+  checkIn          DateTime? @map("check_in")
+  checkOut         DateTime? @map("check_out")
+  confirmationCode String?   @map("confirmation_code")
+  contactPhone     String?   @map("contact_phone")
+  cost             Float?
+  currency         String    @default("USD")
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("accommodations")
+}
+
+model Expense {
+  id        String   @id @default(uuid()) @db.Uuid
+  tripId    String   @map("trip_id") @db.Uuid
+  title     String
+  amount    Float
+  currency  String   @default("USD")
+  category  String   @default("OTHER")
+  date      DateTime @default(now())
+  paidBy    String?  @map("paid_by")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("expenses")
+}
+
+model Note {
+  id        String   @id @default(uuid()) @db.Uuid
+  tripId    String   @map("trip_id") @db.Uuid
+  title     String
+  content   String
+  category  String?  @default("General")
+  isPinned  Boolean  @default(false) @map("is_pinned")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+}
+
+model ChecklistItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  tripId      String    @map("trip_id") @db.Uuid
+  title       String
+  category    String    @default("General")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  dueDate     DateTime? @map("due_date")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("checklist_items")
+}
+
+model Link {
+  id          String   @id @default(uuid()) @db.Uuid
+  tripId      String   @map("trip_id") @db.Uuid
+  title       String
+  url         String
+  category    String?  @default("Resource")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("links")
+}
+
+model AiConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  tripId    String   @map("trip_id") @db.Uuid
+  profileId String   @map("profile_id") @db.Uuid
+  title     String   @default("Trip Assistant Conversation")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  trip     Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  profile  Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+  proposals AiProposal[]
+
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  role           String   // "user", "model", "system"
+  content        String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  proposals    AiProposal[]
+
+  @@map("ai_messages")
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  PARTIAL
+}
+
+model AiProposal {
+  id             String         @id @default(uuid()) @db.Uuid
+  tripId         String         @map("trip_id") @db.Uuid
+  conversationId String         @map("conversation_id") @db.Uuid
+  messageId      String?        @map("message_id") @db.Uuid
+  status         ProposalStatus @default(PENDING)
+  summary        String
+  payload        Json
+  createdAt      DateTime       @default(now()) @map("created_at")
+  resolvedAt     DateTime?      @map("resolved_at")
+
+  trip         Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      AiMessage?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@map("ai_proposals")
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model BlogPost {
+  id            String         @id @default(uuid()) @db.Uuid
+  profileId     String         @map("profile_id") @db.Uuid
+  slug          String         @unique
+  title         String
+  excerpt       String?
+  content       String
+  coverImageUrl String?        @map("cover_image_url")
+  tags          String[]       @default([])
+  status        BlogPostStatus @default(DRAFT)
+  linkedTripId  String?        @map("linked_trip_id") @db.Uuid
+  publishedAt   DateTime?      @map("published_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  profile    Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  linkedTrip Trip?   @relation(fields: [linkedTripId], references: [id], onDelete: SetNull)
+
+  @@map("blog_posts")
+}
