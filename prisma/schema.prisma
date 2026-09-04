@@ -10,15 +10,24 @@ datasource db {
 }
 
 model Profile {
-  id        String   @id @db.Uuid
-  email     String   @unique
-  fullName  String?  @map("full_name")
-  username  String?  @unique
-  bio       String?
-  avatarUrl String?  @map("avatar_url")
-  isPublic  Boolean  @default(false) @map("is_public")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String   @id @db.Uuid
+  email              String   @unique
+  fullName           String?  @map("full_name")
+  username           String?  @unique
+  bio                String?
+  avatarUrl          String?  @map("avatar_url")
+  isPublic           Boolean  @default(false) @map("is_public")
+  
+  // General & Workspace Preferences
+  defaultCurrency    String   @default("USD") @map("default_currency")
+  dateFormat         String   @default("MMM D, YYYY") @map("date_format")
+  aiAutoPropose      Boolean  @default(true) @map("ai_auto_propose")
+  emailNotifications Boolean  @default(true) @map("email_notifications")
+  offlineMode        Boolean  @default(true) @map("offline_mode")
+  travelPreferences  String?  @map("travel_preferences")
+
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   trips           Trip[]
   aiConversations AiConversation[]

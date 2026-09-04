@@ -66,7 +66,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       {/* Mobile Backdrop Overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden  backdrop-blur-xs transition-opacity"
           onClick={onMobileClose}
         />
       )}
@@ -115,7 +115,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         </div>
 
         {/* Scrollable Middle Navigation Groups */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-6 scrollbar-none">
+        <div className="flex-1 bg-white overflow-y-auto py-4 space-y-6 scrollbar-none">
           {/* Group 1: Workspace */}
           <div>
             <div className="px-6 pb-2 text-[10px] font-bold uppercase tracking-wider text-sky-900/60 flex items-center gap-1.5">

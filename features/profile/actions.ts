@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { validateUsername } from "./reserved-usernames";
-import { updateProfileSchema, UpdateProfileInput } from "./schema";
+import {
+  updateProfileSchema,
+  UpdateProfileInput,
+  updateGeneralPreferencesSchema,
+  UpdateGeneralPreferencesInput,
+} from "./schema";
 
 export interface ProfileWithStats {
   id: string;
@@ -14,6 +19,12 @@ export interface ProfileWithStats {
   bio: string | null;
   avatarUrl: string | null;
   isPublic: boolean;
+  defaultCurrency: string;
+  dateFormat: string;
+  aiAutoPropose: boolean;
+  emailNotifications: boolean;
+  offlineMode: boolean;
+  travelPreferences: string | null;
   createdAt: string;
   totalTrips: number;
   publishedTrips: number;
@@ -137,6 +148,12 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
         bio: profile.bio,
         avatarUrl: profile.avatarUrl,
         isPublic: profile.isPublic,
+        defaultCurrency: (profile as unknown as { defaultCurrency?: string }).defaultCurrency || "USD",
+        dateFormat: (profile as unknown as { dateFormat?: string }).dateFormat || "MMM D, YYYY",
+        aiAutoPropose: (profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? true,
+        emailNotifications: (profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? true,
+        offlineMode: (profile as unknown as { offlineMode?: boolean }).offlineMode ?? true,
+        travelPreferences: (profile as unknown as { travelPreferences?: string | null }).travelPreferences || null,
         createdAt: profile.createdAt.toISOString(),
         totalTrips: profile._count.trips,
         publishedTrips: profile.trips.length,
@@ -262,6 +279,61 @@ export async function updateProfile(input: UpdateProfileInput) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to update profile",
+    };
+  }
+}
+
+/**
+ * Update authenticated user's workspace & general preferences.
+ */
+export async function updateGeneralPreferences(input: UpdateGeneralPreferencesInput) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const parsed = updateGeneralPreferencesSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, error: "Invalid preferences data" };
+    }
+
+    const {
+      defaultCurrency,
+      dateFormat,
+      aiAutoPropose,
+      emailNotifications,
+      offlineMode,
+      travelPreferences,
+    } = parsed.data;
+
+    const updated = await db.profile.update({
+      where: { id: user.id },
+      data: {
+        defaultCurrency,
+        dateFormat,
+        aiAutoPropose,
+        emailNotifications,
+        offlineMode,
+        ...(travelPreferences !== undefined && { travelPreferences: travelPreferences?.trim() || null }),
+      },
+    });
+
+    revalidatePath("/profile");
+    revalidatePath("/trips");
+    revalidatePath("/settings");
+
+    return { success: true, profile: updated };
+  } catch (error) {
+    console.error("Error updating general preferences:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to save preferences",
     };
   }
 }

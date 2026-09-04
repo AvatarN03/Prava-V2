@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ProfileWithStats, updateProfile } from "../actions";
+import { ProfileWithStats, updateProfile, updateGeneralPreferences } from "../actions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -43,12 +43,13 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   const [bio, setBio] = useState(initialProfile.bio || "");
   const [isPublic, setIsPublic] = useState(initialProfile.isPublic);
 
-  // General & Workspace Preferences
-  const [defaultCurrency, setDefaultCurrency] = useState("USD");
-  const [dateFormat, setDateFormat] = useState("MMM D, YYYY");
-  const [aiAutoPropose, setAiAutoPropose] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [offlineMode, setOfflineMode] = useState(true);
+  // General & Workspace Preferences (Loaded from Database)
+  const [defaultCurrency, setDefaultCurrency] = useState(initialProfile.defaultCurrency || "USD");
+  const [dateFormat, setDateFormat] = useState(initialProfile.dateFormat || "MMM D, YYYY");
+  const [aiAutoPropose, setAiAutoPropose] = useState(initialProfile.aiAutoPropose ?? true);
+  const [emailNotifications, setEmailNotifications] = useState(initialProfile.emailNotifications ?? true);
+  const [offlineMode, setOfflineMode] = useState(initialProfile.offlineMode ?? true);
+  const [travelPreferences, setTravelPreferences] = useState(initialProfile.travelPreferences || "");
 
   // Tab State with URL query parameter synchronization
   const tabFromQuery = searchParams.get("tab") as TabKey | null;
@@ -61,6 +62,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
 
   const [activeTab, setActiveTab] = useState<TabKey>(validInitialTab);
   const [isSaving, startSaving] = useTransition();
+  const [isSavingPreferences, startSavingPreferences] = useTransition();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
@@ -108,8 +110,56 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     });
   };
 
-  const handleSavePreferences = () => {
-    toast.success("General preferences updated successfully!");
+  const handleUpdatePreference = (
+    partial: Partial<{
+      defaultCurrency: string;
+      dateFormat: string;
+      aiAutoPropose: boolean;
+      emailNotifications: boolean;
+      offlineMode: boolean;
+      travelPreferences: string;
+    }>,
+    successMessage?: string
+  ) => {
+    const newCurrency = partial.defaultCurrency ?? defaultCurrency;
+    const newDateFormat = partial.dateFormat ?? dateFormat;
+    const newAiAutoPropose = partial.aiAutoPropose ?? aiAutoPropose;
+    const newEmailNotifications = partial.emailNotifications ?? emailNotifications;
+    const newOfflineMode = partial.offlineMode ?? offlineMode;
+    const newTravelPreferences = partial.travelPreferences ?? travelPreferences;
+
+    if (partial.defaultCurrency !== undefined) setDefaultCurrency(partial.defaultCurrency);
+    if (partial.dateFormat !== undefined) setDateFormat(partial.dateFormat);
+    if (partial.aiAutoPropose !== undefined) setAiAutoPropose(partial.aiAutoPropose);
+    if (partial.emailNotifications !== undefined) setEmailNotifications(partial.emailNotifications);
+    if (partial.offlineMode !== undefined) setOfflineMode(partial.offlineMode);
+    if (partial.travelPreferences !== undefined) setTravelPreferences(partial.travelPreferences);
+
+    startSavingPreferences(async () => {
+      const res = await updateGeneralPreferences({
+        defaultCurrency: newCurrency,
+        dateFormat: newDateFormat,
+        aiAutoPropose: newAiAutoPropose,
+        emailNotifications: newEmailNotifications,
+        offlineMode: newOfflineMode,
+        travelPreferences: newTravelPreferences.trim() || null,
+      });
+
+      if (res.success && res.profile) {
+        setProfile((prev) => ({
+          ...prev,
+          defaultCurrency: (res.profile as unknown as { defaultCurrency?: string }).defaultCurrency || newCurrency,
+          dateFormat: (res.profile as unknown as { dateFormat?: string }).dateFormat || newDateFormat,
+          aiAutoPropose: (res.profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? newAiAutoPropose,
+          emailNotifications: (res.profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? newEmailNotifications,
+          offlineMode: (res.profile as unknown as { offlineMode?: boolean }).offlineMode ?? newOfflineMode,
+          travelPreferences: (res.profile as unknown as { travelPreferences?: string | null }).travelPreferences || newTravelPreferences,
+        }));
+        toast.success(successMessage || "Preference updated in database.");
+      } else {
+        toast.error(res.error || "Failed to save preference.");
+      }
+    });
   };
 
   const handleSignOut = async () => {
@@ -215,16 +265,14 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
             <GeneralSection
               profile={profile}
               defaultCurrency={defaultCurrency}
-              setDefaultCurrency={setDefaultCurrency}
               dateFormat={dateFormat}
-              setDateFormat={setDateFormat}
               aiAutoPropose={aiAutoPropose}
-              setAiAutoPropose={setAiAutoPropose}
               emailNotifications={emailNotifications}
-              setEmailNotifications={setEmailNotifications}
               offlineMode={offlineMode}
-              setOfflineMode={setOfflineMode}
-              onSavePreferences={handleSavePreferences}
+              travelPreferences={travelPreferences}
+              setTravelPreferences={setTravelPreferences}
+              onUpdatePreference={handleUpdatePreference}
+              isSavingPreferences={isSavingPreferences}
             />
           )}
 
@@ -283,16 +331,14 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           <GeneralSection
             profile={profile}
             defaultCurrency={defaultCurrency}
-            setDefaultCurrency={setDefaultCurrency}
             dateFormat={dateFormat}
-            setDateFormat={setDateFormat}
             aiAutoPropose={aiAutoPropose}
-            setAiAutoPropose={setAiAutoPropose}
             emailNotifications={emailNotifications}
-            setEmailNotifications={setEmailNotifications}
             offlineMode={offlineMode}
-            setOfflineMode={setOfflineMode}
-            onSavePreferences={handleSavePreferences}
+            travelPreferences={travelPreferences}
+            setTravelPreferences={setTravelPreferences}
+            onUpdatePreference={handleUpdatePreference}
+            isSavingPreferences={isSavingPreferences}
           />
         </div>
 
@@ -331,4 +377,5 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     </div>
   );
 }
+
 

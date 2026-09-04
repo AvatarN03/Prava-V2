@@ -10,6 +10,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -19,35 +20,41 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Globe, Sparkles, Bell, Save } from "lucide-react";
+import { Globe, Sparkles, Bell, Save, Compass, Loader2 } from "lucide-react";
 
 interface GeneralSectionProps {
   profile: ProfileWithStats;
   defaultCurrency: string;
-  setDefaultCurrency: (val: string) => void;
   dateFormat: string;
-  setDateFormat: (val: string) => void;
   aiAutoPropose: boolean;
-  setAiAutoPropose: (val: boolean) => void;
   emailNotifications: boolean;
-  setEmailNotifications: (val: boolean) => void;
   offlineMode: boolean;
-  setOfflineMode: (val: boolean) => void;
-  onSavePreferences: () => void;
+  travelPreferences: string;
+  setTravelPreferences: (val: string) => void;
+  onUpdatePreference: (
+    partial: Partial<{
+      defaultCurrency: string;
+      dateFormat: string;
+      aiAutoPropose: boolean;
+      emailNotifications: boolean;
+      offlineMode: boolean;
+      travelPreferences: string;
+    }>,
+    successMessage?: string
+  ) => void;
+  isSavingPreferences: boolean;
 }
 
 export function GeneralSection({
   defaultCurrency,
-  setDefaultCurrency,
   dateFormat,
-  setDateFormat,
   aiAutoPropose,
-  setAiAutoPropose,
   emailNotifications,
-  setEmailNotifications,
   offlineMode,
-  setOfflineMode,
-  onSavePreferences,
+  travelPreferences,
+  setTravelPreferences,
+  onUpdatePreference,
+  isSavingPreferences,
 }: GeneralSectionProps) {
   return (
     <div className="space-y-6 max-w-3xl">
@@ -74,7 +81,15 @@ export function GeneralSection({
               <p className="text-muted-foreground text-[11px]">Default currency for new trips, expense items, and budgets</p>
             </div>
             <div className="w-full sm:w-56">
-              <Select value={defaultCurrency} onValueChange={setDefaultCurrency}>
+              <Select
+                value={defaultCurrency}
+                onValueChange={(val) =>
+                  onUpdatePreference(
+                    { defaultCurrency: val },
+                    `Default currency updated to ${val} in database.`
+                  )
+                }
+              >
                 <SelectTrigger className="h-8 rounded-sm cursor-pointer text-xs">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
@@ -101,15 +116,23 @@ export function GeneralSection({
               <p className="text-muted-foreground text-[11px]">Timeline schedules, activity cards, and itinerary milestones</p>
             </div>
             <div className="w-full sm:w-56">
-              <Select value={dateFormat} onValueChange={setDateFormat}>
+              <Select
+                value={dateFormat}
+                onValueChange={(val) =>
+                  onUpdatePreference(
+                    { dateFormat: val },
+                    "Date display format updated in database."
+                  )
+                }
+              >
                 <SelectTrigger className="h-8 rounded-sm cursor-pointer text-xs">
                   <SelectValue placeholder="Select format" />
                 </SelectTrigger>
                 <SelectContent className="rounded-sm text-xs">
-                  <SelectItem value="MMM D, YYYY" className="cursor-pointer text-xs">MMM D, YYYY (e.g. Oct 14, 2026)</SelectItem>
-                  <SelectItem value="DD/MM/YYYY" className="cursor-pointer text-xs">DD/MM/YYYY (e.g. 14/10/2026)</SelectItem>
-                  <SelectItem value="YYYY-MM-DD" className="cursor-pointer text-xs">YYYY-MM-DD (e.g. 2026-10-14)</SelectItem>
-                  <SelectItem value="MM/DD/YYYY" className="cursor-pointer text-xs">MM/DD/YYYY (e.g. 10/14/2026)</SelectItem>
+                  <SelectItem value="MMM D, YYYY" className="cursor-pointer text-xs">Oct 14, 2026</SelectItem>
+                  <SelectItem value="DD/MM/YYYY" className="cursor-pointer text-xs">14/10/2026</SelectItem>
+                  <SelectItem value="YYYY-MM-DD" className="cursor-pointer text-xs">2026-10-14</SelectItem>
+                  <SelectItem value="MM/DD/YYYY" className="cursor-pointer text-xs">10/14/2026</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -117,7 +140,7 @@ export function GeneralSection({
         </CardContent>
       </Card>
 
-      {/* 2. AI Assistant Features */}
+      {/* 2. AI Assistant Features & Travel Persona */}
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">
           <div className="flex items-center gap-2">
@@ -125,9 +148,9 @@ export function GeneralSection({
               <Sparkles className="h-3.5 w-3.5" />
             </div>
             <div>
-              <CardTitle className="text-sm font-semibold text-foreground">AI Assistant Features</CardTitle>
+              <CardTitle className="text-sm font-semibold text-foreground">AI Assistant & Travel Persona</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Customize smart itinerary planning and autonomous trip suggestions.
+                Customize smart itinerary planning, autonomous trip proposals, and travel preferences.
               </CardDescription>
             </div>
           </div>
@@ -143,7 +166,14 @@ export function GeneralSection({
             </div>
             <Switch
               checked={aiAutoPropose}
-              onCheckedChange={setAiAutoPropose}
+              onCheckedChange={(checked) =>
+                onUpdatePreference(
+                  { aiAutoPropose: checked },
+                  checked
+                    ? "Structured AI proposals enabled in database."
+                    : "Structured AI proposals disabled in database."
+                )
+              }
               className="cursor-pointer"
             />
           </div>
@@ -159,11 +189,59 @@ export function GeneralSection({
             </div>
             <Switch
               checked={offlineMode}
-              onCheckedChange={setOfflineMode}
+              onCheckedChange={(checked) =>
+                onUpdatePreference(
+                  { offlineMode: checked },
+                  checked
+                    ? "Offline travel cache enabled in database."
+                    : "Offline travel cache disabled in database."
+                )
+              }
               className="cursor-pointer"
             />
           </div>
+
+          <Separator />
+
+          <div className="space-y-1.5 py-1">
+            <div className="flex items-center gap-1.5">
+              <Compass className="h-3.5 w-3.5 text-primary" />
+              <p className="font-semibold text-foreground">AI Travel Style & Dietary Guidance</p>
+            </div>
+            <p className="text-muted-foreground text-[11px]">
+              Prava AI uses these preferences (dietary restrictions, relaxed vs fast pacing, preferred hotel vibes) when drafting your itineraries.
+            </p>
+            <Textarea
+              value={travelPreferences}
+              onChange={(e) => setTravelPreferences(e.target.value)}
+              placeholder="e.g. Vegetarian, love historic architecture and coffee shops, prefer moderate pace with max 3-4 activities per day."
+              className="h-20 text-xs rounded-sm resize-none"
+              maxLength={1000}
+            />
+          </div>
         </CardContent>
+
+        <CardFooter className="p-4 pt-3 border-t border-border/60 flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() =>
+              onUpdatePreference(
+                { travelPreferences },
+                "Travel style & AI guidance saved to database."
+              )
+            }
+            disabled={isSavingPreferences}
+            className="h-8 rounded-sm text-xs gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isSavingPreferences ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            Save AI Travel Preferences
+          </Button>
+        </CardFooter>
       </Card>
 
       {/* 3. Notifications & Trip Alerts */}
@@ -187,29 +265,26 @@ export function GeneralSection({
             <div className="space-y-0.5 pr-4">
               <p className="font-semibold text-foreground">Trip Departure & Milestone Reminders</p>
               <p className="text-muted-foreground text-[11px]">
-                Receive checklist alerts and flight countdown notices before your trip starts
+                Receive checklist alerts and countdown notices before your scheduled departure
               </p>
             </div>
             <Switch
               checked={emailNotifications}
-              onCheckedChange={setEmailNotifications}
+              onCheckedChange={(checked) =>
+                onUpdatePreference(
+                  { emailNotifications: checked },
+                  checked
+                    ? "Trip departure reminders enabled in database."
+                    : "Trip departure reminders disabled in database."
+                )
+              }
               className="cursor-pointer"
             />
           </div>
         </CardContent>
-
-        <CardFooter className="p-4 pt-3 border-t border-border/60 flex justify-end">
-          <Button
-            type="button"
-            size="sm"
-            onClick={onSavePreferences}
-            className="h-8 rounded-sm text-xs gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <Save className="h-3.5 w-3.5" />
-            Save General Preferences
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );
 }
+
+
