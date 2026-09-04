@@ -17,7 +17,6 @@ import {
   Zap,
 } from "lucide-react";
 import { ButtonGroup } from "@/components/ui/button-group";
-import { redirect } from "next/navigation";
 import { AnimatedNav } from "@/components/app-shell/nav-Items";
 
 export default async function HomePage() {
@@ -129,7 +128,7 @@ export default async function HomePage() {
                 </Link>
               ) : (
                 <>
-                  <Link href="/login?tab=signup" className="w-full sm:w-auto">
+                  <Link href="/auth?tab=signup" className="w-full sm:w-auto">
                     <Button size="lg" className="w-full sm:w-auto gap-2 px-7 h-12 text-sm font-semibold bg-gradient-to-r from-[#2D9BF0] to-[#1279CE] hover:from-[#1D8BE0] hover:to-[#0D6AB9] shadow-md shadow-[#2D9BF0]/30 transition-all cursor-pointer">
                       <span>Start Planning Free</span>
                       <ArrowRight className="h-4 w-4" />
@@ -376,7 +375,7 @@ export default async function HomePage() {
                 No credit card required. Free instant access with your workspace ready in seconds.
               </p>
               <div className="pt-2">
-                <Link href={user ? "/dashboard" : "/login?tab=signup"}>
+                <Link href={user ? "/dashboard" : "/auth?tab=signup"}>
                   <Button size="lg" className="gap-2 px-7 h-12 text-sm font-semibold bg-gradient-to-r from-[#2D9BF0] to-[#1279CE] hover:from-[#1D8BE0] hover:to-[#0D6AB9] shadow-md shadow-[#2D9BF0]/30 transition-all cursor-pointer">
                     <span>{user ? "Open Your Workspace" : "Get Started Free"}</span>
                     <ArrowRight className="h-4 w-4" />
@@ -415,7 +414,7 @@ export default async function HomePage() {
             <Link href="/pricing" className="hover:text-sky-700 transition-colors cursor-pointer">
               Pricing
             </Link>
-            <Link href="/login" className="hover:text-sky-700 transition-colors cursor-pointer">
+            <Link href="/auth" className="hover:text-sky-700 transition-colors cursor-pointer">
               Sign In
             </Link>
             <span className="text-slate-400">© {new Date().getFullYear()} Prava AI</span>
