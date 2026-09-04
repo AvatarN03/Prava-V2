@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Trash2, Pencil, Calendar, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { ConfirmDeleteDialog } from "@/components/app-shell/confirm-delete-dialog";
 import { ChecklistItem } from "@prisma/client";
 import { toggleChecklistItem, deleteChecklistItem } from "../actions";
 import { EditTaskDialog } from "./edit-task-dialog";
@@ -51,22 +51,20 @@ export function TaskItem({ item }: TaskItemProps) {
   return (
     <>
       <div
-        className={`group flex items-center justify-between gap-3 p-2.5 rounded-sm border transition-colors ${
-          isCompleted
+        className={`group flex items-center justify-between gap-3 p-2.5 rounded-sm border transition-colors ${isCompleted
             ? "border-border/50 bg-muted/20 text-muted-foreground"
             : "border-border bg-card hover:border-primary/40 text-foreground"
-        }`}
+          }`}
       >
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={handleToggle}
             disabled={isPending}
-            className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer ${
-              isCompleted
+            className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer ${isCompleted
                 ? "bg-primary border-primary text-primary-foreground"
                 : "border-border bg-background hover:border-primary/60"
-            }`}
+              }`}
             aria-label={isCompleted ? "Mark incomplete" : "Mark complete"}
           >
             {isCompleted && <Check className="h-3 w-3 stroke-[2.5]" />}
@@ -74,9 +72,8 @@ export function TaskItem({ item }: TaskItemProps) {
 
           <div className="space-y-0.5 min-w-0">
             <span
-              className={`text-xs font-medium leading-normal block ${
-                isCompleted ? "line-through text-muted-foreground" : "text-foreground"
-              }`}
+              className={`text-xs font-medium leading-normal block ${isCompleted ? "line-through text-muted-foreground" : "text-foreground"
+                }`}
             >
               {item.title}
             </span>

@@ -77,7 +77,7 @@ export function TripCard({ trip }: TripCardProps) {
           </div>
         )}
         <div>
-          <CardHeader className="p-5 pb-3">
+          <CardHeader className="p-4 pb-2.5">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -91,7 +91,7 @@ export function TripCard({ trip }: TripCardProps) {
                     </span>
                   )}
                 </div>
-                <CardTitle className="text-base font-semibold leading-snug tracking-tight line-clamp-1 pt-1">
+                <CardTitle className="text-base font-semibold leading-snug tracking-tight line-clamp-1 pt-0.5">
                   <Link
                     href={`/trips/${trip.id}`}
                     className="hover:text-primary transition-colors focus:outline-none focus:underline"
@@ -106,21 +106,21 @@ export function TripCard({ trip }: TripCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Actions</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                  <DropdownMenuItem onClick={() => setIsEditOpen(true)} className="cursor-pointer">
                     <Pencil className="h-3.5 w-3.5 mr-2" />
                     Edit Details
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => setIsDeleteOpen(true)}
-                    className="text-destructive focus:text-destructive"
+                    className="text-destructive focus:text-destructive cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5 mr-2" />
                     Delete Trip
@@ -130,7 +130,7 @@ export function TripCard({ trip }: TripCardProps) {
             </div>
           </CardHeader>
 
-          <CardContent className="p-5 pt-0 pb-3">
+          <CardContent className="p-4 pt-0 pb-3">
             {trip.description ? (
               <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                 {trip.description}
@@ -143,7 +143,7 @@ export function TripCard({ trip }: TripCardProps) {
           </CardContent>
         </div>
 
-        <CardFooter className="p-5 pt-3 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground bg-muted/20 rounded-b-sm">
+        <CardFooter className="p-3 px-4 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground bg-muted/20">
           <div className="inline-flex items-center">
             <Calendar className="w-3.5 h-3.5 mr-1.5 text-muted-foreground/70" />
             <span>{formatDateRange(trip.startDate, trip.endDate)}</span>

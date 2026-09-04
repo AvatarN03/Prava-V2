@@ -38,7 +38,7 @@ export function TripList({ initialTrips }: TripListProps) {
     return (
       <Card className="border-dashed">
         <CardHeader className="text-center py-12">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm bg-muted text-muted-foreground mb-3">
             <Compass className="h-6 w-6 text-primary" />
           </div>
           <CardTitle className="text-lg">No trips created yet</CardTitle>

@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { ConfirmDeleteDialog } from "@/components/app-shell/confirm-delete-dialog";
 import { Link as PrismaLink } from "@prisma/client";
 import { toast } from "sonner";
 import { deleteLink } from "../actions";

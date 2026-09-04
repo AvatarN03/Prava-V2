@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { ConfirmDeleteDialog } from "@/components/app-shell/confirm-delete-dialog";
 import { Note } from "@prisma/client";
 import { toast } from "sonner";
 import { deleteNote, togglePinNote } from "../actions";
@@ -79,31 +79,31 @@ export function NoteCard({ item }: NoteCardProps) {
   return (
     <>
       <div
-        className={`group relative flex flex-col justify-between rounded-2xl border transition-all duration-200 overflow-hidden ${
+        className={`group relative flex flex-col justify-between rounded-sm border transition-colors overflow-hidden ${
           item.isPinned
-            ? "border-[#2D9BF0]/40 bg-gradient-to-b from-sky-50/60 via-white to-white shadow-sm shadow-[#2D9BF0]/10"
-            : "border-slate-200 bg-white hover:border-sky-300 hover:shadow-xs"
+            ? "border-primary/50 bg-card shadow-xs"
+            : "border-border bg-card hover:border-primary/40"
         }`}
       >
-        {/* Pinned accent stripe */}
+        {/* Pinned accent indicator */}
         {item.isPinned && (
-          <div className="h-1 w-full bg-gradient-to-r from-[#2D9BF0] to-[#55B8FF]" />
+          <div className="h-0.5 w-full bg-primary" />
         )}
 
-        <div className="p-4 space-y-2.5">
+        <div className="p-4 space-y-2">
           {/* Header row */}
           <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {item.isPinned && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#2D9BF0] bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5">
-                  <Pin className="w-3 h-3 fill-[#2D9BF0]" />
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 rounded-xs px-1.5 py-0.5">
+                  <Pin className="w-2.5 h-2.5 fill-primary" />
                   Pinned
                 </span>
               )}
               {item.category && (
-                <span className={`inline-flex items-center text-[10px] font-bold border rounded-full px-2.5 py-0.5 ${catColor}`}>
+                <Badge variant="secondary">
                   {item.category}
-                </span>
+                </Badge>
               )}
             </div>
 
@@ -111,13 +111,13 @@ export function NoteCard({ item }: NoteCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-slate-400 hover:text-[#2D9BF0] hover:bg-sky-50 cursor-pointer"
+                className="h-6 w-6 text-muted-foreground hover:text-primary cursor-pointer"
                 onClick={handleTogglePin}
                 disabled={isPinning}
                 title={item.isPinned ? "Unpin note" : "Pin note"}
               >
                 {isPinning ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3 w-3 animate-spin" />
                 ) : item.isPinned ? (
                   <PinOff className="h-3.5 w-3.5" />
                 ) : (
@@ -130,7 +130,7 @@ export function NoteCard({ item }: NoteCardProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     <MoreHorizontal className="h-3.5 w-3.5" />
                   </Button>
@@ -171,23 +171,23 @@ export function NoteCard({ item }: NoteCardProps) {
           </div>
 
           {/* Title */}
-          <h4 className="text-sm font-bold text-slate-900 leading-snug">
+          <h4 className="text-sm font-semibold text-foreground leading-snug">
             {item.title}
           </h4>
 
           {/* Content preview */}
-          <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap line-clamp-4">
+          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-4">
             {item.content}
           </p>
         </div>
 
         {/* Footer */}
-        <div className="px-4 pb-3 pt-2 border-t border-slate-100/80 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 text-[10px] text-slate-400">
+        <div className="px-4 pb-3 pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <FileText className="h-3 w-3" />
             {item.content.split(/\s+/).filter(Boolean).length} words
           </div>
-          <span className="text-[10px] text-slate-400">
+          <span className="text-[10px] text-muted-foreground">
             Updated{" "}
             {new Date(item.updatedAt).toLocaleDateString("en-US", {
               month: "short",
