@@ -6,6 +6,7 @@ import {
   BookOpen,
   User,
   CreditCard,
+  Sparkles,
   LucideIcon,
 } from "lucide-react";
 
@@ -50,15 +51,20 @@ export const otherNavItems: NavItem[] = [
 
 export const accountNavItems: NavItem[] = [
   {
-    title: "Account",
+    title: "Profile",
     href: "/profile",
     icon: User,
   },
   {
-    title: "Subscription & Usage",
+    title: "Usage",
+    href: "/usage",
+    icon: Sparkles,
+    badge: "AI",
+  },
+  {
+    title: "Subscription",
     href: "/pricing",
     icon: CreditCard,
-    badge: "Quota",
   },
 ];
 

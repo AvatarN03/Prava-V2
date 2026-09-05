@@ -23,7 +23,7 @@ model Profile {
   dateFormat         String   @default("MMM D, YYYY") @map("date_format")
   aiAutoPropose      Boolean  @default(true) @map("ai_auto_propose")
   emailNotifications Boolean  @default(true) @map("email_notifications")
-  offlineMode        Boolean  @default(true) @map("offline_mode")
+  offlineMode        Boolean  @default(false) @map("offline_mode")
   travelPreferences  String?  @map("travel_preferences")
 
   createdAt          DateTime @default(now()) @map("created_at")
