@@ -10,18 +10,16 @@ import {
   Globe,
   ExternalLink,
   User,
-  Sparkles,
   SlidersHorizontal,
   Shield,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { OverviewSection } from "./overview-section";
 import { GeneralSection } from "./general-section";
-import { AiUsageSection } from "./ai-usage-section";
 import { SettingsSection } from "./settings-section";
 import { cn } from "@/lib/utils";
 
-type TabKey = "overview" | "general" | "usage" | "security";
+type TabKey = "overview" | "general" | "security";
 
 interface ProfileEditorProps {
   initialProfile: ProfileWithStats;
@@ -30,7 +28,6 @@ interface ProfileEditorProps {
 const NAV_ITEMS: { id: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "overview", label: "Overview", icon: User },
   { id: "general", label: "General", icon: SlidersHorizontal },
-  { id: "usage", label: "AI Usage", icon: Sparkles },
   { id: "security", label: "Security", icon: Shield },
 ];
 
@@ -48,13 +45,13 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   const [dateFormat, setDateFormat] = useState(initialProfile.dateFormat || "MMM D, YYYY");
   const [aiAutoPropose, setAiAutoPropose] = useState(initialProfile.aiAutoPropose ?? true);
   const [emailNotifications, setEmailNotifications] = useState(initialProfile.emailNotifications ?? true);
-  const [offlineMode, setOfflineMode] = useState(initialProfile.offlineMode ?? true);
+  const [offlineMode, setOfflineMode] = useState(initialProfile.offlineMode ?? false);
   const [travelPreferences, setTravelPreferences] = useState(initialProfile.travelPreferences || "");
 
   // Tab State with URL query parameter synchronization
   const tabFromQuery = searchParams.get("tab") as TabKey | null;
   const validInitialTab: TabKey =
-    tabFromQuery === "general" || tabFromQuery === "usage" || tabFromQuery === "security"
+    tabFromQuery === "general" || tabFromQuery === "security"
       ? tabFromQuery
       : tabFromQuery === ("settings" as TabKey)
         ? "general"
@@ -67,7 +64,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
 
   useEffect(() => {
     if (tabFromQuery) {
-      if (tabFromQuery === "overview" || tabFromQuery === "general" || tabFromQuery === "usage" || tabFromQuery === "security") {
+      if (tabFromQuery === "overview" || tabFromQuery === "general" || tabFromQuery === "security") {
         setActiveTab(tabFromQuery);
       } else if ((tabFromQuery as string) === "settings") {
         setActiveTab("general");
@@ -185,10 +182,10 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Account & Settings
+            Profile & Settings
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage your personal traveler identity, regional defaults, AI credits, and session security.
+            Manage your personal traveler identity, regional defaults, travel preferences, and session security.
           </p>
         </div>
 
@@ -276,10 +273,6 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
             />
           )}
 
-          {activeTab === "usage" && (
-            <AiUsageSection profile={profile} />
-          )}
-
           {activeTab === "security" && (
             <SettingsSection
               profile={profile}
@@ -342,21 +335,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           />
         </div>
 
-        {/* 3. AI Usage */}
-        <div className="space-y-4">
-          <div className="pb-2 border-b border-border">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              AI Usage & Quotas
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Trip capacity and monthly AI assistant credits
-            </p>
-          </div>
-          <AiUsageSection profile={profile} />
-        </div>
-
-        {/* 4. Security */}
+        {/* 3. Security */}
         <div className="space-y-4">
           <div className="pb-2 border-b border-border">
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
