@@ -20,7 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Globe, Sparkles, Bell, Save, Compass, Loader2 } from "lucide-react";
+import { Globe, Sparkles, Bell, Save, Compass, Loader2, CheckCircle2, RefreshCw, HardDrive, Sun, Moon } from "lucide-react";
+import { useOfflineSyncContext } from "@/lib/offline";
+import { ThemeChanger } from "@/components/app-shell/theme-changer";
 
 interface GeneralSectionProps {
   profile: ProfileWithStats;
@@ -56,9 +58,40 @@ export function GeneralSection({
   onUpdatePreference,
   isSavingPreferences,
 }: GeneralSectionProps) {
+  const { isSyncing, lastSyncLabel, triggerSync, isOnline } = useOfflineSyncContext();
+
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* 1. Regional & Currency Defaults */}
+      {/* 1. Theme & Appearance */}
+      <Card className="rounded-sm border border-border bg-card shadow-xs">
+        <CardHeader className="p-4 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary">
+              <Sun className="h-3.5 w-3.5" />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-semibold text-foreground">Theme & Appearance</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Customize your workspace visual style with Light, Dark, or System mode.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-4 pt-0 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
+            <div>
+              <p className="font-semibold text-foreground">Interface Theme Mode</p>
+              <p className="text-muted-foreground text-[11px]">Choose between light aesthetic, high-contrast dark palette, or OS sync</p>
+            </div>
+            <div className="w-full sm:w-64">
+              <ThemeChanger />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 2. Regional & Currency Defaults */}
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">
           <div className="flex items-center gap-2">
@@ -180,25 +213,64 @@ export function GeneralSection({
 
           <Separator />
 
-          <div className="flex items-center justify-between py-1">
-            <div className="space-y-0.5 pr-4">
-              <p className="font-semibold text-foreground">Offline Travel Cache</p>
-              <p className="text-muted-foreground text-[11px]">
-                Pre-fetch trip essentials, emergency contacts, and maps for zero-connectivity access
-              </p>
+          <div className="space-y-2 py-1">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5 pr-4">
+                <p className="font-semibold text-foreground">Offline Travel Cache</p>
+                <p className="text-muted-foreground text-[11px]">
+                  Pre-fetch trip essentials, emergency contacts, and maps for zero-connectivity access
+                </p>
+              </div>
+              <Switch
+                checked={offlineMode}
+                onCheckedChange={(checked) => {
+                  onUpdatePreference(
+                    { offlineMode: checked },
+                    checked
+                      ? "Offline travel cache enabled in database."
+                      : "Offline travel cache disabled in database."
+                  );
+                  if (checked) {
+                    // Trigger sync immediately on user toggle
+                    setTimeout(() => triggerSync(), 200);
+                  }
+                }}
+                className="cursor-pointer"
+              />
             </div>
-            <Switch
-              checked={offlineMode}
-              onCheckedChange={(checked) =>
-                onUpdatePreference(
-                  { offlineMode: checked },
-                  checked
-                    ? "Offline travel cache enabled in database."
-                    : "Offline travel cache disabled in database."
-                )
-              }
-              className="cursor-pointer"
-            />
+
+            {offlineMode && (
+              <div className="flex items-center justify-between rounded-xs border border-border/80 bg-muted/40 px-3 py-2 text-[11px]">
+                <div className="flex items-center gap-2">
+                  {isSyncing ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                      <span className="text-foreground font-medium">Syncing active & planning trips to device...</span>
+                    </>
+                  ) : (
+                    <>
+                      <HardDrive className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="text-muted-foreground">
+                        Status: <strong className="text-foreground">{lastSyncLabel}</strong>
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {isOnline && !isSyncing && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => triggerSync()}
+                    className="h-6 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10 cursor-pointer"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Sync Now
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           <Separator />

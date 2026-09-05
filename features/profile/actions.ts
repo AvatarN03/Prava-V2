@@ -152,7 +152,7 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
         dateFormat: (profile as unknown as { dateFormat?: string }).dateFormat || "MMM D, YYYY",
         aiAutoPropose: (profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? true,
         emailNotifications: (profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? true,
-        offlineMode: (profile as unknown as { offlineMode?: boolean }).offlineMode ?? true,
+        offlineMode: (profile as unknown as { offlineMode?: boolean }).offlineMode ?? false,
         travelPreferences: (profile as unknown as { travelPreferences?: string | null }).travelPreferences || null,
         createdAt: profile.createdAt.toISOString(),
         totalTrips: profile._count.trips,

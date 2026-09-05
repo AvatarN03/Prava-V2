@@ -15,7 +15,7 @@ export const updateGeneralPreferencesSchema = z.object({
   dateFormat: z.string().min(1).max(30).default("MMM D, YYYY"),
   aiAutoPropose: z.boolean().default(true),
   emailNotifications: z.boolean().default(true),
-  offlineMode: z.boolean().default(true),
+  offlineMode: z.boolean().default(false),
   travelPreferences: z.string().max(1000).optional().nullable(),
 });
 
