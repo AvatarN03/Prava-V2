@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useTransition } from "react";
+import dynamic from "next/dynamic";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   CloudSun,
   Coins,
@@ -9,25 +11,90 @@ import {
   ShieldAlert,
   Languages,
   Compass,
+  Loader2,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { WeatherData, FxRates, CitySuggestion } from "@/features/travel-essentials/types";
-import { WeatherView } from "@/features/travel-essentials/weather/weather-view";
-import { CurrencyConverter } from "@/features/travel-essentials/currency/currency-converter";
-import { MapView } from "@/features/travel-essentials/maps/map-view";
-import { CountryGuideView } from "@/features/travel-essentials/country-guide/country-guide-view";
-import { EmergencyView } from "@/features/travel-essentials/emergency/emergency-view";
-import { LanguageView } from "@/features/travel-essentials/language/language-view";
+import {
+  WeatherData,
+  FxRates,
+  CitySuggestion,
+  CurrencyPerformanceData,
+} from "@/features/travel-essentials/types";
+
+// Tab skeleton fallback for lazy loading
+function TabLoadingSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-28 w-full bg-muted/40 rounded-xl border border-border/50 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <span>Loading module...</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="h-20 bg-muted/30 rounded-xl border border-border/40" />
+        <div className="h-20 bg-muted/30 rounded-xl border border-border/40" />
+        <div className="h-20 bg-muted/30 rounded-xl border border-border/40" />
+      </div>
+    </div>
+  );
+}
+
+// Next.js dynamic imports for on-demand bundle & component loading
+const WeatherView = dynamic(
+  () => import("@/features/travel-essentials/weather/weather-view").then((m) => m.WeatherView),
+  { loading: () => <TabLoadingSkeleton /> }
+);
+
+const CurrencyConverter = dynamic(
+  () =>
+    import("@/features/travel-essentials/currency/currency-converter").then(
+      (m) => m.CurrencyConverter
+    ),
+  { loading: () => <TabLoadingSkeleton /> }
+);
+
+const MapView = dynamic(
+  () => import("@/features/travel-essentials/maps/map-view").then((m) => m.MapView),
+  { ssr: false, loading: () => <TabLoadingSkeleton /> }
+);
+
+const CountryGuideView = dynamic(
+  () =>
+    import("@/features/travel-essentials/country-guide/country-guide-view").then(
+      (m) => m.CountryGuideView
+    ),
+  { loading: () => <TabLoadingSkeleton /> }
+);
+
+const EmergencyView = dynamic(
+  () =>
+    import("@/features/travel-essentials/emergency/emergency-view").then((m) => m.EmergencyView),
+  { loading: () => <TabLoadingSkeleton /> }
+);
+
+const LanguageView = dynamic(
+  () =>
+    import("@/features/travel-essentials/language/language-view").then((m) => m.LanguageView),
+  { loading: () => <TabLoadingSkeleton /> }
+);
+
+export type TabType = "weather" | "currency" | "maps" | "guide" | "emergency" | "language";
 
 interface TravelEssentialsShellProps {
+  initialTab?: TabType;
   initialWeather: WeatherData | null;
   initialFxRates: FxRates | null;
+  preferredCurrency?: string;
   onWeatherSearch: (city: string) => Promise<WeatherData | null>;
   onCitySuggestions?: (query: string) => Promise<CitySuggestion[]>;
   onFxRefresh: (base: string) => Promise<FxRates | null>;
+  onFetchPerformance?: (
+    base: string,
+    target: string,
+    range: "7D" | "1M" | "3M" | "1Y"
+  ) => Promise<CurrencyPerformanceData | null>;
 }
-
-type TabType = "weather" | "currency" | "maps" | "guide" | "emergency" | "language";
 
 const TABS: { id: TabType; label: string; icon: React.ElementType; iconColor: string }[] = [
   { id: "weather", label: "Weather", icon: CloudSun, iconColor: "text-amber-500" },
@@ -39,13 +106,37 @@ const TABS: { id: TabType; label: string; icon: React.ElementType; iconColor: st
 ];
 
 export function TravelEssentialsShell({
+  initialTab = "weather",
   initialWeather,
   initialFxRates,
+  preferredCurrency = "USD",
   onWeatherSearch,
   onCitySuggestions,
   onFxRefresh,
+  onFetchPerformance,
 }: TravelEssentialsShellProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("weather");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Read URL query parameter if present, otherwise initialTab
+  const currentQueryTab = searchParams.get("tab") as TabType | null;
+  const activeTab: TabType =
+    currentQueryTab && TABS.some((t) => t.id === currentQueryTab)
+      ? currentQueryTab
+      : initialTab;
+
+  const handleTabChange = (val: string) => {
+    const nextTab = val as TabType;
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextTab === "weather") {
+      params.delete("tab");
+    } else {
+      params.set("tab", nextTab);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
@@ -67,7 +158,7 @@ export function TravelEssentialsShell({
       {/* Shadcn Tabs Navigation */}
       <Tabs
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val as TabType)}
+        onValueChange={handleTabChange}
         className="w-full space-y-6"
       >
         <div className="overflow-x-auto pb-1 no-scrollbar">
@@ -88,35 +179,45 @@ export function TravelEssentialsShell({
           </TabsList>
         </div>
 
-        {/* Tab Contents */}
+        {/* Tab Contents rendered on-demand for optimal DOM & load performance */}
         <TabsContent value="weather" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <WeatherView
-            initialData={initialWeather}
-            onSearch={onWeatherSearch}
-            onCitySuggestions={onCitySuggestions}
-          />
+          {activeTab === "weather" && (
+            <WeatherView
+              initialData={initialWeather}
+              onSearch={onWeatherSearch}
+              onCitySuggestions={onCitySuggestions}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="currency" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <CurrencyConverter initialRates={initialFxRates} onRefresh={onFxRefresh} />
+          {activeTab === "currency" && (
+            <CurrencyConverter
+              initialRates={initialFxRates}
+              userPreferredCurrency={preferredCurrency}
+              onRefresh={onFxRefresh}
+              onFetchPerformance={onFetchPerformance}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="maps" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <MapView />
+          {activeTab === "maps" && <MapView />}
         </TabsContent>
 
         <TabsContent value="guide" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <CountryGuideView />
+          {activeTab === "guide" && <CountryGuideView />}
         </TabsContent>
 
         <TabsContent value="emergency" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <EmergencyView />
+          {activeTab === "emergency" && <EmergencyView />}
         </TabsContent>
 
         <TabsContent value="language" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          <LanguageView />
+          {activeTab === "language" && <LanguageView />}
         </TabsContent>
       </Tabs>
     </div>
   );
 }
+
