@@ -215,3 +215,5 @@ AI in Prava AI operates under strict structured contracts:
    npm run build
    ```
    Ensure zero TypeScript errors and zero unhandled lint regressions.
+7. **Clean Imports & Formatting (`format-imports-and-clean`)**:
+   Always organize imports into the strict 6-tier hierarchy (`inbuilt` → `installed packages` → `components` → `contexts & providers` → `services, lib & utils` → `constants, types & styles`) separated by single blank lines, strip unused import components, and maintain readable indentation as detailed in `.agents/skills/format-imports-and-clean/SKILL.md`.

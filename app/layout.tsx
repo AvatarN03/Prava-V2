@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Sora } from "next/font/google";
+
 import { Toaster } from "@/components/ui/sonner";
+
 import { ThemeProvider } from "@/provider/ThemeProvider";
+
 import "./globals.css";
 
 const sora = Sora({
@@ -14,11 +17,15 @@ export const metadata: Metadata = {
   description:
     "Intelligent trip planning without the chaos. Organize multi-day itineraries, stays, expenses, and travel essentials with governed AI proposals.",
   icons: {
-    icon: "/logo.png"
-  }
+    icon: "/logo.png",
+  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"
@@ -39,4 +46,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

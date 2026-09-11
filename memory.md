@@ -283,6 +283,16 @@
 - **Task 45 (Agent & Repository Documentation — AGENTS.md & README.md Comprehensive Guide)**:
   - **AGENTS.md Overhaul**: Preserved Next.js breaking changes agent rule block and authored a comprehensive guide for LLMs/AI assistants working on Prava AI. Documented the core philosophy ("Workspace First, AI Second", "The application remembers, the LLM does not"), complete routing architecture, full technology stack, feature-first codebase organization, Prisma database conventions (`syncUserProfile`, UUID PKs, cascade deletes), Supabase SSR & PKCE authentication, Gemini 2.5 Flash structured action proposals, calm productivity design standards (Cerulean `#2D9BF0`, shadcn/ui, no AI slop/glassmorphism), external API services, and strict developer/agent rules of engagement.
   - **README.md Overhaul**: Replaced the default `create-next-app` boilerplate with a comprehensive project README featuring badges, executive overview, feature breakdown across all 5 key modules, technology stack matrix, step-by-step setup and environment configuration guide, project structure, scripts, design philosophy, and documentation links.
+- **Task 46 (Format Imports & Code Cleaner Skill — `.agents/skills/format-imports-and-clean`)**:
+  - **Skill Creation**: Created the custom Antigravity skill `format-imports-and-clean` in both workspace (`.agents/skills/format-imports-and-clean/SKILL.md`) and global configuration (`~/.gemini/config/skills/format-imports-and-clean/SKILL.md`).
+  - **6-Tier Import Hierarchy**: Formalized the exact 6-tier import structure (`inbuilt` → `installed packages` → `components` → `contexts & providers` → `services, lib & utils` → `constants, types & styles`) separated by single blank lines.
+  - **Integrated in Agent Guide**: Added Rule 7 to `AGENTS.md` enforcing the skill across the codebase.
+- **Task 47 (Landing Page Modularization & Theme-Adaptive Architecture — `features/landing/`)**:
+  - **Modular Decomposition**: Extracted the landing page into a dedicated `features/landing/` domain with focused components: `landing-header.tsx`, `hero-section.tsx`, `interactive-mockup.tsx`, `feature-highlights.tsx`, `workflow-section.tsx`, `cta-banner.tsx`, `landing-footer.tsx`, and `index.ts`.
+  - **First-Class Dark & Light Mode Adaptation**: Eliminated hardcoded light-only colors, replacing them with semantic tokens and Tailwind `dark:` variants (`dark:bg-slate-900`, `dark:text-slate-100`, `dark:border-slate-800`, `dark:bg-slate-950`). The landing page seamlessly adapts to the system theme without requiring a duplicate toggle on the page itself.
+  - **Interactive Workspace Simulation**: Upgraded the mockup into a living preview where users can switch between **Itinerary**, **Overview**, **Stays**, **Expenses**, and **Essentials** tabs, as well as test the AI Structured Proposal card by clicking "Accept Proposal" (animating an item directly into the Day 1 timeline) or "Dismiss".
+  - **Responsive Mobile Navigation**: Added an accessible mobile drawer menu for screens `< lg` with quick links and authentication actions.
+  - **Refactored `app/page.tsx`**: Streamlined `app/page.tsx` into an elegant, thin Server Component following the strict 6-tier import structure.
 
 ## Current Architecture State
 - **Framework**: Next.js 16.3.3 (App Router with Turbopack)

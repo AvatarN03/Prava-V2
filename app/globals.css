@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =========================================================
-   LIGHT MODE
+   LIGHT MODE TOKENS
    ========================================================= */
 
 :root {
@@ -14,7 +14,7 @@
   --popover: 255 255 255;
   --popover-foreground: 17 24 39;
 
-  /* Prava Brand — #2D9BF0 */
+  /* Prava Brand — #2D9BF0 Radiant Cerulean */
   --primary: 45 155 240;
   --primary-foreground: 255 255 255;
 
@@ -43,9 +43,8 @@
   --radius: 0.375rem;
 }
 
-
 /* =========================================================
-   DARK MODE
+   DARK MODE TOKENS
    ========================================================= */
 
 .dark {
@@ -82,9 +81,8 @@
   --ring: 45 155 240;
 }
 
-
 /* =========================================================
-   TAILWIND v4 THEME
+   TAILWIND v4 THEME MAPPINGS
    ========================================================= */
 
 @theme inline {
@@ -125,9 +123,8 @@
   --radius: var(--radius);
 }
 
-
 /* =========================================================
-   GLOBALS
+   GLOBAL INTERACTION & TYPOGRAPHY
    ========================================================= */
 
 button,
@@ -141,12 +138,10 @@ input[type="reset"] {
 body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
-
   font-family:
     var(--font-sora),
     Roboto,
     sans-serif;
-
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -155,7 +150,10 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Thin custom scrollbars */
+/* =========================================================
+   CUSTOM SCROLLBAR UTILITIES
+   ========================================================= */
+
 .thin-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
