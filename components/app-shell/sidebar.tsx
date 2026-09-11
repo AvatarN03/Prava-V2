@@ -42,8 +42,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               "group flex items-center gap-2.5 rounded-l-none rounded-r-md pl-4 pr-3 py-2 text-xs font-normal transition-all duration-200 ease-in-out relative cursor-pointer",
               // Opposite-theme styling: In light mode, sidebar is dark; in dark mode, sidebar is light
               isActive
-                ? "bg-[#2D9BF0] text-white/95 shadow-xs"
-                : "text-slate-400 hover:text-white hover:bg-white/10 hover:translate-x-0.5 dark:text-slate-600 dark:hover:text-slate-950 dark:hover:bg-slate-200/80 dark:hover:translate-x-0.5"
+                ? "bg-[#2D9BF0] text-white/90  shadow-xs"
+                : "text-slate-400 hover:text-white hover:bg-slate-100/15 hover:translate-x-0.5 dark:text-slate-600 dark:hover:text-slate-950 dark:hover:bg-slate-200 dark:hover:translate-x-0.5"
             )}
           >
             <Icon
@@ -100,7 +100,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             href="/dashboard"
             className="flex items-center gap-2 font-bold group cursor-pointer"
           >
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg p-1 transition-transform duration-300 group-hover:scale-105">
+            <div className="relative flex h-8 w-8 items-end justify-center rounded-lg p-1 transition-transform duration-300 group-hover:scale-105">
               <Image
                 src="/logo.png"
                 alt="Prava AI Logo"
@@ -110,10 +110,11 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm tracking-tight font-extrabold text-white dark:text-slate-900">
+              <span className="text-md font-light text-white dark:text-slate-900">
                 Prava AI
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-[#2D9BF0] animate-pulse shadow-xs" />
+
             </div>
           </Link>
 

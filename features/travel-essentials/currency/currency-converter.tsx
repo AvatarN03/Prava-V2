@@ -1,28 +1,32 @@
 "use client";
 
-import { useState, useTransition, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+
 import {
   ArrowRightLeft,
   Coins,
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  Plus,
-  Trash2,
-  Search,
-  Star,
-  Sparkles,
   Info,
-  Calendar,
-  Check,
-  ChevronRight,
-  ShieldCheck,
   LineChart,
+  Plus,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Star,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -30,8 +34,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FxRates, CurrencyPerformanceData, SupportedCurrency } from "../types";
+
 import { SUPPORTED_CURRENCIES } from "./currency-service";
+
+import type {
+  CurrencyPerformanceData,
+  FxRates,
+  SupportedCurrency,
+} from "../types";
 
 interface CurrencyConverterProps {
   initialRates: FxRates | null;
@@ -48,16 +58,16 @@ type TimeRange = "7D" | "1M" | "3M" | "1Y";
 
 export function CurrencyConverter({
   initialRates,
-  userPreferredCurrency = "USD",
+  userPreferredCurrency = "INR",
   onRefresh,
   onFetchPerformance,
 }: CurrencyConverterProps) {
   const [rates, setRates] = useState<FxRates | null>(initialRates);
   const [baseCurrency, setBaseCurrency] = useState<string>(userPreferredCurrency);
   const [selectedTarget, setSelectedTarget] = useState<string>(
-    userPreferredCurrency === "EUR" ? "GBP" : "EUR"
+    userPreferredCurrency === "INR" ? "USD" : userPreferredCurrency === "USD" ? "EUR" : "USD"
   );
-  const [amount, setAmount] = useState<string>("100");
+  const [amount, setAmount] = useState<string>(userPreferredCurrency === "INR" ? "1000" : "100");
   const [isRefreshing, startRefresh] = useTransition();
 
   // Client-side in-memory caches for instantaneous UI switching
@@ -121,8 +131,8 @@ export function CurrencyConverter({
       // Ignore parse error
     }
 
-    // Default watchlist if none stored
-    const defaults = ["EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "INR", "SGD"].filter(
+    // Default watchlist if none stored (popular destinations for Indian and global travelers)
+    const defaults = ["USD", "EUR", "AED", "GBP", "THB", "SGD", "JPY", "CAD"].filter(
       (c) => c !== baseCurrency
     );
     setWatchlist(defaults);
@@ -334,13 +344,15 @@ export function CurrencyConverter({
               Base:
             </span>
             <Select value={baseCurrency} onValueChange={handleBaseChange}>
-              <SelectTrigger className="h-7 text-xs font-semibold bg-background border-border/50 cursor-pointer w-28">
-                <SelectValue />
+              <SelectTrigger className="h-7 w-20 shrink-0 text-xs font-semibold bg-background border-border/60 cursor-pointer px-2.5">
+                <SelectValue placeholder={baseCurrency}>
+                  {baseCurrency}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent className="max-h-60 w-56 thin-scrollbar">
+              <SelectContent className="max-h-60 w-64 thin-scrollbar">
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <SelectItem key={c.code} value={c.code} className="text-xs cursor-pointer">
-                    {c.flag} {c.code} — {c.name}
+                    <span className="font-semibold">{c.code}</span> - {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -391,11 +403,32 @@ export function CurrencyConverter({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="text-base font-mono font-bold h-10 pr-16 bg-background"
-                  placeholder="100"
+                  placeholder="1000"
                 />
                 <span className="absolute right-3 top-2.5 text-xs font-semibold text-muted-foreground font-mono">
                   {baseCurrency}
                 </span>
+              </div>
+
+              {/* Quick Amount Chips */}
+              <div className="flex items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
+                {(baseCurrency === "INR"
+                  ? ["500", "1000", "5000", "10000", "50000"]
+                  : ["50", "100", "500", "1000", "5000"]
+                ).map((chipVal) => (
+                  <button
+                    key={chipVal}
+                    type="button"
+                    onClick={() => setAmount(chipVal)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono transition-all cursor-pointer border ${
+                      amount === chipVal
+                        ? "bg-primary text-primary-foreground border-primary font-bold shadow-xs"
+                        : "bg-muted/50 border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {baseCurrency === "INR" ? `₹${Number(chipVal).toLocaleString("en-IN")}` : chipVal}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -419,20 +452,26 @@ export function CurrencyConverter({
                 <span className="font-semibold text-foreground">You Receive (Est.)</span>
                 <span className="text-[11px] text-muted-foreground">{targetCurrencyMeta.name}</span>
               </div>
-              <div className="flex items-center justify-between h-10 px-3 rounded-md border border-border bg-muted/40 font-mono text-base font-bold text-foreground">
-                <span>{convertedValue}</span>
+              <div className="flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-border bg-muted/40 font-mono text-base font-bold text-foreground">
+                <span className="truncate">{convertedValue}</span>
                 <Select value={selectedTarget} onValueChange={setSelectedTarget}>
-                  <SelectTrigger className="h-7 text-xs font-semibold bg-background border-border/60 w-24 cursor-pointer">
-                    <SelectValue />
+                  <SelectTrigger className="h-7 w-20 shrink-0 text-xs font-semibold bg-background border-border/60 cursor-pointer">
+                    <SelectValue placeholder={selectedTarget}>{selectedTarget}</SelectValue>
                   </SelectTrigger>
-                  <SelectContent className="max-h-60 w-44 thin-scrollbar">
+                  <SelectContent className="max-h-60 w-60 thin-scrollbar">
                     {SUPPORTED_CURRENCIES.filter((c) => c.code !== baseCurrency).map((c) => (
                       <SelectItem key={c.code} value={c.code} className="text-xs cursor-pointer">
-                        {c.flag} {c.code}
+                        <span className="font-semibold">{c.code}</span> - {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Conversion Reference */}
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 font-mono">
+                <span>1 {baseCurrency} = {targetRate.toFixed(4)} {selectedTarget}</span>
+                <span>1 {selectedTarget} = {(targetRate > 0 ? 1 / targetRate : 0).toFixed(4)} {baseCurrency}</span>
               </div>
             </div>
           </div>
@@ -455,18 +494,18 @@ export function CurrencyConverter({
           {/* Add Currency to Watchlist Dropdown */}
           <div className="flex items-center gap-2">
             <Select value={currencyToAdd} onValueChange={handleAddToWatchlist}>
-              <SelectTrigger className="h-7 text-xs font-medium bg-background border-border/70 cursor-pointer w-40">
+              <SelectTrigger className="h-7 text-xs font-medium bg-background border-border/70 cursor-pointer w-44">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add currency...</span>
                 </div>
               </SelectTrigger>
-              <SelectContent className="max-h-60 w-56 thin-scrollbar">
+              <SelectContent className="max-h-60 w-64 thin-scrollbar">
                 {SUPPORTED_CURRENCIES.filter(
                   (c) => c.code !== baseCurrency && !watchlist.includes(c.code)
                 ).map((c) => (
                   <SelectItem key={c.code} value={c.code} className="text-xs cursor-pointer">
-                    {c.flag} {c.code} — {c.name}
+                    <span className="font-semibold">{c.code}</span> - {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>

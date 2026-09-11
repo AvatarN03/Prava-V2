@@ -188,6 +188,8 @@ export interface AiTranslatedPhrase {
   localeCode: string;
   culturalNote?: string;
   provider?: string;
+  detectedLanguage?: string;
+  direction?: "to-english" | "to-foreign";
 }
 
 export type EssentialCategory =

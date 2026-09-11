@@ -1,37 +1,52 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import {
-  Map,
-  Search,
-  Loader2,
-  MapPin,
-  Crosshair,
-  Hotel,
-  Pill,
-  ShoppingCart,
-  DollarSign,
-  Train,
-  Clock,
-  ExternalLink,
-  ChevronRight,
-  Sparkles,
-  RefreshCw,
   AlertCircle,
+  Check,
+  ChevronRight,
+  Clock,
+  Copy,
+  Crosshair,
+  DollarSign,
+  ExternalLink,
+  Hotel,
+  Loader2,
+  Map,
+  MapPin,
+  Pill,
+  RefreshCw,
+  Search,
+  ShoppingCart,
+  Sparkles,
+  Train,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  MapLocationSuggestion,
-  NearbyEssentialPOI,
-  EssentialCategory,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
+import {
   fetchMapLocationSuggestions,
   fetchNearbyTravelEssentials,
-  reverseGeocodeLocation,
   formatDistance,
+  reverseGeocodeLocation,
+} from "./map-service";
+
+import type {
+  EssentialCategory,
+  MapLocationSuggestion,
+  NearbyEssentialPOI,
 } from "./map-service";
 
 // Client-only dynamic import to avoid Leaflet SSR window errors
@@ -47,14 +62,16 @@ const MapInner = dynamic(() => import("./map-inner"), {
   ),
 });
 
+// Top Indian travel destinations & metropolitan hubs
 const POPULAR_DESTINATIONS = [
-  { name: "Paris, France", coords: [48.8566, 2.3522] as [number, number] },
-  { name: "Tokyo, Japan", coords: [35.6762, 139.6503] as [number, number] },
-  { name: "Rome, Italy", coords: [41.9028, 12.4964] as [number, number] },
-  { name: "New York, USA", coords: [40.7128, -74.006] as [number, number] },
-  { name: "London, UK", coords: [51.5074, -0.1278] as [number, number] },
-  { name: "Dubai, UAE", coords: [25.2048, 55.2708] as [number, number] },
-  { name: "Sydney, Australia", coords: [-33.8688, 151.2093] as [number, number] },
+  { name: "Mumbai, Maharashtra", coords: [19.0760, 72.8777] as [number, number] },
+  { name: "New Delhi, NCR", coords: [28.6139, 77.2090] as [number, number] },
+  { name: "Bengaluru, Karnataka", coords: [12.9716, 77.5946] as [number, number] },
+  { name: "Goa (Panaji)", coords: [15.4909, 73.8278] as [number, number] },
+  { name: "Jaipur, Rajasthan", coords: [26.9124, 75.7873] as [number, number] },
+  { name: "Kochi, Kerala", coords: [9.9312, 76.2673] as [number, number] },
+  { name: "Manali, HP", coords: [32.2432, 77.1892] as [number, number] },
+  { name: "Varanasi, UP", coords: [25.3176, 82.9739] as [number, number] },
 ];
 
 const CATEGORY_TABS: {
@@ -65,24 +82,27 @@ const CATEGORY_TABS: {
 }[] = [
   { id: "all", label: "All Essentials", icon: Sparkles, color: "text-primary" },
   { id: "hotel", label: "Hotels & Stays", icon: Hotel, color: "text-indigo-500" },
-  { id: "pharmacy", label: "Pharmacies & Chemists", icon: Pill, color: "text-rose-500" },
-  { id: "supermarket", label: "General Stores", icon: ShoppingCart, color: "text-emerald-500" },
-  { id: "atm", label: "ATMs & Cash", icon: DollarSign, color: "text-amber-500" },
+  { id: "pharmacy", label: "Hospitals & Medical", icon: Pill, color: "text-rose-500" },
   { id: "transit", label: "Transit & Metro", icon: Train, color: "text-sky-500" },
+  { id: "atm", label: "ATMs & Cash", icon: DollarSign, color: "text-amber-500" },
+  { id: "supermarket", label: "General Stores", icon: ShoppingCart, color: "text-emerald-500" },
 ];
 
 export function MapView() {
-  const [center, setCenter] = useState<[number, number]>([35.6762, 139.6503]); // Tokyo default
-  const [zoom, setZoom] = useState<number>(14);
-  const [locationName, setLocationName] = useState<string>("Tokyo, Japan");
+  // Oriented to India (Mumbai as default center)
+  const [center, setCenter] = useState<[number, number]>([19.0760, 72.8777]);
+  const [zoom, setZoom] = useState<number>(13);
+  const [locationName, setLocationName] = useState<string>("Mumbai, Maharashtra, India");
   const [isUserDeviceLocation, setIsUserDeviceLocation] = useState(false);
   const [deviceCoords, setDeviceCoords] = useState<[number, number] | null>(null);
+  const [copiedCoords, setCopiedCoords] = useState(false);
 
   // Search & Autocomplete suggestions state
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [suggestions, setSuggestions] = useState<MapLocationSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const isSelectingRef = useRef(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Geolocation states
@@ -95,8 +115,13 @@ export function MapView() {
   const [activeCategory, setActiveCategory] = useState<"all" | EssentialCategory>("all");
   const [selectedPoi, setSelectedPoi] = useState<NearbyEssentialPOI | null>(null);
 
-  // Debounced fetch for suggestions when user types >= 3 characters
+  // Debounced fetch for suggestions (stops if selection is made)
   useEffect(() => {
+    if (isSelectingRef.current) {
+      isSelectingRef.current = false;
+      return;
+    }
+
     const trimmed = searchQuery.trim();
     if (trimmed.length < 3) {
       setSuggestions([]);
@@ -108,14 +133,16 @@ export function MapView() {
       setIsSuggesting(true);
       try {
         const results = await fetchMapLocationSuggestions(trimmed);
-        setSuggestions(results);
-        setShowDropdown(results.length > 0);
+        if (!isSelectingRef.current) {
+          setSuggestions(results);
+          setShowDropdown(results.length > 0);
+        }
       } catch (err) {
         console.error("Failed to load map suggestions:", err);
       } finally {
         setIsSuggesting(false);
       }
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -140,7 +167,7 @@ export function MapView() {
     setIsLoadingPois(true);
     setSelectedPoi(null);
 
-    fetchNearbyTravelEssentials(center[0], center[1])
+    fetchNearbyTravelEssentials(center[0], center[1], "all")
       .then((data) => {
         if (!isCancelled) {
           setPois(data);
@@ -157,19 +184,45 @@ export function MapView() {
     };
   }, [center]);
 
+  // Handle category tab selection with targeted on-demand fetch if few places exist
+  const handleCategorySelect = (tabId: "all" | EssentialCategory) => {
+    setActiveCategory(tabId);
+    if (tabId !== "all") {
+      const existing = pois.filter((p) => p.category === tabId);
+      if (existing.length < 4) {
+        setIsLoadingPois(true);
+        fetchNearbyTravelEssentials(center[0], center[1], tabId, 3000)
+          .then((morePois) => {
+            if (morePois.length > 0) {
+              setPois((prev) => {
+                const existingIds = new Set(prev.map((p) => p.id));
+                const uniqueNew = morePois.filter((p) => !existingIds.has(p.id));
+                return [...prev, ...uniqueNew].sort((a, b) => a.distanceMeters - b.distanceMeters);
+              });
+            }
+          })
+          .catch((err) => console.warn("Category load error:", err))
+          .finally(() => setIsLoadingPois(false));
+      }
+    }
+  };
+
   // Handle location search selection
   const handleSelectLocation = (
     name: string,
     coords: [number, number],
     isDevice: boolean = false
   ) => {
-    setCenter(coords);
-    setZoom(14);
-    setLocationName(name);
-    setIsUserDeviceLocation(isDevice);
+    isSelectingRef.current = true;
     setShowDropdown(false);
+    setSuggestions([]);
     setSearchQuery("");
     setLocationError(null);
+
+    setCenter(coords);
+    setZoom(13);
+    setLocationName(name);
+    setIsUserDeviceLocation(isDevice);
   };
 
   // Handle direct search form submit
@@ -177,7 +230,11 @@ export function MapView() {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
+    isSelectingRef.current = true;
+    setShowDropdown(false);
+    setSuggestions([]);
     setIsSuggesting(true);
+
     try {
       const results = await fetchMapLocationSuggestions(searchQuery.trim());
       if (results.length > 0) {
@@ -186,7 +243,7 @@ export function MapView() {
       } else {
         setLocationError(`Could not find "${searchQuery}". Please check the spelling.`);
       }
-    } catch (err) {
+    } catch {
       setLocationError("Failed to search location.");
     } finally {
       setIsSuggesting(false);
@@ -223,7 +280,7 @@ export function MapView() {
         setIsLocating(false);
         if (error.code === error.PERMISSION_DENIED) {
           setLocationError(
-            "Location access denied. Please allow location permissions in your browser settings to pinpoint your device on the map."
+            "Location access denied. Please allow location permissions in your browser to pinpoint your device on the map."
           );
         } else {
           setLocationError("Unable to retrieve your location. Please check your GPS or internet connection.");
@@ -235,6 +292,14 @@ export function MapView() {
         maximumAge: 60000,
       }
     );
+  };
+
+  const handleCopyCoordinates = () => {
+    const coordStr = `${center[0].toFixed(4)}, ${center[1].toFixed(4)}`;
+    navigator.clipboard.writeText(coordStr);
+    setCopiedCoords(true);
+    toast.success(`Coordinates copied: ${coordStr}`);
+    setTimeout(() => setCopiedCoords(false), 2000);
   };
 
   // Filtered POIs based on active category
@@ -259,6 +324,10 @@ export function MapView() {
     return counts;
   }, [pois]);
 
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${locationName} ${center[0]},${center[1]}`
+  )}`;
+
   return (
     <div className="space-y-6">
       {/* Header & Controls Strip */}
@@ -271,11 +340,11 @@ export function MapView() {
                 Interactive Travel Maps & Local Essentials
               </h2>
               <Badge variant="secondary" className="text-[10px] font-mono px-2 py-0">
-                Live OpenStreetMap Feed
+                OpenStreetMap Feed
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Explore destinations, pinpoint your device location, and discover nearby hotels, chemist stores, general markets, and transit stations.
+              Explore destinations, pinpoint device GPS, and locate verified hotels, hospitals, metro stations, and ATMs.
             </p>
           </div>
 
@@ -306,7 +375,7 @@ export function MapView() {
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search destination (e.g. Kyoto, Barcelona, Queenstown)..."
+                  placeholder="Search destination (e.g. Mumbai, Bandra, Goa, Jaipur)..."
                   className="pl-8 pr-8 h-9 text-xs bg-background"
                   value={searchQuery}
                   onChange={(e) => {
@@ -333,9 +402,9 @@ export function MapView() {
               </Button>
             </form>
 
-            {/* Suggestions Dropdown */}
+            {/* Suggestions Dropdown (Closes reliably on select) */}
             {showDropdown && suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border/80 bg-popover/95 backdrop-blur-md shadow-xl overflow-hidden py-1 divide-y divide-border/40 animate-in fade-in-50 zoom-in-95 duration-100">
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border/80 bg-popover/95 backdrop-blur-md shadow-xl overflow-hidden py-1 divide-y divide-border/40 animate-in fade-in-50 duration-100">
                 <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 flex items-center justify-between">
                   <span>Destination Suggestions</span>
                   <span className="text-[9px] font-normal lowercase text-muted-foreground/70">
@@ -374,7 +443,7 @@ export function MapView() {
             )}
           </div>
 
-          {/* Quick Destination Pins */}
+          {/* Quick Indian Destination Pins */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             <span className="text-[11px] text-muted-foreground whitespace-nowrap mr-1 font-medium">Quick pins:</span>
             {POPULAR_DESTINATIONS.map((dest) => (
@@ -383,7 +452,7 @@ export function MapView() {
                 type="button"
                 onClick={() => handleSelectLocation(dest.name, dest.coords)}
                 className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all whitespace-nowrap cursor-pointer border ${
-                  locationName === dest.name
+                  locationName.toLowerCase().includes(dest.name.split(",")[0].toLowerCase())
                     ? "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400 font-semibold"
                     : "bg-muted/50 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
@@ -406,7 +475,7 @@ export function MapView() {
             variant="ghost"
             size="sm"
             onClick={() => setLocationError(null)}
-            className="h-6 text-xs px-2"
+            className="h-6 text-xs px-2 cursor-pointer"
           >
             Dismiss
           </Button>
@@ -420,22 +489,37 @@ export function MapView() {
           <Card className="border-border/80 bg-card overflow-hidden shadow-xs">
             {/* Map Top Bar */}
             <div className="p-3 border-b border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2 font-medium text-foreground">
+              <div className="flex items-center gap-2 font-medium text-foreground min-w-0">
                 <MapPin className="w-4 h-4 text-sky-500 shrink-0" />
-                <span className="font-semibold text-sm truncate">{locationName}</span>
+                <span className="font-semibold text-sm truncate max-w-[280px] sm:max-w-md">{locationName}</span>
                 {isUserDeviceLocation && (
-                  <Badge variant="outline" className="text-[10px] font-mono border-blue-500/40 text-blue-600 bg-blue-500/10">
+                  <Badge variant="outline" className="text-[10px] font-mono border-blue-500/40 text-blue-600 bg-blue-500/10 shrink-0">
                     GPS Active
                   </Badge>
                 )}
               </div>
 
-              <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground">
-                <span>
-                  {center[0].toFixed(4)}° N, {center[1].toFixed(4)}° E
-                </span>
-                <span className="hidden sm:inline">•</span>
-                <span className="hidden sm:inline">1.5 km radius scan</span>
+              <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyCoordinates}
+                  className="h-6 px-2 text-[10px] gap-1 cursor-pointer hover:bg-muted"
+                  title="Copy GPS coordinates"
+                >
+                  {copiedCoords ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+                  <span>{center[0].toFixed(4)}°N, {center[1].toFixed(4)}°E</span>
+                </Button>
+
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline font-semibold pl-1"
+                >
+                  <span>Open Maps</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
               </div>
             </div>
 
@@ -451,17 +535,59 @@ export function MapView() {
               onSelectPoi={setSelectedPoi}
             />
 
-            {/* Map Bottom Legend */}
-            <div className="p-2.5 border-t border-border/50 bg-muted/10 flex flex-wrap items-center justify-between gap-3 text-[11px] text-muted-foreground px-4">
-              <div className="flex items-center gap-4 flex-wrap">
-                <span className="font-medium text-foreground">Marker Legend:</span>
-                <span className="flex items-center gap-1">🏨 Hotels</span>
-                <span className="flex items-center gap-1">💊 Pharmacies</span>
-                <span className="flex items-center gap-1">🛒 General Stores</span>
-                <span className="flex items-center gap-1">🏧 ATMs</span>
-                <span className="flex items-center gap-1">🚆 Transit</span>
+            {/* Map Pin Visual Guide & Legend */}
+            <div className="p-2.5 px-3.5 border-t border-border/50 bg-muted/20 flex flex-wrap items-center justify-between gap-y-2 gap-x-4 text-[11px]">
+              <div className="flex items-center gap-1.5 font-semibold text-foreground text-xs shrink-0">
+                <span>Map Pin Guide:</span>
               </div>
-              <span>Click any marker to inspect</span>
+
+              <div className="flex items-center gap-3.5 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white shadow-xs">
+                    <DollarSign className="w-3 h-3" />
+                  </span>
+                  <span className="font-medium text-foreground">ATMs & Cash</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-500 text-white shadow-xs">
+                    <Pill className="w-3 h-3" />
+                  </span>
+                  <span className="font-medium text-foreground">Hospitals & Medical</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white shadow-xs">
+                    <Hotel className="w-3 h-3" />
+                  </span>
+                  <span className="font-medium text-foreground">Hotels & Stays</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white shadow-xs">
+                    <Train className="w-3 h-3" />
+                  </span>
+                  <span className="font-medium text-foreground">Transit Stations</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white shadow-xs">
+                    <ShoppingCart className="w-3 h-3" />
+                  </span>
+                  <span className="font-medium text-foreground">General Stores</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 border border-sky-400 text-sky-400 shadow-xs">
+                    <MapPin className="w-3 h-3" />
+                  </span>
+                  <span className="font-medium text-foreground">Search Hub</span>
+                </div>
+              </div>
+
+              <span className="text-[10px] text-muted-foreground ml-auto hidden sm:inline">
+                Click any pin to inspect details
+              </span>
             </div>
           </Card>
         </div>
@@ -482,7 +608,7 @@ export function MapView() {
                 )}
               </div>
               <CardDescription className="text-xs">
-                Essential amenities within 1.5 km of {locationName.split(",")[0]}.
+                Verified essentials within 1.5 km of {locationName.split(",")[0]}.
               </CardDescription>
 
               {/* Category Filter Pills */}
@@ -496,7 +622,7 @@ export function MapView() {
                     <button
                       key={tab.id}
                       type="button"
-                      onClick={() => setActiveCategory(tab.id)}
+                      onClick={() => handleCategorySelect(tab.id)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 border select-none ${
                         isCurrent
                           ? "bg-primary text-primary-foreground border-primary font-semibold shadow-xs"
@@ -523,7 +649,7 @@ export function MapView() {
               ) : filteredPois.length === 0 ? (
                 <div className="py-12 text-center text-xs text-muted-foreground space-y-1">
                   <p className="font-semibold text-foreground">No places found in this category.</p>
-                  <p className="text-[11px]">Try switching to &quot;All Essentials&quot; or search a busier city area.</p>
+                  <p className="text-[11px]">Try switching to &quot;All Essentials&quot; or search another city hub.</p>
                 </div>
               ) : (
                 <div className="space-y-2">

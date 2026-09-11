@@ -1,53 +1,80 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+
 import {
+  AlertTriangle,
   BookOpen,
-  Zap,
-  DollarSign,
-  Droplets,
-  FileCheck,
+  Bot,
+  Calculator,
   Calendar,
-  Search,
-  MapPin,
-  ExternalLink,
-  Loader2,
-  ShieldCheck,
-  ShieldAlert,
-  CreditCard,
-  PhoneCall,
-  Flame,
-  Shield,
-  HeartPulse,
-  Info,
-  Copy,
   Check,
   CheckCircle2,
-  XCircle,
-  Calculator,
-  Newspaper,
-  Bot,
-  Lightbulb,
-  Globe,
-  Landmark,
   Compass,
+  Copy,
+  CreditCard,
+  DollarSign,
+  Droplets,
+  ExternalLink,
+  FileCheck,
+  Flame,
+  Globe,
+  HeartPulse,
+  Info,
+  Landmark,
+  Lightbulb,
+  Loader2,
+  MapPin,
+  Newspaper,
+  PhoneCall,
+  RotateCw,
+  Search,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  XCircle,
+  Zap,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  searchCountryInfo,
-  fetchCountrySuggestions,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
+import {
+  getCachedAiSummary,
+  getCachedCountryInfo,
+  getCachedNews,
+  setCachedAiSummary,
+  setCachedCountryInfo,
+  setCachedNews,
+} from "./country-cache";
+import {
   fetchCountryNews,
+  fetchCountrySuggestions,
   generateCountryAiSummary,
-  CountrySuggestionItem,
-  CountryNewsArticle,
-  CountryAiSummary,
+  searchCountryInfo,
 } from "./country-service";
-import { QUICK_PICK_COUNTRIES, QuickPickCountry } from "./country-constants";
+
 import { EMERGENCY_DIRECTORY } from "../emergency/emergency-data";
-import { CountryInfo, EmergencyContacts } from "../types";
+import type { CountryInfo, EmergencyContacts } from "../types";
+import {
+  getIndianPassportVisaGuidance,
+  QUICK_PICK_COUNTRIES,
+  type QuickPickCountry,
+} from "./country-constants";
+import type {
+  CountryAiSummary,
+  CountryNewsArticle,
+  CountrySuggestionItem,
+} from "./country-service";
 
 const REGIONS = ["All", "Europe", "Asia", "Americas", "Middle East"] as const;
 type RegionType = (typeof REGIONS)[number];
@@ -64,7 +91,7 @@ export function CountryGuideView() {
   const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // News and AI Summary State
+  // News and AI Summary State (OpenRouter exclusively)
   const [news, setNews] = useState<CountryNewsArticle[]>([]);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
   const [aiSummary, setAiSummary] = useState<CountryAiSummary | null>(null);
@@ -81,11 +108,21 @@ export function CountryGuideView() {
     setTimeout(() => setCopiedNumber(null), 2000);
   };
 
-  // Fetch default country (Japan) from API on mount
+  // Fetch default country (India) on mount — instant cache read to prevent reloading spam
   useEffect(() => {
-    searchCountryInfo("Japan")
+    const cachedIndia = getCachedCountryInfo("India");
+    if (cachedIndia) {
+      setCountry(cachedIndia);
+      setIsInitialLoading(false);
+      return;
+    }
+
+    searchCountryInfo("India")
       .then((res) => {
-        if (res) setCountry(res);
+        if (res) {
+          setCountry(res);
+          setCachedCountryInfo("India", res);
+        }
         setIsInitialLoading(false);
       })
       .catch((err) => {
@@ -99,26 +136,80 @@ export function CountryGuideView() {
     if (country) setTipPercent(country.tippingPercent ?? 10);
   }, [country]);
 
+  // Indian passport visa snapshot
+  const indianVisa = useMemo(() => {
+    if (!country) return null;
+    return getIndianPassportVisaGuidance(country.name, country.code);
+  }, [country]);
+
+  // Regenerate live AI summary on demand (bypasses cache)
+  const handleRegenerateAi = async () => {
+    if (!country) return;
+    setIsLoadingAi(true);
+    try {
+      const fresh = await generateCountryAiSummary(country.name, country, news, true);
+      setAiSummary(fresh);
+      setCachedAiSummary(country.name, fresh);
+    } catch (err) {
+      console.error("Failed to regenerate AI summary:", err);
+    } finally {
+      setIsLoadingAi(false);
+    }
+  };
+
   // Fetch live news & AI summary when country changes
+  // Uses client-side persistent cache (localStorage) to avoid calling APIs on reloads
   useEffect(() => {
     let isCancelled = false;
     if (!country) return;
-    setIsLoadingNews(true);
-    setIsLoadingAi(true);
 
-    fetchCountryNews(country.name)
-      .then((articles) => {
+    // 1. Synchronously check client persistent cache
+    const cachedNews = getCachedNews(country.name);
+    const cachedSummary = getCachedAiSummary(country.name);
+
+    if (cachedNews) {
+      setNews(cachedNews);
+      setIsLoadingNews(false);
+    } else {
+      setIsLoadingNews(true);
+    }
+
+    if (cachedSummary) {
+      setAiSummary(cachedSummary);
+      setIsLoadingAi(false);
+    } else {
+      setIsLoadingAi(true);
+    }
+
+    // If both news and AI summary are already cached, terminate here without any network call
+    if (cachedNews && cachedSummary) {
+      return;
+    }
+
+    // 2. Fetch missing data asynchronously
+    const newsPromise = cachedNews
+      ? Promise.resolve(cachedNews)
+      : fetchCountryNews(country.name).then((articles) => {
         if (!isCancelled) {
           setNews(articles);
+          setCachedNews(country.name, articles);
           setIsLoadingNews(false);
-          return generateCountryAiSummary(country.name, country, articles);
         }
-      })
-      .then((summary) => {
-        if (!isCancelled && summary) {
-          setAiSummary(summary);
-          setIsLoadingAi(false);
-        }
+        return articles;
+      });
+
+    newsPromise
+      .then((articles) => {
+        if (isCancelled) return;
+        if (cachedSummary) return; // Summary already present in cache
+
+        return generateCountryAiSummary(country.name, country, articles, false).then((summary) => {
+          if (!isCancelled && summary) {
+            setAiSummary(summary);
+            setCachedAiSummary(country.name, summary);
+            setIsLoadingAi(false);
+          }
+        });
       })
       .catch((err) => {
         console.error("Error loading news/AI summary:", err);
@@ -175,10 +266,16 @@ export function CountryGuideView() {
   const handleSelectCountry = (targetName: string) => {
     setShowDropdown(false);
     setSearchQuery("");
+    const cached = getCachedCountryInfo(targetName);
+    if (cached) {
+      setCountry(cached);
+      return;
+    }
     startSearching(async () => {
       const res = await searchCountryInfo(targetName);
       if (res) {
         setCountry(res);
+        setCachedCountryInfo(targetName, res);
       }
     });
   };
@@ -206,15 +303,15 @@ export function CountryGuideView() {
   const waterBadgeMeta =
     waterStatus === "safe"
       ? {
-          label: "Safe to Drink (Potable)",
-          bg: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-        }
+        label: "Safe to Drink (Potable)",
+        bg: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+      }
       : waterStatus === "caution"
-      ? {
+        ? {
           label: "Caution / Bottled Preferred",
           bg: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
         }
-      : {
+        : {
           label: "Bottled / Boiled Water Only",
           bg: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30",
         };
@@ -365,11 +462,10 @@ export function CountryGuideView() {
                 key={reg}
                 type="button"
                 onClick={() => setActiveRegion(reg)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer border ${
-                  activeRegion === reg
-                    ? "bg-primary text-primary-foreground border-primary font-semibold shadow-xs"
-                    : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted"
-                }`}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer border ${activeRegion === reg
+                  ? "bg-primary text-primary-foreground border-primary font-semibold shadow-xs"
+                  : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted"
+                  }`}
               >
                 {reg}
               </button>
@@ -387,11 +483,10 @@ export function CountryGuideView() {
               key={pick.code}
               type="button"
               onClick={() => handleSelectCountry(pick.name)}
-              className={`px-2.5 py-1 text-xs rounded-full border font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                country.name.toLowerCase() === pick.name.toLowerCase() || country.code === pick.code
-                  ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40 font-semibold shadow-xs"
-                  : "bg-muted/50 text-muted-foreground hover:text-foreground border-border hover:bg-muted"
-              }`}
+              className={`px-2.5 py-1 text-xs rounded-full border font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${country.name.toLowerCase() === pick.name.toLowerCase() || country.code === pick.code
+                ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40 font-semibold shadow-xs"
+                : "bg-muted/50 text-muted-foreground hover:text-foreground border-border hover:bg-muted"
+                }`}
             >
               <span>{pick.flag || "🌐"}</span>
               <span>{pick.name}</span>
@@ -425,6 +520,10 @@ export function CountryGuideView() {
                         {country.subregion || country.region}
                       </Badge>
                     )}
+                    <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 flex items-center gap-1">
+                      <Globe className="w-3 h-3" />
+                      <span>REST Countries v5 Live</span>
+                    </Badge>
                   </div>
                   {country.officialName && country.officialName !== country.name && (
                     <p className="text-xs text-muted-foreground font-serif italic mt-0.5">
@@ -479,9 +578,9 @@ export function CountryGuideView() {
 
             {/* Links and Action Buttons */}
             <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-2 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-border/60">
-              <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+              <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 flex items-start gap-1.5 flex-row-reverse">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>{country.bestSeasons}</span>
+                <span className="max-w-xs  text-justify">{country.bestSeasons}</span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 {country.googleMapsUrl && (
@@ -652,23 +751,62 @@ export function CountryGuideView() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left (7 Cols): AI Executive Intelligence & Traveler Advisory */}
         <Card className="lg:col-span-7 border-border/80 bg-card shadow-xs flex flex-col justify-between">
-          <CardHeader className="p-4 pb-2.5 border-b border-border/50">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+          <CardHeader className="p-3.5 sm:p-4 pb-2.5 border-b border-border/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full">
+              {/* Left: Bot Icon + Title */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                   <Bot className="w-4 h-4" />
                 </div>
-                <div>
-                  <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
-                    AI Travel Intelligence & Live Advisory
-                  </CardTitle>
-                </div>
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground truncate">
+                  AI Travel Intelligence & Live Advisory
+                </CardTitle>
               </div>
-              {aiSummary && (
-                <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
-                  {aiSummary.provider}
-                </Badge>
-              )}
+
+              {/* Right: Controls cleanly anchored to the far right */}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end ml-auto">
+                {/* Provenance Badge */}
+                {aiSummary?.isAiGenerated ? (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-mono border-purple-500/40 text-purple-600 dark:text-purple-400 bg-purple-500/10 flex items-center gap-1.5 shadow-xs px-2 py-0.5"
+                    title={aiSummary.provider}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                    <span>{aiSummary.provider}</span>
+                  </Badge>
+                ) : aiSummary?.hasError ? (
+                  <Badge variant="outline" className="text-[10px] font-mono border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 flex items-center gap-1 px-2 py-0.5">
+                    <AlertTriangle className="w-3 h-3 text-amber-500" />
+                    <span>OpenRouter Notice</span>
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground bg-muted/40 flex items-center gap-1 px-2 py-0.5">
+                    <Info className="w-3 h-3" />
+                    <span>Curated Data</span>
+                  </Badge>
+                )}
+
+                {/* Timestamp */}
+                {aiSummary?.generatedAt && (
+                  <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
+                    {aiSummary.generatedAt}
+                  </span>
+                )}
+
+                {/* Regenerate or Retry Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRegenerateAi}
+                  disabled={isLoadingAi}
+                  className="h-6 text-[11px] px-2 gap-1 cursor-pointer hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-400 shrink-0"
+                  title="Generate live travel summary via OpenRouter"
+                >
+                  <Sparkles className={`w-3 h-3 ${isLoadingAi ? "animate-spin text-purple-500" : "text-purple-500"}`} />
+                  <span>{isLoadingAi ? "Connecting..." : aiSummary?.hasError ? "Retry AI" : "Regenerate"}</span>
+                </Button>
+              </div>
             </div>
           </CardHeader>
 
@@ -676,10 +814,36 @@ export function CountryGuideView() {
             {isLoadingAi ? (
               <div className="py-8 flex flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span>Synthesizing travel conditions and safety advisory...</span>
+                <span>Synthesizing travel conditions and safety advisory via OpenRouter...</span>
               </div>
             ) : aiSummary ? (
               <div className="space-y-3">
+                {/* OpenRouter Error Notice with Inline Retry & Fallback Details */}
+                {aiSummary.hasError && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5 min-w-0">
+                        <span className="font-semibold text-foreground text-xs block">
+                          OpenRouter AI Service Notice
+                        </span>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          {aiSummary.errorMessage || "OpenRouter free models were busy. Showing authentic verified data below."}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRegenerateAi}
+                      disabled={isLoadingAi}
+                      className="h-7 text-xs px-2.5 gap-1.5 border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 cursor-pointer shrink-0 self-end sm:self-center"
+                    >
+                      <RotateCw className={`w-3 h-3 ${isLoadingAi ? "animate-spin" : ""}`} />
+                      <span>Retry AI</span>
+                    </Button>
+                  </div>
+                )}
                 {/* 1. Travel Vibe Overview */}
                 <p className="text-foreground leading-relaxed text-xs">
                   {aiSummary.vibe}
@@ -733,7 +897,7 @@ export function CountryGuideView() {
 
         {/* Right (5 Cols): Live News Feed Articles */}
         <Card className="lg:col-span-5 border-border/80 bg-card shadow-xs flex flex-col">
-          <CardHeader className="p-4 pb-2.5 border-b border-border/50 flex flex-row items-center justify-between">
+          <CardHeader className="p-4 pb-2.5 border-b border-border/50 flex flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
                 <Newspaper className="w-4 h-4" />
@@ -742,9 +906,14 @@ export function CountryGuideView() {
                 Latest News & Headlines
               </CardTitle>
             </div>
-            {isLoadingNews && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-            )}
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-mono border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/10 flex items-center gap-1">
+                NewsAPI.org Live Feed
+              </Badge>
+              {isLoadingNews && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+              )}
+            </div>
           </CardHeader>
 
           <CardContent className="p-3 flex-1 overflow-y-auto max-h-[320px] thin-scrollbar space-y-2">
@@ -850,11 +1019,10 @@ export function CountryGuideView() {
                       key={pct}
                       type="button"
                       onClick={() => setTipPercent(pct)}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
-                        tipPercent === pct
-                          ? "bg-emerald-600 text-white font-bold"
-                          : "bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${tipPercent === pct
+                        ? "bg-emerald-600 text-white font-bold"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       {pct}%
                     </button>
@@ -907,24 +1075,47 @@ export function CountryGuideView() {
           </CardContent>
         </Card>
 
-        {/* 4. Visa & Entry Guidelines */}
+        {/* 4. Indian Passport Visa Snapshot */}
         <Card className="border-border/80 bg-card shadow-xs">
           <CardHeader className="p-4 pb-2 border-b border-border/50">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <FileCheck className="w-4 h-4" />
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <FileCheck className="w-4 h-4" />
+                </div>
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Indian Passport Visa Snapshot
+                </CardTitle>
               </div>
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Visa & Entry Guidelines
-              </CardTitle>
+              {indianVisa && (
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-semibold ${indianVisa.status === "Citizen" || indianVisa.status === "Visa Free"
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                    : indianVisa.status === "Visa on Arrival"
+                      ? "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30"
+                      : indianVisa.status === "eVisa"
+                        ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
+                        : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                    }`}
+                >
+                  {indianVisa.status}
+                </Badge>
+              )}
             </div>
           </CardHeader>
-          <CardContent className="p-4 space-y-1.5 text-xs">
+          <CardContent className="p-4 space-y-2 text-xs">
+            {indianVisa?.duration && (
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground font-medium">Permitted Stay:</span>
+                <strong className="font-semibold text-foreground font-mono">{indianVisa.duration}</strong>
+              </div>
+            )}
             <p className="text-[11px] text-foreground leading-relaxed">
-              {country.visaInfo}
+              {indianVisa?.note || country.visaInfo}
             </p>
-            <p className="text-[10px] text-muted-foreground">
-              Passports must have at least <strong>6 months</strong> of remaining validity for international entry.
+            <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-1.5">
+              Indian passports must have at least <strong>6 months</strong> remaining validity from departure date.
             </p>
           </CardContent>
         </Card>
@@ -1038,10 +1229,10 @@ export function CountryGuideView() {
             {(country.donts && country.donts.length > 0
               ? country.donts
               : [
-                  "Don't ignore local dress codes at sacred religious monuments.",
-                  "Don't display large sums of physical cash in crowded transit areas.",
-                  "Don't photograph military or government buildings without consent.",
-                ]
+                "Don't ignore local dress codes at sacred religious monuments.",
+                "Don't display large sums of physical cash in crowded transit areas.",
+                "Don't photograph military or government buildings without consent.",
+              ]
             ).map((dontItem, idx) => (
               <div
                 key={idx}
@@ -1083,11 +1274,10 @@ export function CountryGuideView() {
                 key={item.country}
                 type="button"
                 onClick={() => handleSelectCountry(item.country.split(" ")[0])}
-                className={`p-2.5 rounded-xl border text-left transition-all hover:bg-muted/50 cursor-pointer space-y-1 ${
-                  country.code.toUpperCase() === item.code.toUpperCase()
-                    ? "border-rose-500/40 bg-rose-500/5"
-                    : "border-border/60 bg-muted/20"
-                }`}
+                className={`p-2.5 rounded-xl border text-left transition-all hover:bg-muted/50 cursor-pointer space-y-1 ${country.code.toUpperCase() === item.code.toUpperCase()
+                  ? "border-rose-500/40 bg-rose-500/5"
+                  : "border-border/60 bg-muted/20"
+                  }`}
               >
                 <div className="flex items-center justify-between text-[11px] font-bold text-foreground">
                   <span className="truncate">{item.country.split(" (")[0]}</span>

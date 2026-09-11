@@ -1,8 +1,10 @@
 import { Suspense } from "react";
-import { fetchWeather, fetchCitySuggestions } from "@/features/travel-essentials/weather/weather-service";
-import { fetchFxRates, fetchCurrencyPerformance } from "@/features/travel-essentials/currency/currency-service";
-import { getCurrentProfile } from "@/features/profile/actions";
+
 import { TravelEssentialsShell } from "./travel-essentials-shell";
+
+import { getCurrentProfile } from "@/features/profile/actions";
+import { fetchCurrencyPerformance, fetchFxRates } from "@/features/travel-essentials/currency/currency-service";
+import { fetchCitySuggestions, fetchWeather } from "@/features/travel-essentials/weather/weather-service";
 
 export const metadata = {
   title: "Travel Essentials | Prava",
@@ -28,14 +30,14 @@ export default async function TravelEssentialsPage({ searchParams }: PageProps) 
   const preferredCurrency =
     profileRes.success && profileRes.profile?.defaultCurrency
       ? profileRes.profile.defaultCurrency
-      : "USD";
+      : "INR";
 
   // On-demand SSR fetching based on requested tab
   let initialWeather = null;
   let initialFxRates = null;
 
   if (activeTab === "weather") {
-    initialWeather = await fetchWeather("Tokyo");
+    initialWeather = await fetchWeather("Mumbai");
   } else if (activeTab === "currency") {
     initialFxRates = await fetchFxRates(preferredCurrency);
   }

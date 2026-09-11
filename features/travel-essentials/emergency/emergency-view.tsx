@@ -1,20 +1,28 @@
 "use client";
 
 import { useState } from "react";
+
 import {
-  ShieldAlert,
-  Search,
-  PhoneCall,
-  Flame,
-  Shield,
-  HeartPulse,
-  Info,
-  Copy,
   Check,
+  Copy,
+  Flame,
+  HeartPulse,
+  PhoneCall,
+  Search,
+  Shield,
+  ShieldAlert,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
 import { EMERGENCY_DIRECTORY } from "./emergency-data";
 
 export function EmergencyView() {

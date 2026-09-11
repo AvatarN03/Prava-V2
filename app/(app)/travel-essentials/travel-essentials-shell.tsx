@@ -1,24 +1,25 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
 import dynamic from "next/dynamic";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
 import {
+  BookOpen,
   CloudSun,
   Coins,
-  Map,
-  BookOpen,
-  ShieldAlert,
-  Languages,
   Compass,
+  Languages,
   Loader2,
+  Map,
 } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  WeatherData,
-  FxRates,
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import type {
   CitySuggestion,
   CurrencyPerformanceData,
+  FxRates,
+  WeatherData,
 } from "@/features/travel-essentials/types";
 
 // Tab skeleton fallback for lazy loading
@@ -102,7 +103,7 @@ export function TravelEssentialsShell({
   initialTab = "weather",
   initialWeather,
   initialFxRates,
-  preferredCurrency = "USD",
+  preferredCurrency = "INR",
   onWeatherSearch,
   onCitySuggestions,
   onFxRefresh,

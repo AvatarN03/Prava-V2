@@ -1,4 +1,4 @@
-import { EmergencyContacts } from "../types";
+import type { EmergencyContacts } from "../types";
 
 export const EMERGENCY_DIRECTORY: EmergencyContacts[] = [
   { country: "United States & Canada", code: "US/CA", dialCode: "+1", general: "911", police: "911", ambulance: "911", fire: "911" },

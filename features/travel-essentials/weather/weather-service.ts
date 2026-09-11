@@ -1,4 +1,8 @@
-import { WeatherData, DailyForecastItem, HourlyForecastItem } from "../types";
+import type {
+  DailyForecastItem,
+  HourlyForecastItem,
+  WeatherData,
+} from "../types";
 
 // WMO Weather interpretation codes (WW)
 export function getWeatherDescription(code: number): string {
@@ -250,7 +254,7 @@ async function fetchFromOpenMeteo(query: string): Promise<WeatherData | null> {
   try {
     const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
       query.trim()
-    )}&count=1&language=en&format=json`;
+    )}&count=5&language=en&format=json`;
 
     const geoRes = await fetch(geoUrl, { next: { revalidate: 3600 } });
     if (!geoRes.ok) return null;
@@ -260,7 +264,11 @@ async function fetchFromOpenMeteo(query: string): Promise<WeatherData | null> {
       return null;
     }
 
-    const place = geoData.results[0];
+    // Prioritize Indian destinations when ambiguous or matching
+    const indianMatch = geoData.results.find(
+      (r: any) => r.country_code?.toUpperCase() === "IN" || r.country?.toLowerCase() === "india"
+    );
+    const place = indianMatch || geoData.results[0];
     const { latitude, longitude, name, country } = place;
 
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&timezone=auto`;
@@ -365,7 +373,7 @@ async function fetchFromOpenMeteo(query: string): Promise<WeatherData | null> {
  * Main weather entrypoint:
  * Uses OpenWeather API when OPENWEATHER_API_KEY is available, otherwise uses Open-Meteo
  */
-export async function fetchWeather(query: string = "Tokyo"): Promise<WeatherData | null> {
+export async function fetchWeather(query: string = "Mumbai"): Promise<WeatherData | null> {
   const apiKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
 
   if (apiKey && apiKey.trim() && apiKey !== "your-openweather-api-key") {
@@ -379,7 +387,7 @@ export async function fetchWeather(query: string = "Tokyo"): Promise<WeatherData
 
 /**
  * Fetch 4-5 city name auto-suggestions for search autocomplete
- * Requires minimum 3 characters
+ * Prioritizes Indian cities and destinations
  */
 export async function fetchCitySuggestions(query: string): Promise<import("../types").CitySuggestion[]> {
   if (!query || query.trim().length < 3) return [];
@@ -391,13 +399,20 @@ export async function fetchCitySuggestions(query: string): Promise<import("../ty
     try {
       const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
         trimmed
-      )}&limit=5&appid=${apiKey.trim()}`;
+      )}&limit=8&appid=${apiKey.trim()}`;
 
       const res = await fetch(geoUrl, { next: { revalidate: 3600 } });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          return data.map((item: any) => {
+          // Prioritize Indian destinations
+          const sorted = [...data].sort((a: any, b: any) => {
+            const aIsIN = a.country === "IN" ? 1 : 0;
+            const bIsIN = b.country === "IN" ? 1 : 0;
+            return bIsIN - aIsIN;
+          });
+
+          return sorted.slice(0, 5).map((item: any) => {
             const parts: string[] = [item.name];
             if (item.state && item.state !== item.name) parts.push(item.state);
             if (item.country) parts.push(item.country);
@@ -421,13 +436,20 @@ export async function fetchCitySuggestions(query: string): Promise<import("../ty
   try {
     const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
       trimmed
-    )}&count=5&language=en&format=json`;
+    )}&count=8&language=en&format=json`;
 
     const res = await fetch(geoUrl, { next: { revalidate: 3600 } });
     if (res.ok) {
       const data = await res.json();
       if (data.results && Array.isArray(data.results)) {
-        return data.results.map((item: any) => {
+        // Prioritize Indian destinations
+        const sorted = [...data.results].sort((a: any, b: any) => {
+          const aIsIN = a.country_code?.toUpperCase() === "IN" || a.country?.toLowerCase() === "india" ? 1 : 0;
+          const bIsIN = b.country_code?.toUpperCase() === "IN" || b.country?.toLowerCase() === "india" ? 1 : 0;
+          return bIsIN - aIsIN;
+        });
+
+        return sorted.slice(0, 5).map((item: any) => {
           const parts: string[] = [item.name];
           if (item.admin1 && item.admin1 !== item.name) parts.push(item.admin1);
           if (item.country) parts.push(item.country);

@@ -1,21 +1,24 @@
-import { FxRates, CurrencyPerformanceData, CurrencyHistoryPoint, SupportedCurrency } from "../types";
+import type {
+  CurrencyHistoryPoint,
+  CurrencyPerformanceData,
+  FxRates,
+  SupportedCurrency,
+} from "../types";
 
 export const SUPPORTED_CURRENCIES: SupportedCurrency[] = [
+  { code: "INR", name: "Indian Rupee", symbol: "₹", flag: "🇮🇳" },
   { code: "USD", name: "United States Dollar", symbol: "$", flag: "🇺🇸" },
   { code: "EUR", name: "Euro", symbol: "€", flag: "🇪🇺" },
   { code: "GBP", name: "British Pound", symbol: "£", flag: "🇬🇧" },
+  { code: "AED", name: "UAE Dirham", symbol: "AED", flag: "🇦🇪" },
+  { code: "THB", name: "Thai Baht", symbol: "฿", flag: "🇹🇭" },
+  { code: "SGD", name: "Singapore Dollar", symbol: "S$", flag: "🇸🇬" },
   { code: "JPY", name: "Japanese Yen", symbol: "¥", flag: "🇯🇵" },
   { code: "CAD", name: "Canadian Dollar", symbol: "CA$", flag: "🇨🇦" },
   { code: "AUD", name: "Australian Dollar", symbol: "A$", flag: "🇦🇺" },
   { code: "CHF", name: "Swiss Franc", symbol: "CHF", flag: "🇨🇭" },
-  { code: "INR", name: "Indian Rupee", symbol: "₹", flag: "🇮🇳" },
-  { code: "SGD", name: "Singapore Dollar", symbol: "S$", flag: "🇸🇬" },
-  { code: "AED", name: "UAE Dirham", symbol: "AED", flag: "🇦🇪" },
-  { code: "THB", name: "Thai Baht", symbol: "฿", flag: "🇹🇭" },
   { code: "IDR", name: "Indonesian Rupiah", symbol: "Rp", flag: "🇮🇩" },
-  { code: "MXN", name: "Mexican Peso", symbol: "Mex$", flag: "🇲🇽" },
-  { code: "BRL", name: "Brazilian Real", symbol: "R$", flag: "🇧🇷" },
-  { code: "CNY", name: "Chinese Yuan", symbol: "¥", flag: "🇨🇳" },
+  { code: "MYR", name: "Malaysian Ringgit", symbol: "RM", flag: "🇲🇾" },
   { code: "NZD", name: "New Zealand Dollar", symbol: "NZ$", flag: "🇳🇿" },
   { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$", flag: "🇭🇰" },
   { code: "SEK", name: "Swedish Krona", symbol: "kr", flag: "🇸🇪" },
@@ -27,10 +30,12 @@ export const SUPPORTED_CURRENCIES: SupportedCurrency[] = [
   { code: "TRY", name: "Turkish Lira", symbol: "₺", flag: "🇹🇷" },
   { code: "ZAR", name: "South African Rand", symbol: "R", flag: "🇿🇦" },
   { code: "KRW", name: "South Korean Won", symbol: "₩", flag: "🇰🇷" },
-  { code: "MYR", name: "Malaysian Ringgit", symbol: "RM", flag: "🇲🇾" },
   { code: "PHP", name: "Philippine Peso", symbol: "₱", flag: "🇵🇭" },
   { code: "ILS", name: "Israeli Shekel", symbol: "₪", flag: "🇮🇱" },
   { code: "ISK", name: "Icelandic Króna", symbol: "kr", flag: "🇮🇸" },
+  { code: "MXN", name: "Mexican Peso", symbol: "Mex$", flag: "🇲🇽" },
+  { code: "BRL", name: "Brazilian Real", symbol: "R$", flag: "🇧🇷" },
+  { code: "CNY", name: "Chinese Yuan", symbol: "¥", flag: "🇨🇳" },
 ];
 
 function formatDate(d: Date): string {
@@ -59,7 +64,7 @@ const fxPerfCache = new Map<string, CacheEntry<CurrencyPerformanceData>>();
 /**
  * Fetch latest FX rates from Frankfurter API with daily change calculations
  */
-export async function fetchFxRates(base: string = "USD"): Promise<FxRates | null> {
+export async function fetchFxRates(base: string = "INR"): Promise<FxRates | null> {
   const cleanBase = base.toUpperCase();
   const now = Date.now();
 

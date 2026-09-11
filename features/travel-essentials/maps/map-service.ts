@@ -1,16 +1,17 @@
-import {
+import { getNearbyEssentialsAction } from "./actions";
+
+import type {
+  EssentialCategory,
   MapLocationSuggestion,
   NearbyEssentialPOI,
-  EssentialCategory,
 } from "../types";
 
-export type { MapLocationSuggestion, NearbyEssentialPOI, EssentialCategory };
+export type { EssentialCategory, MapLocationSuggestion, NearbyEssentialPOI };
 
-
-// In-memory caches to reduce network calls
+// In-memory caches to reduce network calls and prevent memory leaks
 const suggestionsCache = new Map<string, { data: MapLocationSuggestion[]; timestamp: number }>();
 const nearbyCache = new Map<string, { data: NearbyEssentialPOI[]; timestamp: number }>();
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 /**
  * Calculate distance between two coordinates in meters using the Haversine formula
@@ -47,6 +48,7 @@ export function formatDistance(meters: number): string {
 
 /**
  * Fetch debounced location autocomplete suggestions from OpenStreetMap Nominatim
+ * Prioritizes Indian cities and regions
  */
 export async function fetchMapLocationSuggestions(
   query: string
@@ -63,19 +65,31 @@ export async function fetchMapLocationSuggestions(
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       cleanQuery
-    )}&format=json&addressdetails=1&limit=6`;
-    const res = await fetch(url, {
+    )}&format=json&addressdetails=1&countrycodes=in&limit=8`;
+
+    let res = await fetch(url, {
       headers: {
         Accept: "application/json",
         "User-Agent": "PravaTravelCompanion/2.0",
       },
     });
 
-    if (!res.ok) {
-      return getFallbackSuggestions(cleanQuery);
+    let data = res.ok ? await res.json() : [];
+
+    // If no Indian results found or query is global, query without countrycodes constraint
+    if (!Array.isArray(data) || data.length === 0) {
+      const globalUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+        cleanQuery
+      )}&format=json&addressdetails=1&limit=6`;
+      res = await fetch(globalUrl, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "PravaTravelCompanion/2.0",
+        },
+      });
+      data = res.ok ? await res.json() : [];
     }
 
-    const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) {
       return getFallbackSuggestions(cleanQuery);
     }
@@ -139,250 +153,344 @@ export async function reverseGeocodeLocation(
 }
 
 /**
- * Fetch nearby travel essentials (Hotels, Pharmacies, Supermarkets, ATMs, Transit) within 1.5 km
+ * Curated authentic Indian landmark POIs for major travel hubs
+ */
+const VERIFIED_INDIAN_POIS: Record<string, NearbyEssentialPOI[]> = {
+  mumbai: [
+    {
+      id: "mum-hotel-taj",
+      name: "The Taj Mahal Palace",
+      category: "hotel",
+      categoryLabel: "Heritage Luxury Hotel",
+      lat: 18.9217,
+      lon: 72.8332,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Apollo Bunder, Colaba, Mumbai",
+      openingHours: "24/7 Front Desk & Concierge",
+      phone: "+91 22 6665 3366",
+    },
+    {
+      id: "mum-hotel-oberoi",
+      name: "The Oberoi Mumbai",
+      category: "hotel",
+      categoryLabel: "5-Star Hotel",
+      lat: 18.9272,
+      lon: 72.8205,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Nariman Point, Marine Drive, Mumbai",
+      openingHours: "24/7 Check-in",
+      phone: "+91 22 6632 5757",
+    },
+    {
+      id: "mum-hotel-trident",
+      name: "Trident Hotel Bandra Kurla",
+      category: "hotel",
+      categoryLabel: "Business Hotel",
+      lat: 19.0664,
+      lon: 72.8687,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "C-56, G Block, BKC, Bandra East, Mumbai",
+      openingHours: "24/7 Front Desk",
+    },
+    {
+      id: "mum-hotel-jw",
+      name: "JW Marriott Mumbai Juhu",
+      category: "hotel",
+      categoryLabel: "Beachfront Resort Hotel",
+      lat: 19.1026,
+      lon: 72.8263,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Juhu Tara Road, Juhu, Mumbai",
+      openingHours: "24/7 Check-in",
+    },
+    {
+      id: "mum-med-lilavati",
+      name: "Lilavati Hospital & Research Centre",
+      category: "pharmacy",
+      categoryLabel: "Multi-Speciality Hospital",
+      lat: 19.0514,
+      lon: 72.8290,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "A-791, Bandra Reclamation, Bandra West, Mumbai",
+      openingHours: "24/7 Emergency & Casualty",
+      phone: "+91 22 2675 1000",
+    },
+    {
+      id: "mum-med-breachcandy",
+      name: "Breach Candy Hospital",
+      category: "pharmacy",
+      categoryLabel: "Premier Medical Centre",
+      lat: 18.9715,
+      lon: 72.8055,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "60 A, Bhulabhai Desai Road, Mumbai",
+      openingHours: "24/7 Emergency Services",
+      phone: "+91 22 2366 7788",
+    },
+    {
+      id: "mum-med-kem",
+      name: "KEM Hospital & Medical College",
+      category: "pharmacy",
+      categoryLabel: "Government Super-Speciality Hospital",
+      lat: 19.0028,
+      lon: 72.8432,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Acharya Donde Marg, Parel, Mumbai",
+      openingHours: "24/7 Trauma & Emergency",
+    },
+    {
+      id: "mum-med-chemist",
+      name: "Apollo Pharmacy 24/7",
+      category: "pharmacy",
+      categoryLabel: "24-Hour Chemist",
+      lat: 19.0178,
+      lon: 72.8478,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Dr. Ambedkar Road, Dadar TT, Mumbai",
+      openingHours: "Open 24 Hours",
+    },
+    {
+      id: "mum-tran-csmt",
+      name: "Chhatrapati Shivaji Maharaj Terminus (CSMT)",
+      category: "transit",
+      categoryLabel: "UNESCO World Heritage Rail Terminal",
+      lat: 18.9401,
+      lon: 72.8354,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Fort, Mumbai",
+      openingHours: "24/7 Suburban & Express Rail Services",
+    },
+    {
+      id: "mum-tran-churchgate",
+      name: "Churchgate Railway Station",
+      category: "transit",
+      categoryLabel: "Western Railway Terminus",
+      lat: 18.9322,
+      lon: 72.8267,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Maharshi Karve Road, Churchgate, Mumbai",
+      openingHours: "4:00 AM - 1:30 AM",
+    },
+    {
+      id: "mum-tran-dadar",
+      name: "Dadar Railway Junction",
+      category: "transit",
+      categoryLabel: "Central & Western Interchange",
+      lat: 19.0178,
+      lon: 72.8430,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Dadar West, Mumbai",
+      openingHours: "24/7 Rail Services",
+    },
+    {
+      id: "mum-tran-airport",
+      name: "CSM International Airport Terminal 2 (BOM)",
+      category: "transit",
+      categoryLabel: "International Airport",
+      lat: 19.0886,
+      lon: 72.8679,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Sahar, Andheri East, Mumbai",
+      openingHours: "24/7 Flight Operations",
+    },
+    {
+      id: "mum-atm-sbi",
+      name: "State Bank of India (SBI) Main Branch & ATM",
+      category: "atm",
+      categoryLabel: "National Bank & 24/7 ATM",
+      lat: 18.9320,
+      lon: 72.8335,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Samachar Marg, Fort, Mumbai",
+      openingHours: "24/7 ATM Services",
+    },
+    {
+      id: "mum-atm-hdfc",
+      name: "HDFC Bank ATM Hub",
+      category: "atm",
+      categoryLabel: "24/7 ATM & Cash Deposit",
+      lat: 19.0585,
+      lon: 72.8320,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Hill Road, Bandra West, Mumbai",
+      openingHours: "24/7 Cash Access",
+    },
+    {
+      id: "mum-shop-naturesbasket",
+      name: "Nature's Basket Gourmet Store",
+      category: "supermarket",
+      categoryLabel: "Gourmet Supermarket",
+      lat: 19.0610,
+      lon: 72.8315,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Turner Road, Bandra West, Mumbai",
+      openingHours: "8:00 AM - 10:30 PM",
+    },
+    {
+      id: "mum-shop-dmart",
+      name: "D-Mart Ready Supermarket",
+      category: "supermarket",
+      categoryLabel: "Daily Essentials Store",
+      lat: 19.0200,
+      lon: 72.8440,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Gokhale Road, Dadar West, Mumbai",
+      openingHours: "8:00 AM - 10:00 PM",
+    },
+  ],
+  delhi: [
+    {
+      id: "del-hotel-imperial",
+      name: "The Imperial New Delhi",
+      category: "hotel",
+      categoryLabel: "Heritage Luxury Hotel",
+      lat: 28.6238,
+      lon: 77.2185,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Janpath, Connaught Place, New Delhi",
+      openingHours: "24/7 Check-in",
+    },
+    {
+      id: "del-med-aiims",
+      name: "AIIMS New Delhi",
+      category: "pharmacy",
+      categoryLabel: "Apex Medical Hospital",
+      lat: 28.5672,
+      lon: 77.2100,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Sri Aurobindo Marg, Ansari Nagar, New Delhi",
+      openingHours: "24/7 Emergency & Trauma",
+    },
+    {
+      id: "del-tran-ndls",
+      name: "New Delhi Railway Station (NDLS)",
+      category: "transit",
+      categoryLabel: "Central Rail Terminal & Airport Express",
+      lat: 28.6427,
+      lon: 77.2195,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Bhavbhuti Marg, Ratan Lal Market, New Delhi",
+      openingHours: "24/7 Rail & Metro",
+    },
+    {
+      id: "del-tran-cp",
+      name: "Rajiv Chowk Metro Station",
+      category: "transit",
+      categoryLabel: "Delhi Metro Interchange Hub",
+      lat: 28.6328,
+      lon: 77.2197,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "Connaught Place, New Delhi",
+      openingHours: "5:30 AM - 11:30 PM",
+    },
+    {
+      id: "del-atm-sbi",
+      name: "State Bank of India Parliament Street",
+      category: "atm",
+      categoryLabel: "Bank & 24/7 ATM",
+      lat: 28.6250,
+      lon: 77.2140,
+      distanceMeters: 0,
+      walkingMinutes: 1,
+      address: "11 Parliament Street, New Delhi",
+      openingHours: "24/7 ATM",
+    },
+  ],
+};
+
+/**
+ * Fetch nearby travel essentials (Hotels, Hospitals/Medical, Transit, ATMs, Stores)
+ * Queries server-side spatial Overpass engine (or Google Places if configured)
+ * with graceful fallback to closest verified landmarks.
  */
 export async function fetchNearbyTravelEssentials(
   lat: number,
-  lon: number
+  lon: number,
+  category: EssentialCategory | "all" = "all",
+  radiusMeters: number = 2500
 ): Promise<NearbyEssentialPOI[]> {
-  const cacheKey = `${lat.toFixed(3)}_${lon.toFixed(3)}`;
+  const cacheKey = `${lat.toFixed(3)}_${lon.toFixed(3)}_${category}`;
   const cached = nearbyCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.data;
   }
 
+  // 1. Query server action with spatial radius queries across fast mirrors
   try {
-    // Query Overpass API for essential travel POIs within 1500m radius
-    const overpassQuery = `
-      [out:json][timeout:8];
-      (
-        node["tourism"~"hotel|hostel|guest_house"](around:1500,${lat},${lon});
-        node["amenity"~"pharmacy|chemist"](around:1500,${lat},${lon});
-        node["shop"~"supermarket|convenience|chemist"](around:1500,${lat},${lon});
-        node["amenity"="atm"](around:1500,${lat},${lon});
-        node["amenity"="bank"](around:1500,${lat},${lon});
-        node["railway"~"station|subway_entrance"](around:1500,${lat},${lon});
-        node["highway"="bus_stop"](around:1500,${lat},${lon});
-      );
-      out center 35;
-    `;
-
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: overpassQuery,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      signal: AbortSignal.timeout(6000),
+    const res = await getNearbyEssentialsAction({
+      lat,
+      lon,
+      category,
+      radiusMeters,
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      const elements = data.elements || [];
-
-      if (elements.length > 0) {
-        const pois: NearbyEssentialPOI[] = elements
-          .filter((el: any) => el.tags && (el.tags.name || el.tags.operator || el.tags.brand))
-          .map((el: any) => {
-            const tags = el.tags || {};
-            const pLat = el.lat || el.center?.lat || lat;
-            const pLon = el.lon || el.center?.lon || lon;
-            const distance = calculateDistanceMeters(lat, lon, pLat, pLon);
-            const walkingMinutes = Math.max(1, Math.round(distance / 80)); // ~80m/min walking speed
-
-            let category: EssentialCategory = "supermarket";
-            let categoryLabel = "General Store";
-
-            if (tags.tourism === "hotel" || tags.tourism === "hostel" || tags.tourism === "guest_house") {
-              category = "hotel";
-              categoryLabel = tags.tourism === "hostel" ? "Hostel" : "Hotel / Stay";
-            } else if (tags.amenity === "pharmacy" || tags.amenity === "chemist" || tags.shop === "chemist") {
-              category = "pharmacy";
-              categoryLabel = "Pharmacy / Chemist";
-            } else if (tags.amenity === "atm" || tags.amenity === "bank") {
-              category = "atm";
-              categoryLabel = tags.amenity === "atm" ? "ATM / Cash" : "Bank & ATM";
-            } else if (tags.railway || tags.highway === "bus_stop") {
-              category = "transit";
-              categoryLabel = tags.railway ? "Train / Metro Station" : "Transit Stop";
-            } else {
-              category = "supermarket";
-              categoryLabel = tags.shop === "convenience" ? "Convenience Store" : "Supermarket";
-            }
-
-            const name =
-              tags.name ||
-              tags.operator ||
-              tags.brand ||
-              `${categoryLabel} Near Location`;
-
-            const street = [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean).join(" ");
-
-            return {
-              id: `osm-${el.id}`,
-              name,
-              category,
-              categoryLabel,
-              lat: pLat,
-              lon: pLon,
-              distanceMeters: distance,
-              walkingMinutes,
-              address: street || tags["addr:city"] || undefined,
-              openingHours: tags.opening_hours || undefined,
-              phone: tags.phone || undefined,
-            };
-          });
-
-        if (pois.length >= 3) {
-          // Sort by distance ascending
-          pois.sort((a, b) => a.distanceMeters - b.distanceMeters);
-          nearbyCache.set(cacheKey, { data: pois, timestamp: Date.now() });
-          return pois;
-        }
-      }
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      nearbyCache.set(cacheKey, { data: res.data, timestamp: Date.now() });
+      return res.data;
     }
   } catch (err) {
-    // If Overpass is slow or times out, gracefully use synthesized realistic nearby essentials
-    console.warn("Using contextual nearby fallback POIs for location:", err);
+    console.warn("Server action nearby essentials lookup error:", err);
   }
 
-  const fallbacks = generateContextualNearbyEssentials(lat, lon);
-  nearbyCache.set(cacheKey, { data: fallbacks, timestamp: Date.now() });
-  return fallbacks;
-}
-
-/**
- * High-reliability fallback generator for travel essentials around coordinates
- */
-function generateContextualNearbyEssentials(
-  lat: number,
-  lon: number
-): NearbyEssentialPOI[] {
-  const templates = [
-    {
-      name: "City Central Grand Hotel",
-      category: "hotel" as EssentialCategory,
-      categoryLabel: "Hotel / Stay",
-      dLat: 0.0032,
-      dLon: 0.0028,
-      address: "12 Downtown Promenade",
-      openingHours: "24/7 Front Desk",
-    },
-    {
-      name: "Traveler's Boutique Inn & Suites",
-      category: "hotel" as EssentialCategory,
-      categoryLabel: "Hotel / Stay",
-      dLat: -0.0041,
-      dLon: 0.0035,
-      address: "45 Boulevard St.",
-      openingHours: "Check-in from 2 PM",
-    },
-    {
-      name: "CarePlus 24/7 Pharmacy & Chemist",
-      category: "pharmacy" as EssentialCategory,
-      categoryLabel: "Pharmacy / Chemist",
-      dLat: 0.0018,
-      dLon: -0.0022,
-      address: "8 Market Crossroad",
-      openingHours: "Open 24 Hours",
-    },
-    {
-      name: "Metro Health Apothecary",
-      category: "pharmacy" as EssentialCategory,
-      categoryLabel: "Pharmacy / Chemist",
-      dLat: -0.0025,
-      dLon: -0.0019,
-      address: "31 Station Way",
-      openingHours: "8:00 AM - 10:00 PM",
-    },
-    {
-      name: "Express Daily Mart & Groceries",
-      category: "supermarket" as EssentialCategory,
-      categoryLabel: "Supermarket & General Store",
-      dLat: 0.0021,
-      dLon: 0.0015,
-      address: "19 Commerce Avenue",
-      openingHours: "7:00 AM - 11:00 PM",
-    },
-    {
-      name: "Fresh Foods & Convenience Store",
-      category: "supermarket" as EssentialCategory,
-      categoryLabel: "Convenience Store",
-      dLat: -0.0031,
-      dLon: 0.0029,
-      address: "54 High Street",
-      openingHours: "Open 24 Hours",
-    },
-    {
-      name: "Global Exchange Bank & 24h ATM",
-      category: "atm" as EssentialCategory,
-      categoryLabel: "ATM / Cash",
-      dLat: 0.0014,
-      dLon: -0.0009,
-      address: "3 Financial Square",
-      openingHours: "24/7 Multi-Currency ATM",
-    },
-    {
-      name: "National Bank ATM Hub",
-      category: "atm" as EssentialCategory,
-      categoryLabel: "ATM / Cash",
-      dLat: -0.0019,
-      dLon: 0.0021,
-      address: "77 Central Road",
-      openingHours: "24/7 Cash Access",
-    },
-    {
-      name: "Central Railway & Metro Station",
-      category: "transit" as EssentialCategory,
-      categoryLabel: "Train / Metro Station",
-      dLat: 0.0045,
-      dLon: -0.0038,
-      address: "Station Plaza West",
-      openingHours: "5:00 AM - 1:00 AM",
-    },
-    {
-      name: "City Express Bus Terminal",
-      category: "transit" as EssentialCategory,
-      categoryLabel: "Transit Stop",
-      dLat: -0.0038,
-      dLon: -0.0042,
-      address: "Terminal Loop 2",
-      openingHours: "Frequent 10-min departures",
-    },
+  // 2. Fallback: If offline or remote Overpass mirrors fail, compute distance to verified landmarks
+  const allVerified = [
+    ...VERIFIED_INDIAN_POIS.mumbai,
+    ...VERIFIED_INDIAN_POIS.delhi,
   ];
 
-  return templates.map((t, idx) => {
-    const pLat = lat + t.dLat;
-    const pLon = lon + t.dLon;
-    const distanceMeters = calculateDistanceMeters(lat, lon, pLat, pLon);
-    const walkingMinutes = Math.max(1, Math.round(distanceMeters / 80));
+  const fallback = allVerified
+    .map((poi) => {
+      const distanceMeters = calculateDistanceMeters(lat, lon, poi.lat, poi.lon);
+      const walkingMinutes = Math.max(1, Math.round(distanceMeters / 80));
+      return {
+        ...poi,
+        distanceMeters,
+        walkingMinutes,
+      };
+    })
+    .filter((poi) => category === "all" || poi.category === category)
+    .sort((a, b) => a.distanceMeters - b.distanceMeters);
 
-    return {
-      id: `fallback-poi-${idx}`,
-      name: t.name,
-      category: t.category,
-      categoryLabel: t.categoryLabel,
-      lat: pLat,
-      lon: pLon,
-      distanceMeters,
-      walkingMinutes,
-      address: t.address,
-      openingHours: t.openingHours,
-    };
-  }).sort((a, b) => a.distanceMeters - b.distanceMeters);
+  nearbyCache.set(cacheKey, { data: fallback, timestamp: Date.now() });
+  return fallback;
 }
 
 function getFallbackSuggestions(query: string): MapLocationSuggestion[] {
   const list = [
-    { name: "Tokyo, Japan", lat: 35.6762, lon: 139.6503, country: "Japan" },
-    { name: "Paris, France", lat: 48.8566, lon: 2.3522, country: "France" },
-    { name: "Rome, Italy", lat: 41.9028, lon: 12.4964, country: "Italy" },
-    { name: "New York, NY, USA", lat: 40.7128, lon: -74.006, country: "United States" },
-    { name: "London, UK", lat: 51.5074, lon: -0.1278, country: "United Kingdom" },
-    { name: "Barcelona, Spain", lat: 41.3851, lon: 2.1734, country: "Spain" },
-    { name: "Kyoto, Japan", lat: 35.0116, lon: 135.7681, country: "Japan" },
+    { name: "Mumbai, Maharashtra, India", lat: 19.0760, lon: 72.8777, country: "India" },
+    { name: "New Delhi, Delhi, India", lat: 28.6139, lon: 77.2090, country: "India" },
+    { name: "Bengaluru, Karnataka, India", lat: 12.9716, lon: 77.5946, country: "India" },
+    { name: "Goa (Panaji), India", lat: 15.4909, lon: 73.8278, country: "India" },
+    { name: "Jaipur, Rajasthan, India", lat: 26.9124, lon: 75.7873, country: "India" },
+    { name: "Kochi, Kerala, India", lat: 9.9312, lon: 76.2673, country: "India" },
+    { name: "Manali, Himachal Pradesh, India", lat: 32.2432, lon: 77.1892, country: "India" },
+    { name: "Varanasi, Uttar Pradesh, India", lat: 25.3176, lon: 82.9739, country: "India" },
+    { name: "Kolkata, West Bengal, India", lat: 22.5726, lon: 88.3639, country: "India" },
+    { name: "Hyderabad, Telangana, India", lat: 17.3850, lon: 78.4867, country: "India" },
+    { name: "Chennai, Tamil Nadu, India", lat: 13.0827, lon: 80.2707, country: "India" },
     { name: "Dubai, UAE", lat: 25.2048, lon: 55.2708, country: "United Arab Emirates" },
-    { name: "Bangkok, Thailand", lat: 13.7563, lon: 100.5018, country: "Thailand" },
-    { name: "Sydney, Australia", lat: -33.8688, lon: 151.2093, country: "Australia" },
-    { name: "Berlin, Germany", lat: 52.52, lon: 13.405, country: "Germany" },
+    { name: "Tokyo, Japan", lat: 35.6762, lon: 139.6503, country: "Japan" },
+    { name: "London, UK", lat: 51.5074, lon: -0.1278, country: "United Kingdom" },
   ];
 
   const q = query.toLowerCase();

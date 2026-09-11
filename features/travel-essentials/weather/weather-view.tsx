@@ -1,40 +1,50 @@
 "use client";
 
-import { useState, useTransition, useMemo, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+
 import {
-  CloudSun,
-  Sun,
+  Calendar,
+  ChevronRight,
+  Clock,
   Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
   CloudRain,
   CloudSnow,
-  CloudLightning,
-  CloudFog,
-  CloudDrizzle,
-  Search,
-  Wind,
+  CloudSun,
+  Compass,
   Droplets,
-  Thermometer,
-  Calendar,
+  Gauge,
   Loader2,
   MapPin,
-  Sunrise,
-  Sunset,
-  Eye,
-  Gauge,
-  Compass,
-  Umbrella,
-  Sparkles,
   RefreshCw,
-  Clock,
-  ChevronRight,
+  Search,
   ShieldCheck,
-  Globe2,
+  Sparkles,
+  Sun,
+  Sunrise,
+  Umbrella,
+  Wind,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Badge } from "@/components/ui/badge";
-import { WeatherData, DailyForecastItem, HourlyForecastItem, CitySuggestion } from "../types";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
+import type {
+  CitySuggestion,
+  DailyForecastItem,
+  HourlyForecastItem,
+  WeatherData,
+} from "../types";
 
 interface WeatherViewProps {
   initialData: WeatherData | null;
@@ -42,18 +52,18 @@ interface WeatherViewProps {
   onCitySuggestions?: (query: string) => Promise<CitySuggestion[]>;
 }
 
+// Minimal, curated destination hubs focused on India
 const QUICK_DESTINATIONS = [
-  "Tokyo",
-  "Paris",
-  "New York",
-  "London",
-  "Rome",
-  "Bali",
-  "Reykjavik",
-  "Dubai",
+  "Mumbai",
+  "Delhi",
+  "Bengaluru",
+  "Goa",
+  "Jaipur",
+  "Manali",
+  "Kochi",
 ];
 
-function getWeatherIconComponent(code: number, isDay: boolean = true) {
+function getWeatherIconMeta(code: number) {
   if (code === 0) return { icon: Sun, color: "text-amber-500", bg: "bg-amber-500/10" };
   if (code === 1 || code === 2) return { icon: CloudSun, color: "text-amber-400", bg: "bg-amber-400/10" };
   if (code === 3) return { icon: Cloud, color: "text-slate-400", bg: "bg-slate-400/10" };
@@ -66,7 +76,7 @@ function getWeatherIconComponent(code: number, isDay: boolean = true) {
   return { icon: CloudSun, color: "text-amber-400", bg: "bg-amber-400/10" };
 }
 
-function getUvIndexDescription(uv?: number): { text: string; color: string } {
+function getUvIndexMeta(uv?: number): { text: string; color: string } {
   if (uv === undefined) return { text: "Moderate", color: "text-amber-500" };
   if (uv <= 2) return { text: "Low (Safe)", color: "text-emerald-500" };
   if (uv <= 5) return { text: "Moderate", color: "text-amber-500" };
@@ -75,31 +85,31 @@ function getUvIndexDescription(uv?: number): { text: string; color: string } {
   return { text: "Extreme", color: "text-purple-600" };
 }
 
-function getTravelPackingInsight(day: DailyForecastItem): { title: string; advice: string; icon: React.ElementType } {
+function getTravelPackingInsight(day: DailyForecastItem) {
   if (day.precipitationProbability > 50 || day.weatherCode >= 61) {
     return {
       title: "Rain Gear Recommended",
-      advice: "Pack a compact umbrella or breathable rain shell. Outdoor plans may need waterproof footwear.",
+      advice: "Pack a compact umbrella or rain shell. Water-resistant footwear advised.",
       icon: Umbrella,
     };
   }
-  if (day.temperatureMax > 28) {
+  if (day.temperatureMax > 32) {
     return {
-      title: "Warm & Sunny Preparation",
-      advice: "Lightweight, breathable fabrics, sunglasses, and regular hydration recommended for exploring.",
+      title: "High Heat Advisory",
+      advice: "Lightweight breathable cotton, sunglasses, sunscreen, and regular hydration.",
       icon: Sun,
     };
   }
-  if (day.temperatureMin < 8) {
+  if (day.temperatureMin < 12) {
     return {
-      title: "Cold Weather Layering",
-      advice: "Thermal base layers, a warm insulated jacket, and a scarf will keep you comfortable during evening strolls.",
+      title: "Cool Weather Layering",
+      advice: "Light jacket, pullover, or shawl recommended for morning and evening breezes.",
       icon: CloudSnow,
     };
   }
   return {
-    title: "Pleasant Exploration Weather",
-    advice: "Great conditions for city walking tours, sightseeing, and outdoor cafes.",
+    title: "Favorable Exploration Weather",
+    advice: "Pleasant conditions for outdoor travel, temple walks, markets, and sightseeing.",
     icon: Sparkles,
   };
 }
@@ -112,14 +122,20 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
   const [unit, setUnit] = useState<"C" | "F">("C");
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
 
-  // City suggestions state
+  // Suggestions state & selection flag
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const isSelectingRef = useRef(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // Debounced fetch for suggestions when user types >= 3 characters
+  // Debounced fetch for suggestions (aborted when a suggestion is selected)
   useEffect(() => {
+    if (isSelectingRef.current) {
+      isSelectingRef.current = false;
+      return;
+    }
+
     const trimmed = searchQuery.trim();
     if (trimmed.length < 3 || !onCitySuggestions) {
       setSuggestions([]);
@@ -131,19 +147,21 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
       setIsSuggesting(true);
       try {
         const results = await onCitySuggestions(trimmed);
-        setSuggestions(results || []);
-        setShowDropdown((results && results.length > 0) || false);
+        if (!isSelectingRef.current) {
+          setSuggestions(results || []);
+          setShowDropdown(Boolean(results && results.length > 0));
+        }
       } catch (err) {
         console.error("Failed to load city suggestions:", err);
       } finally {
         setIsSuggesting(false);
       }
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [searchQuery, onCitySuggestions]);
 
-  // Click outside to close suggestion dropdown
+  // Click outside listener to dismiss suggestions
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -159,8 +177,11 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
 
   const handleSearchCity = (cityName: string) => {
     if (!cityName.trim()) return;
+    isSelectingRef.current = true;
     setError(null);
     setShowDropdown(false);
+    setSuggestions([]);
+
     startSearch(async () => {
       const result = await onSearch(cityName.trim());
       if (result) {
@@ -174,14 +195,19 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
   };
 
   const handleSelectSuggestion = (item: CitySuggestion) => {
-    setSearchQuery(item.displayName);
+    isSelectingRef.current = true;
     setShowDropdown(false);
-    handleSearchCity(item.displayName);
+    setSuggestions([]);
+    setSearchQuery(item.name);
+    handleSearchCity(item.name);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      isSelectingRef.current = true;
+      setShowDropdown(false);
+      setSuggestions([]);
       handleSearchCity(searchQuery);
     }
   };
@@ -193,7 +219,6 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
     return `${celsius}°C`;
   };
 
-  // Safe fallback forecast items if legacy data is passed
   const forecastDays = useMemo(() => {
     if (data?.forecastDays && data.forecastDays.length > 0) {
       return data.forecastDays;
@@ -205,14 +230,14 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
           date: timeStr,
           dayName: idx === 0 ? "Today" : idx === 1 ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" }),
           formattedDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-          temperatureMax: data.daily.temperatureMax[idx] || 20,
-          temperatureMin: data.daily.temperatureMin[idx] || 15,
+          temperatureMax: data.daily.temperatureMax[idx] || 25,
+          temperatureMin: data.daily.temperatureMin[idx] || 20,
           weatherCode: data.daily.weatherCode[idx] || 1,
           weatherDescription: "Forecast Outlook",
           precipitationProbability: data.daily.precipitationProbabilityMax[idx] || 0,
           precipitationAmount: 0,
-          windSpeed: data.windSpeed || 10,
-          humidity: data.humidity || 50,
+          windSpeed: data.windSpeed || 12,
+          humidity: data.humidity || 55,
           hourly: [],
         };
       });
@@ -222,13 +247,57 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
 
   const selectedDay: DailyForecastItem | undefined = forecastDays[selectedDateIndex] || forecastDays[0];
   const travelInsight = selectedDay ? getTravelPackingInsight(selectedDay) : null;
-  const currentIconMeta = data ? getWeatherIconComponent(data.weatherCode) : null;
+  const currentIconMeta = data ? getWeatherIconMeta(data.weatherCode) : null;
   const CurrentIcon = currentIconMeta?.icon || CloudSun;
+
+  // Compact atmospheric matrix items
+  const atmosphericStats = useMemo(() => {
+    if (!data) return [];
+    const uvMeta = getUvIndexMeta(data.uvIndex);
+    return [
+      {
+        label: "Wind",
+        value: unit === "F" ? `${Math.round(data.windSpeed * 0.621371)} mph` : `${data.windSpeed} km/h`,
+        icon: Wind,
+        color: "text-primary",
+      },
+      {
+        label: "Humidity",
+        value: `${data.humidity}%`,
+        icon: Droplets,
+        color: "text-sky-500",
+      },
+      {
+        label: "Precipitation",
+        value: data.precipitationProbability ? `${data.precipitationProbability}% chance` : `${data.precipitation} mm`,
+        icon: Umbrella,
+        color: "text-blue-500",
+      },
+      {
+        label: "UV Index",
+        value: data.uvIndex !== undefined ? `${data.uvIndex} (${uvMeta.text})` : "Moderate",
+        icon: Sun,
+        color: uvMeta.color,
+      },
+      {
+        label: "Pressure",
+        value: data.pressure ? `${data.pressure} hPa` : "1013 hPa",
+        icon: Gauge,
+        color: "text-indigo-500",
+      },
+      {
+        label: "Sun Times",
+        value: data.sunrise && data.sunset ? `${data.sunrise} / ${data.sunset}` : "Sunrise to Sunset",
+        icon: Sunrise,
+        color: "text-amber-500",
+      },
+    ];
+  }, [data, unit]);
 
   return (
     <div className="space-y-6">
-      {/* Search Bar & Destination Quick Pills */}
-      <div className="flex flex-col gap-3 pb-2 border-b border-border/80">
+      {/* Top Controls: Search Bar & Quick Indian Pick Pills */}
+      <div className="flex flex-col gap-3 pb-3 border-b border-border/80">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -238,16 +307,16 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
               </h2>
               {data?.source && (
                 <Badge variant="secondary" className="text-[10px] font-mono font-medium px-2 py-0 h-5">
-                  {data.source === "OpenWeather" ? "OpenWeather API" : "Live Forecast Feed"}
+                  {data.source === "OpenWeather" ? "OpenWeather" : "Live Forecast"}
                 </Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Instant atmospheric conditions, multi-day forecasting, and hourly breakdowns for global destinations.
+              Live atmospheric radar, multi-day forecasting, and hourly schedules for top destinations.
             </p>
           </div>
 
-          {/* Unit Switcher & Refresh */}
+          {/* Unit Switcher & Refresh Button */}
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/60 text-xs font-semibold">
               <button
@@ -290,14 +359,14 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
           </div>
         </div>
 
-        {/* Search Input with Autocomplete Suggestions Dropdown */}
+        {/* Search Input with Robust Suggestion Dropdown */}
         <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center">
           <div ref={searchContainerRef} className="relative flex-1 max-w-md">
             <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search city (e.g. Kyoto, Barcelona, Queenstown)..."
+                  placeholder="Search city (e.g. Mumbai, Delhi, Jaipur, Goa)..."
                   className="pl-8 pr-8 h-9 text-xs bg-background"
                   value={searchQuery}
                   onChange={(e) => {
@@ -327,9 +396,9 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
               </Button>
             </form>
 
-            {/* Suggestions Dropdown */}
+            {/* Suggestions Dropdown (Closes reliably on selection) */}
             {showDropdown && suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border/80 bg-popover/95 backdrop-blur-md shadow-xl overflow-hidden py-1 divide-y divide-border/40 animate-in fade-in-50 zoom-in-95 duration-100">
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border/80 bg-popover/95 backdrop-blur-md shadow-xl overflow-hidden py-1 divide-y divide-border/40 animate-in fade-in-50 duration-100">
                 <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 flex items-center justify-between">
                   <span>Location Suggestions</span>
                   <span className="text-[9px] font-normal lowercase text-muted-foreground/70">
@@ -343,9 +412,9 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                     onClick={() => handleSelectSuggestion(item)}
                     className="w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-3 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer group select-none"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary">
-                        <MapPin className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary">
+                        <MapPin className="h-3 w-3" />
                       </div>
                       <div className="truncate">
                         <span className="font-semibold text-foreground group-hover:text-primary">
@@ -359,11 +428,11 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono text-muted-foreground group-hover:border-primary/40 group-hover:text-primary">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono text-muted-foreground group-hover:border-primary/40 group-hover:text-primary">
                         {item.country}
                       </Badge>
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+                      <ChevronRight className="w-3 h-3 text-muted-foreground/50 group-hover:text-primary transition-transform" />
                     </div>
                   </button>
                 ))}
@@ -371,7 +440,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
             )}
           </div>
 
-          {/* Quick Destination Pills */}
+          {/* Indian Cities Quick Picks */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             <span className="text-[11px] text-muted-foreground whitespace-nowrap mr-1 font-medium">Quick pick:</span>
             {QUICK_DESTINATIONS.map((dest) => (
@@ -396,7 +465,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
       {error && (
         <div className="p-3 text-xs bg-destructive/10 border border-destructive/20 rounded-lg text-destructive flex items-center justify-between">
           <span>{error}</span>
-          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-6 text-xs px-2">
+          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-6 text-xs px-2 cursor-pointer">
             Dismiss
           </Button>
         </div>
@@ -404,14 +473,14 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
 
       {data && (
         <div className="space-y-6">
-          {/* Main Hero Weather Card */}
+          {/* Main Hero Card: Current Weather + Atmospheric Matrix */}
           <Card className="border-border/80 bg-gradient-to-br from-card via-card to-muted/20 shadow-xs overflow-hidden">
             <CardContent className="p-5 sm:p-6">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 {/* Left: Location & Main Temperature */}
                 <div className="space-y-3 flex-1">
                   <div className="flex items-center gap-2 text-primary font-medium text-xs">
-                    <MapPin className="w-3.5 h-3.5" />
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
                     <span className="font-semibold text-sm text-foreground">
                       {data.city}{data.country ? `, ${data.country}` : ""}
                     </span>
@@ -422,7 +491,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                     )}
                   </div>
 
-                  <div className="flex items-center gap-5">
+                  <div className="flex items-center gap-4 sm:gap-5">
                     <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${currentIconMeta?.bg} ${currentIconMeta?.color} border border-border/50 shrink-0`}>
                       <CurrentIcon className="w-9 h-9" />
                     </div>
@@ -450,79 +519,31 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                   </div>
                 </div>
 
-                {/* Right: Atmospheric Matrix Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 border-t lg:border-t-0 lg:border-l border-border/80 pt-4 lg:pt-0 lg:pl-6 text-xs">
-                  {/* Wind */}
-                  <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                      <Wind className="w-3.5 h-3.5 text-primary" />
-                      <span>Wind</span>
-                    </div>
-                    <div className="font-semibold text-foreground font-mono">
-                      {unit === "F" ? `${Math.round(data.windSpeed * 0.621371)} mph` : `${data.windSpeed} km/h`}
-                    </div>
-                  </div>
-
-                  {/* Humidity */}
-                  <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                      <Droplets className="w-3.5 h-3.5 text-sky-500" />
-                      <span>Humidity</span>
-                    </div>
-                    <div className="font-semibold text-foreground font-mono">
-                      {data.humidity}%
-                    </div>
-                  </div>
-
-                  {/* Precipitation */}
-                  <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                      <Umbrella className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Precipitation</span>
-                    </div>
-                    <div className="font-semibold text-foreground font-mono">
-                      {data.precipitationProbability ? `${data.precipitationProbability}% chance` : `${data.precipitation} mm`}
-                    </div>
-                  </div>
-
-                  {/* UV Index */}
-                  <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                      <Sun className="w-3.5 h-3.5 text-amber-500" />
-                      <span>UV Index</span>
-                    </div>
-                    <div className={`font-semibold font-mono ${getUvIndexDescription(data.uvIndex).color}`}>
-                      {data.uvIndex !== undefined ? `${data.uvIndex} (${getUvIndexDescription(data.uvIndex).text})` : "Moderate"}
-                    </div>
-                  </div>
-
-                  {/* Pressure or Visibility */}
-                  <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                      <Gauge className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Pressure</span>
-                    </div>
-                    <div className="font-semibold text-foreground font-mono">
-                      {data.pressure ? `${data.pressure} hPa` : "1013 hPa"}
-                    </div>
-                  </div>
-
-                  {/* Sun Times */}
-                  <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
-                      <Sunrise className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Sun Times</span>
-                    </div>
-                    <div className="font-semibold text-foreground text-[11px] truncate">
-                      {data.sunrise && data.sunset ? `${data.sunrise} / ${data.sunset}` : "Dawn to Dusk"}
-                    </div>
-                  </div>
+                {/* Right: Concise Atmospheric Matrix Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 border-t lg:border-t-0 lg:border-l border-border/80 pt-4 lg:pt-0 lg:pl-6 text-xs">
+                  {atmosphericStats.map((stat) => {
+                    const StatIcon = stat.icon;
+                    return (
+                      <div
+                        key={stat.label}
+                        className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1 hover:bg-muted/60 transition-colors"
+                      >
+                        <div className="flex items-center gap-1.5 text-muted-foreground font-medium text-[11px]">
+                          <StatIcon className={`w-3.5 h-3.5 ${stat.color} shrink-0`} />
+                          <span>{stat.label}</span>
+                        </div>
+                        <div className="font-semibold text-foreground font-mono text-xs truncate">
+                          {stat.value}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Date Selector Strip (Check future days) */}
+          {/* 7-Day Multi-Day Forecast Selector Strip */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -537,7 +558,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
               {forecastDays.map((day, idx) => {
                 const isSelected = selectedDateIndex === idx;
-                const iconMeta = getWeatherIconComponent(day.weatherCode);
+                const iconMeta = getWeatherIconMeta(day.weatherCode);
                 const Icon = iconMeta.icon;
 
                 return (
@@ -564,7 +585,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                     </div>
 
                     <div className="flex items-center justify-center py-1">
-                      <div className={`p-2 rounded-lg ${iconMeta.bg} ${iconMeta.color}`}>
+                      <div className={`p-1.5 rounded-lg ${iconMeta.bg} ${iconMeta.color}`}>
                         <Icon className="w-4 h-4" />
                       </div>
                     </div>
@@ -583,7 +604,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
             </div>
           </div>
 
-          {/* Selected Date Details & Hourly Timeline */}
+          {/* Selected Date Details & Hourly Schedule */}
           {selectedDay && (
             <Card className="border-border/80 bg-card">
               <CardHeader className="pb-3 border-b border-border/50">
@@ -594,14 +615,14 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                       Hourly Schedule for {selectedDay.dayName} ({selectedDay.formattedDate})
                     </CardTitle>
                     <CardDescription className="text-xs mt-0.5">
-                      {selectedDay.weatherDescription} with expected temperatures from {formatTemp(selectedDay.temperatureMin)} to {formatTemp(selectedDay.temperatureMax)}.
+                      {selectedDay.weatherDescription} with temperatures between {formatTemp(selectedDay.temperatureMin)} and {formatTemp(selectedDay.temperatureMax)}.
                     </CardDescription>
                   </div>
 
                   {travelInsight && (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/60 border border-border/60 text-xs self-start sm:self-auto">
                       <travelInsight.icon className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         <strong className="text-foreground font-medium mr-1">{travelInsight.title}:</strong>
                         {travelInsight.advice}
                       </span>
@@ -615,13 +636,13 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                   <div className="overflow-x-auto pb-2 no-scrollbar">
                     <div className="inline-flex gap-2 min-w-full">
                       {selectedDay.hourly.map((hourItem) => {
-                        const hIconMeta = getWeatherIconComponent(hourItem.weatherCode);
+                        const hIconMeta = getWeatherIconMeta(hourItem.weatherCode);
                         const HIcon = hIconMeta.icon;
 
                         return (
                           <div
                             key={hourItem.fullTime || hourItem.time}
-                            className="flex flex-col items-center justify-between p-3 rounded-lg bg-muted/40 border border-border/50 min-w-[85px] sm:min-w-[95px] space-y-2 text-center"
+                            className="flex flex-col items-center justify-between p-3 rounded-lg bg-muted/40 border border-border/50 min-w-[85px] sm:min-w-[95px] space-y-2 text-center hover:bg-muted/60 transition-colors"
                           >
                             <span className="text-[11px] font-semibold text-muted-foreground">
                               {hourItem.time}
@@ -653,14 +674,14 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                 ) : (
                   <div className="py-6 text-center text-xs text-muted-foreground space-y-1">
                     <p>Standard day forecast outlook: High {formatTemp(selectedDay.temperatureMax)}, Low {formatTemp(selectedDay.temperatureMin)}.</p>
-                    <p className="text-[11px]">3-hourly precision will activate automatically as the date approaches.</p>
+                    <p className="text-[11px]">3-hourly precision activates automatically for near-term dates.</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           )}
 
-          {/* Quick Travel Note Card */}
+          {/* Travel Context Guidance Footer */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl border border-border/70 bg-card flex items-start gap-3">
               <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
@@ -669,7 +690,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
               <div className="space-y-1">
                 <h4 className="text-xs font-semibold text-foreground">Timezone & Local Coordination</h4>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Weather observations reflect local time in {data.city}. Check the destination time difference before booking morning walking tours or sunset dinners.
+                  Weather observations reflect local time in {data.city}. Plan morning walking tours, temple visits, and sunset spots according to the local solar cycle.
                 </p>
               </div>
             </div>
@@ -681,7 +702,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
               <div className="space-y-1">
                 <h4 className="text-xs font-semibold text-foreground">Smart Forecast Cache</h4>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Forecasts are cached for 30 minutes to reduce battery and data usage while abroad. Hit the refresh button anytime for instant live radar sync.
+                  Forecasts are cached for 30 minutes to reduce battery and cellular data usage while traveling. Hit the refresh button anytime for live radar updates.
                 </p>
               </div>
             </div>
@@ -691,4 +712,3 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
     </div>
   );
 }
-

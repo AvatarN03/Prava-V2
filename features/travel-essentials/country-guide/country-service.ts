@@ -1,7 +1,7 @@
 "use server";
 
-import { CountryInfo, EmergencyContacts } from "../types";
 import { EMERGENCY_DIRECTORY } from "../emergency/emergency-data";
+import type { CountryInfo, EmergencyContacts } from "../types";
 import { QUICK_PICK_COUNTRIES } from "./country-constants";
 
 // ─── REST Countries API v5 response shape ────────────────────────────────────
@@ -104,6 +104,10 @@ export interface CountryAiSummary {
   newsDigest: string[];
   insiderTip: string;
   provider: string;
+  isAiGenerated: boolean;
+  generatedAt?: string;
+  hasError?: boolean;
+  errorMessage?: string;
 }
 
 // ─── In-memory server caches ──────────────────────────────────────────────────
@@ -491,23 +495,39 @@ function extractJsonPayload(raw: string): any {
 }
 
 /**
- * Generate an AI-powered travel & news summary using OpenRouter free router model
+ * Verified free chat models on OpenRouter (in priority order).
+ * Note: Avoid generic "openrouter/free" because it includes content safety models (e.g. nemotron-3.5-content-safety)
+ * which only output "User Safety: safe".
+ */
+const VERIFIED_FREE_MODELS = [
+  "inclusionai/ling-3.0-flash-sante:free",
+  "nex-agi/nex-n2.5-mini:free",
+  "liquid/lfm-2.5-2.6b:free",
+  "nvidia/nemotron-3.5-lightning:free",
+];
+
+/**
+ * Generate an AI-powered travel & news summary using OpenRouter free models exclusively
  */
 export async function generateCountryAiSummary(
   countryName: string,
   countryInfo: CountryInfo,
-  newsArticles: CountryNewsArticle[]
+  newsArticles: CountryNewsArticle[],
+  forceRefresh: boolean = false
 ): Promise<CountryAiSummary> {
   const cacheKey = `ai_sum_${countryName.toLowerCase()}`;
-  const cached = aiSummaryCache.get(cacheKey);
-
-  if (cached && Date.now() - cached.timestamp < CACHE_AI_MS) return cached.data;
+  if (!forceRefresh) {
+    const cached = aiSummaryCache.get(cacheKey);
+    if (cached && !cached.data.hasError && Date.now() - cached.timestamp < CACHE_AI_MS) {
+      return cached.data;
+    }
+  }
 
   const openRouterKey = process.env.OPENROUTER_API_KEY;
   const newsHeadlines = newsArticles.map((a) => `- ${a.title}`).join("\n");
 
   const prompt = `You are a concise, premium travel intelligence assistant for the Prava Travel Companion app.
-Analyze the destination "${countryName}" with these attributes:
+Analyze the destination "${countryName}" for an international traveler (with focus on Indian travel context if relevant):
 - Capital: ${countryInfo.capital}
 - Currency: ${countryInfo.currency}
 - Water Safety: ${countryInfo.waterSafetyStatus}
@@ -528,8 +548,34 @@ Provide a factual JSON response with this exact schema:
 }
 Only output valid JSON.`;
 
-  // 1. Call OpenRouter API with free router model
-  if (openRouterKey) {
+  // Curated baseline data for fallback
+  const curatedFallback: CountryAiSummary = {
+    vibe: `${countryName} offers an extraordinary blend of historic landmarks, vibrant urban energy, and welcoming local hospitality. Exploring its capital ${countryInfo.capital} reveals rich cultural traditions alongside world-class modern transit and culinary scenes.`,
+    advisoryStatus: countryInfo.waterSafetyStatus === "safe" ? "safe" : "moderate",
+    advisoryReason: `Standard travel precautions apply throughout ${countryName}. Tourist infrastructure is well-established with reliable municipal emergency services.`,
+    newsDigest: [
+      `Transit networks in ${countryInfo.capital} and major regional routes are operating on standard schedules with high contactless payment adoption.`,
+      `Seasonal cultural events, heritage sites, and museum exhibitions are actively welcoming international travelers.`,
+      `Confirm digital visa entry prerequisites and passport validity (minimum 6 months) prior to flight departure.`,
+    ],
+    insiderTip: `Download local transit maps in advance and carry small local currency (${countryInfo.currency.split(" ")[0]}) for small merchant markets and traditional cafes.`,
+    provider: "Prava Curated Travel Intelligence",
+    isAiGenerated: false,
+    generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  };
+
+  if (!openRouterKey) {
+    return {
+      ...curatedFallback,
+      hasError: true,
+      errorMessage: "OPENROUTER_API_KEY is not configured in the environment.",
+    };
+  }
+
+  let lastErrorReason = "";
+
+  // Iterate through verified free models on OpenRouter
+  for (const modelId of VERIFIED_FREE_MODELS) {
     try {
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -540,53 +586,63 @@ Only output valid JSON.`;
           "X-Title": "Prava Travel Intelligence",
         },
         body: JSON.stringify({
-          model: "openrouter/free",
+          model: modelId,
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
+          temperature: 0.2,
         }),
-        signal: AbortSignal.timeout(12000),
+        signal: AbortSignal.timeout(10000),
       });
 
-      if (res.ok) {
-        const json = await res.json();
-        const rawContent = json.choices?.[0]?.message?.content;
-        const resolvedModel = json.model || "openrouter/free";
+      if (!res.ok) {
+        let errBody = "";
+        try {
+          const errJson = await res.json();
+          errBody = errJson.error?.message || JSON.stringify(errJson);
+        } catch {
+          errBody = await res.text().catch(() => "");
+        }
+        lastErrorReason = `OpenRouter HTTP ${res.status} (${res.statusText}): ${errBody || "Upstream provider rejected query"}`;
+        console.warn(`[Country Guide AI] Model ${modelId} failed:`, lastErrorReason);
+        continue; // Try next model
+      }
 
-        if (rawContent) {
-          const parsed = extractJsonPayload(rawContent);
-          if (parsed && parsed.vibe) {
-            const result: CountryAiSummary = {
-              vibe: parsed.vibe,
-              advisoryStatus: parsed.advisoryStatus || "safe",
-              advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
-              newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
-              insiderTip: parsed.insiderTip || "",
-              provider: `OpenRouter (${resolvedModel.replace(/:free$/, "")})`,
-            };
-            aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
-            return result;
-          }
+      const json = await res.json();
+      const rawContent = json.choices?.[0]?.message?.content;
+      const activeModel = json.model || modelId;
+
+      if (rawContent) {
+        const parsed = extractJsonPayload(rawContent);
+        if (parsed && parsed.vibe) {
+          const result: CountryAiSummary = {
+            vibe: parsed.vibe,
+            advisoryStatus: parsed.advisoryStatus || "safe",
+            advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
+            newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
+            insiderTip: parsed.insiderTip || "",
+            provider: `OpenRouter (${activeModel.replace(/:free$/, "")})`,
+            isAiGenerated: true,
+            generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            hasError: false,
+          };
+          aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+          return result;
+        } else {
+          lastErrorReason = `Model returned unexpected non-JSON output format: "${rawContent.slice(0, 100)}"`;
         }
       }
-    } catch (err) {
-      console.warn("[Country Guide AI] OpenRouter API error, falling back to contextual engine:", err);
+    } catch (err: any) {
+      lastErrorReason = err.name === "TimeoutError"
+        ? `OpenRouter model ${modelId} timed out after 10s.`
+        : `Network error connecting to OpenRouter: ${err.message || "Unknown error"}`;
+      console.warn(`[Country Guide AI] Error on model ${modelId}:`, lastErrorReason);
     }
   }
 
-  // 2. Fallback High-Quality Contextual Summary (only if OpenRouter is unreachable)
-  const fallbackResult: CountryAiSummary = {
-    vibe: `${countryName} offers an extraordinary blend of historic landmarks, vibrant urban energy, and welcoming local hospitality. Exploring its capital ${countryInfo.capital} reveals rich cultural traditions alongside world-class modern transit and culinary scenes.`,
-    advisoryStatus: countryInfo.waterSafetyStatus === "safe" ? "safe" : "moderate",
-    advisoryReason: `Standard travel precautions apply throughout ${countryName}. Tourist infrastructure is well-established with reliable municipal emergency services.`,
-    newsDigest: [
-      `Transit networks in ${countryInfo.capital} and major regional routes are operating on standard schedules with high contactless payment adoption.`,
-      `Seasonal cultural events, heritage sites, and museum exhibitions are actively welcoming international travelers.`,
-      `Confirm digital visa entry prerequisites and passport validity (minimum 6 months) prior to flight departure.`,
-    ],
-    insiderTip: `Download local transit maps in advance and carry small local currency (${countryInfo.currency.split(" ")[0]}) for small merchant markets and traditional cafes.`,
-    provider: "Prava AI Intelligence Engine",
+  // All candidate models were attempted and failed
+  return {
+    ...curatedFallback,
+    hasError: true,
+    errorMessage: lastErrorReason || "OpenRouter free models are currently unavailable or busy.",
+    provider: "OpenRouter (Error — Showing Curated Fallback)",
   };
-
-  aiSummaryCache.set(cacheKey, { data: fallbackResult, timestamp: Date.now() });
-  return fallbackResult;
 }
