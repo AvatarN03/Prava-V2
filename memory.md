@@ -280,7 +280,9 @@
     - Created `handleUpdatePreference` callback in `features/profile/components/profile-editor.tsx` and wired to all controls in `features/profile/components/general-section.tsx`.
     - Every option change (currency select, date format select, AI proposal switch, offline cache switch, departure notifications switch) immediately saves to PostgreSQL and fires a descriptive Sonner toast (e.g. `"Default currency updated to EUR in database."`, `"Structured AI proposals enabled in database."`).
   - **Simplified Date Format Select**: Removed confusing `MMM D, YYYY` prefix syntax in favor of clean real-world date examples (`Oct 14, 2026`, `14/10/2026`, `2026-10-14`, `10/14/2026`).
-  - **Verification**: Verified with clean Next.js 16 production build (`npm run build`, exit code 0, 0 TypeScript errors).
+- **Task 45 (Agent & Repository Documentation — AGENTS.md & README.md Comprehensive Guide)**:
+  - **AGENTS.md Overhaul**: Preserved Next.js breaking changes agent rule block and authored a comprehensive guide for LLMs/AI assistants working on Prava AI. Documented the core philosophy ("Workspace First, AI Second", "The application remembers, the LLM does not"), complete routing architecture, full technology stack, feature-first codebase organization, Prisma database conventions (`syncUserProfile`, UUID PKs, cascade deletes), Supabase SSR & PKCE authentication, Gemini 2.5 Flash structured action proposals, calm productivity design standards (Cerulean `#2D9BF0`, shadcn/ui, no AI slop/glassmorphism), external API services, and strict developer/agent rules of engagement.
+  - **README.md Overhaul**: Replaced the default `create-next-app` boilerplate with a comprehensive project README featuring badges, executive overview, feature breakdown across all 5 key modules, technology stack matrix, step-by-step setup and environment configuration guide, project structure, scripts, design philosophy, and documentation links.
 
 ## Current Architecture State
 - **Framework**: Next.js 16.3.3 (App Router with Turbopack)
