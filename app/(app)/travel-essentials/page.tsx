@@ -10,7 +10,7 @@ export const metadata = {
     "Real-time travel companion utilities: live weather forecasts, currency conversions, interactive maps, country guides, emergency contacts, and local phrasebooks.",
 };
 
-const VALID_TABS = ["weather", "currency", "maps", "guide", "emergency", "language"] as const;
+const VALID_TABS = ["weather", "currency", "maps", "guide", "language"] as const;
 type TabType = (typeof VALID_TABS)[number];
 
 interface PageProps {
@@ -19,7 +19,7 @@ interface PageProps {
 
 export default async function TravelEssentialsPage({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
-  const requestedTab = resolvedParams?.tab;
+  const requestedTab = resolvedParams?.tab === "emergency" ? "guide" : resolvedParams?.tab;
   const activeTab: TabType = VALID_TABS.includes(requestedTab as TabType)
     ? (requestedTab as TabType)
     : "weather";

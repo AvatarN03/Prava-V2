@@ -67,19 +67,13 @@ const CountryGuideView = dynamic(
   { loading: () => <TabLoadingSkeleton /> }
 );
 
-const EmergencyView = dynamic(
-  () =>
-    import("@/features/travel-essentials/emergency/emergency-view").then((m) => m.EmergencyView),
-  { loading: () => <TabLoadingSkeleton /> }
-);
-
 const LanguageView = dynamic(
   () =>
     import("@/features/travel-essentials/language/language-view").then((m) => m.LanguageView),
   { loading: () => <TabLoadingSkeleton /> }
 );
 
-export type TabType = "weather" | "currency" | "maps" | "guide" | "emergency" | "language";
+export type TabType = "weather" | "currency" | "maps" | "guide" | "language";
 
 interface TravelEssentialsShellProps {
   initialTab?: TabType;
@@ -101,7 +95,6 @@ const TABS: { id: TabType; label: string; icon: React.ElementType; iconColor: st
   { id: "currency", label: "Currency", icon: Coins, iconColor: "text-emerald-500" },
   { id: "maps", label: "Maps", icon: Map, iconColor: "text-sky-500" },
   { id: "guide", label: "Country Guide", icon: BookOpen, iconColor: "text-indigo-500" },
-  { id: "emergency", label: "Emergency", icon: ShieldAlert, iconColor: "text-rose-500" },
   { id: "language", label: "Language", icon: Languages, iconColor: "text-violet-500" },
 ];
 
@@ -120,7 +113,12 @@ export function TravelEssentialsShell({
   const searchParams = useSearchParams();
 
   // Read URL query parameter if present, otherwise initialTab
-  const currentQueryTab = searchParams.get("tab") as TabType | null;
+  const rawQueryTab = searchParams.get("tab");
+  const currentQueryTab: TabType | null =
+    rawQueryTab === "emergency"
+      ? "guide"
+      : (rawQueryTab as TabType | null);
+
   const activeTab: TabType =
     currentQueryTab && TABS.some((t) => t.id === currentQueryTab)
       ? currentQueryTab
@@ -207,10 +205,6 @@ export function TravelEssentialsShell({
 
         <TabsContent value="guide" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           {activeTab === "guide" && <CountryGuideView />}
-        </TabsContent>
-
-        <TabsContent value="emergency" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-          {activeTab === "emergency" && <EmergencyView />}
         </TabsContent>
 
         <TabsContent value="language" className="mt-0 focus-visible:outline-none focus-visible:ring-0">

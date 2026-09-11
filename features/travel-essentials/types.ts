@@ -168,12 +168,26 @@ export interface LanguagePhrase {
   english: string;
   translated: string;
   pronunciation: string;
+  notes?: string;
 }
 
 export interface LanguageGuide {
   language: string;
   country: string;
+  flag?: string;
+  localeCode: string; // e.g. "ja-JP", "fr-FR", "pl-PL"
+  nativeName?: string;
   phrases: LanguagePhrase[];
+}
+
+export interface AiTranslatedPhrase {
+  original: string;
+  translated: string;
+  pronunciation: string;
+  targetLanguage: string;
+  localeCode: string;
+  culturalNote?: string;
+  provider?: string;
 }
 
 export type EssentialCategory =
