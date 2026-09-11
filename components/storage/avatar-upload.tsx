@@ -58,6 +58,9 @@ export function AvatarUpload({
         if (onAvatarUpdated) {
           onAvatarUpdated(uploadRes.url);
         }
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("prava-profile-updated"));
+        }
         toast.success("Profile photo updated successfully!");
       } else {
         toast.error(uploadRes.error || "Failed to upload avatar image.");

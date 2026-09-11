@@ -472,3 +472,66 @@ export async function getPublicCreatorProfile(username: string) {
     return { success: false, error: "Failed to load creator profile" };
   }
 }
+
+export interface TopBarUserInfo {
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+  username: string | null;
+}
+
+/**
+ * Lightweight query to fetch the current authenticated user's display name and avatar for the TopBar.
+ */
+export async function getTopBarUserInfo(): Promise<{ success: boolean; data?: TopBarUserInfo }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false };
+    }
+
+    const profile = await db.profile.findUnique({
+      where: { id: user.id },
+      select: {
+        fullName: true,
+        username: true,
+        avatarUrl: true,
+        email: true,
+      },
+    });
+
+    const userMeta = user.user_metadata || {};
+    const name =
+      profile?.fullName ||
+      (profile?.username ? `@${profile.username}` : null) ||
+      userMeta.full_name ||
+      userMeta.name ||
+      user.email?.split("@")[0] ||
+      "Traveler";
+
+    const avatarUrl =
+      profile?.avatarUrl ||
+      userMeta.avatar_url ||
+      userMeta.picture ||
+      null;
+
+    return {
+      success: true,
+      data: {
+        name,
+        email: profile?.email || user.email || null,
+        avatarUrl,
+        username: profile?.username || null,
+      },
+    };
+  } catch (err) {
+    console.error("Error fetching top bar user info:", err);
+    return { success: false };
+  }
+}
+

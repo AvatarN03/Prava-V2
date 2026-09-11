@@ -7,22 +7,19 @@ import { useState, useEffect } from "react";
  * Returns `true` when the user has network connectivity.
  */
 export function useOnlineStatus(): boolean {
-  const [isOnline, setIsOnline] = useState<boolean>(() => {
-    if (typeof navigator !== "undefined") {
-      return navigator.onLine;
-    }
-    return true; // SSR default
-  });
+  const [isOnline, setIsOnline] = useState<boolean>(true);
 
   useEffect(() => {
+    // Sync on mount after hydration
+    if (typeof navigator !== "undefined") {
+      setIsOnline(navigator.onLine);
+    }
+
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-
-    // Sync on mount in case initial state was stale
-    setIsOnline(navigator.onLine);
 
     return () => {
       window.removeEventListener("online", handleOnline);

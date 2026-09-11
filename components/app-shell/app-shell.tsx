@@ -10,22 +10,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     // Outer shell: Matches sidebar theme (Dark in light mode, Light in dark mode)
-    <div className="min-h-screen bg-[#090E1A] dark:bg-slate-200 transition-colors">
-      {/* Permanently Fixed Sidebar */}
+    <div className="h-screen w-full bg-[#090E1A] dark:bg-slate-100 transition-colors flex overflow-hidden">
+      {/* Sidebar: Natural flex child on desktop, fixed overlay drawer on mobile */}
       <Sidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      {/* Right Content Canvas with Left-Side Rounded Corners (Opposite theme surface) */}
-      <div className="min-h-screen md:pl-64 flex flex-col">
-        <div className="flex-1 flex flex-col md:rounded-tl-[28px] md:rounded-bl-[28px] md:my-1.5 md:mr-1.5 bg-slate-50 text-slate-900 dark:bg-[#0A0F1D] dark:text-slate-100 shadow-2xl overflow-hidden border-l border-slate-200/50 dark:border-slate-800 transition-colors">
+      {/* Right Content Canvas with Left-Side Rounded Corners Only (Pure flex-1 sibling, no padding offset) */}
+      <div className="flex-1 h-screen flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 rounded-none md:rounded-tl-[20px] md:rounded-bl-[20px] md:my-2 md:mr-0 bg-slate-50 text-slate-900 dark:bg-[#0A0F1D] dark:text-slate-100 shadow-2xl overflow-hidden md:border-l-8 border-blue-500 dark:border-blue-300/60 transition-colors">
           <TopBar onMobileMenuOpen={() => setMobileOpen(true)} />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto overflow-y-auto">
-            {children}
+          <main className="flex-1 min-h-0 overflow-y-auto w-full p-4 sm:p-6 lg:p-8 thin-scrollbar">
+            <div className="w-full max-w-7xl mx-auto">
+              {children}
+            </div>
           </main>
         </div>
       </div>
     </div>
   );
 }
+

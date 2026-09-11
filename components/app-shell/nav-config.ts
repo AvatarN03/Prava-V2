@@ -1,13 +1,13 @@
 import {
-  LayoutDashboard,
-  Compass,
-  Users,
-  ShieldAlert,
   BookOpen,
-  User,
+  Compass,
   CreditCard,
-  Sparkles,
+  LayoutDashboard,
   LucideIcon,
+  ShieldAlert,
+  Sparkles,
+  User,
+  Users,
 } from "lucide-react";
 
 export interface NavItem {
@@ -24,7 +24,7 @@ export const workspaceNavItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: "My Trips",
+    title: "Trips",
     href: "/trips",
     icon: Compass,
   },
@@ -37,13 +37,13 @@ export const workspaceNavItems: NavItem[] = [
 
 export const otherNavItems: NavItem[] = [
   {
-    title: "Community Forum",
+    title: "Community",
     href: "/community",
     icon: Users,
     badge: "Active",
   },
   {
-    title: "Travel Stories",
+    title: "Stories",
     href: "/stories",
     icon: BookOpen,
   },
@@ -71,3 +71,4 @@ export const accountNavItems: NavItem[] = [
 // Backwards compatibility aliases if needed
 export const mainNavItems = [...workspaceNavItems, ...otherNavItems];
 export const secondaryNavItems = accountNavItems;
+

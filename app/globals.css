@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* =========================================================
    LIGHT MODE TOKENS
    ========================================================= */
@@ -151,17 +153,41 @@ html {
 }
 
 /* =========================================================
-   CUSTOM SCROLLBAR UTILITIES
+   CUSTOM SCROLLBAR UTILITIES (Prava Blue Theme)
    ========================================================= */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(45, 155, 240, 0.4) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(45, 155, 240, 0.4);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(45, 155, 240, 0.75);
+}
 
 .thin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  scrollbar-color: rgba(45, 155, 240, 0.4) transparent;
 }
 
 .thin-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 .thin-scrollbar::-webkit-scrollbar-track {
@@ -169,10 +195,11 @@ html {
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(45, 155, 240, 0.4);
   border-radius: 9999px;
+  transition: background-color 0.2s ease;
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: rgba(45, 155, 240, 0.75);
 }

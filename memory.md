@@ -320,6 +320,47 @@
 - **Subscription & Usage Hub**: The workspace `/pricing` page serves as an active billing, quota monitoring, and monthly credit usage tracking dashboard.
 - **Authentication & Callback**: Server-side PKCE code exchange in `/auth/callback/route.ts` ensures immediate session cookie persistence without client-side race conditions or reload loops.
 
+- **Task 48 (Shell Opposite-Theme, Left-Side Rounded Corners & Dashboard Preservation)**:
+  - **Opposite Theme Inversion & Tailwind v4 Variant Fix**:
+    - Added `@custom-variant dark (&:where(.dark, .dark *));` to `app/globals.css` so Tailwind v4 properly listens to `next-themes` `.dark` class toggling rather than only OS media queries.
+    - Set the desktop sidebar to `md:bg-transparent md:border-r-0`, completely merging the sidebar into the outer shell background (`bg-[#090E1A]` in light mode, `dark:bg-slate-100` in dark mode) with zero distinction or seams.
+    - In **Light Mode**: Sidebar and wrapping background are unified Deep Dark Navy (`bg-[#090E1A]`), while the floating main canvas is Clean Light (`bg-slate-50`, `text-slate-900`).
+    - In **Dark Mode**: Sidebar and wrapping background are unified Clean Light Slate (`dark:bg-slate-100`), while the floating main canvas is Deep Dark Navy (`dark:bg-[#0A0F1D]`, `dark:text-slate-100`).
+  - **Left-Side Rounded Corners Only**: Main content canvas features `rounded-none md:rounded-tl-[24px] md:rounded-bl-[24px] md:my-2 md:ml-2 md:mr-0` with `overflow-hidden`, creating the distinct docked sheet aesthetic with the outer background wrapping the top, left, and bottom, while the right edge remains flush.
+  - **TopBar Header Enhancement**: Re-architected TopBar to match the reference layout: Page Title, Quick Search input with `Ctrl K` keyboard shortcut badge, Today date chip, Live Workspace pulsing indicator, and User Profile badge with avatar and role chip.
+  - **Preserved Authentic Travel Dashboard**: Reverted `app/(app)/dashboard/page.tsx` and `DashboardMetrics` back to Prava AI's core travel workspace entities (Total Trips, Total Budget Spent, Scheduled Activities, Pending Tasks, Upcoming Trip, Quick Essentials, Recent Trips, and Urgent Checklist), avoiding unnecessary domain deviations.
+  - **Strict Import Standards**: Adhered to the 6-tier import hierarchy formalized in `.agents/skills/format-imports-and-clean`.
+
+- **Task 49 (Sidebar & AppShell Refactor: Flex Sibling, Compact Width, Muted Font Weight, Less Rounding & Border Removal)**:
+  - **Flex Sibling Architecture**:
+    - Refactored `Sidebar` to be a natural `md:static md:translate-x-0 shrink-0 w-52` flex child on desktop, while retaining `fixed inset-y-0 left-0 z-40` drawer behavior on mobile.
+    - Eliminated `md:pl-60` padding offset and `md:ml-2` from `app-shell.tsx`. The right content canvas is now a pure `flex-1 min-w-0` sibling.
+  - **Compact Width (`w-52`)**: Reduced sidebar width from `w-60` (240px) to `w-52` (208px), matching the compact text lengths and eliminating dead space.
+  - **Lessened Corner Radius (`rounded-r-md`)**: Reduced right-side active corner radius from `rounded-r-lg` (8px) to `rounded-r-md` (6px) with flat left edge (`rounded-l-none`).
+  - **Subtle Active Font Weight**: Removed `font-semibold` in favor of `font-normal text-white/95`, providing clean, non-heavy active item typography.
+  - **Removed Account Border**: Removed `border-t` from the Account section container for a clean, borderless transition into the bottom account items.
+  - **Removed Heading Icons & Cleaned Naming**: Retained icon-free uppercase section headers and clean non-truncating labels (`Trips`, `Community`, `Stories`).
+
+
+- **Task 50 (Centered Canvas Content with mx-auto & Rightmost Scrollbar Preservation)**:
+  - **Identified Cause of Left Shift**: Views with `max-w-5xl` or `max-w-4xl` (specifically `AccountUsageView` on `/pricing`, `UsageView` on `/usage`, and `ProfileEditor` on `/profile`) lacked `mx-auto`, causing content to stick to the left edge of the full-width scrollable canvas and leaving large empty space on the right.
+  - **Centered Page Elements**:
+    - Added `max-w-5xl mx-auto w-full` to `AccountUsageView` and `UsageView`.
+    - Added `max-w-5xl mx-auto w-full` to `ProfileEditor`.
+    - Added `max-w-4xl mx-auto w-full` to `ManageStoriesPage`.
+    - Wrapped `{children}` inside `<main>` in `app-shell.tsx` with `<div className="w-full max-w-7xl mx-auto">`.
+  - **Preserved Rightmost Scrollbar**: By keeping the outer `<main className="w-full overflow-y-auto ...">` full width and centering the inner wrapper with `mx-auto`, the thin blue scrollbar stays anchored at the rightmost browser edge while the page content is centered in the canvas.
+
+- **Task 51 (TopBar User Avatar & Account Info Real-Time Fetching with Skeleton Loading & Fallback)**:
+  - **Database Profile Query (`getTopBarUserInfo`)**: Implemented a lightweight Server Action in `features/profile/actions.ts` that directly queries `db.profile` by authenticated user ID. It retrieves the user's verified custom uploaded avatar (`avatarUrl`), full name, username, and email. Falls back gracefully to Google OAuth metadata if custom avatar is absent.
+  - **Animated Skeleton Loading Effect**: Configured an animated pulsing skeleton state (`Skeleton` circle and text bar) in `top-bar.tsx` while account data is resolving.
+  - **Robust Avatar & Fallback Rendering**: When resolved, displays the real profile avatar image with `object-cover`. If no image exists or image fails to load, falls back to `AvatarFallback` displaying the user's initial in a vibrant Cerulean gradient (`bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF]`) or user icon.
+  - **Real-Time Cross-Component Sync**: Added event listener (`prava-profile-updated`) to `TopBar` and dispatched events from `AvatarUpload` and `ProfileEditor`, enabling immediate header updates upon avatar or name modification without requiring a page refresh.
+
+- **Task 52 (Theme Toggle Delay & Icon Size Increase)**:
+  - **Enlarged MorphIcon (`size={20}`)**: Increased the `MorphIcon` size from `16px` to `20px` with a bolder `strokeWidth={2.2}` and increased the icon button container to `h-9 w-9`.
+  - **Deliberate Theme Switch Delay**: Implemented a 240ms delay between the initiation of the SVG morph transition and the actual Next.js `setTheme` color change. The icon immediately begins morphing between Sun and Moon, followed smoothly by the application theme switch once the vector strokes animate.
+
 ## Next Steps
 - Automated testing harness with Vitest / Playwright.
 

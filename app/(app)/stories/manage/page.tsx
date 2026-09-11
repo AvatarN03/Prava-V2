@@ -13,7 +13,7 @@ export default async function ManageStoriesPage() {
   const posts = res.success && res.posts ? res.posts : [];
 
   return (
-    <div className="space-y-6 max-w-4xl py-2">
+    <div className="space-y-6 max-w-4xl mx-auto w-full py-2">
       <MyStoriesList posts={posts} />
     </div>
   );

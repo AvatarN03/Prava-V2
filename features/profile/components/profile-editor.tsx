@@ -101,6 +101,9 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           isPublic: res.profile.isPublic,
         }));
         toast.success("Account details saved successfully.");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("prava-profile-updated"));
+        }
       } else {
         toast.error(res.error || "Failed to save changes.");
       }
@@ -177,7 +180,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   const publicProfileUrl = profile.username ? `/u/${profile.username}` : null;
 
   return (
-    <div className="space-y-6 max-w-5xl pb-16">
+    <div className="space-y-6 max-w-5xl mx-auto w-full pb-16">
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
         <div>
