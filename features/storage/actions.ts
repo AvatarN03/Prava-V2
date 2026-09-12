@@ -26,13 +26,18 @@ export async function uploadImageAction(formData: FormData) {
     }
 
     const file = formData.get("file") as File | null;
-    const folder = (formData.get("folder") as "trips" | "avatars" | "posts") || "trips";
+    const folder = (formData.get("folder") as "trips" | "avatars" | "posts" | "community") || "trips";
 
     if (!file || typeof file === "string") {
       return { success: false, error: "No image file provided." };
     }
 
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    const mimeType = (file.type || "").toLowerCase();
+    const isAllowed =
+      ALLOWED_IMAGE_TYPES.includes(mimeType) ||
+      /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(file.name);
+
+    if (!isAllowed) {
       return {
         success: false,
         error: "Invalid file type. Please upload a JPG, PNG, WebP, GIF, or AVIF image.",

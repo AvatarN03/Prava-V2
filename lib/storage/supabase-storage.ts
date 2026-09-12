@@ -4,6 +4,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 export const STORAGE_BUCKET = "prava-media";
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
+  "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",
@@ -20,11 +21,12 @@ export interface UploadResult {
 
 /**
  * Helper to obtain the best Supabase client for storage operations.
- * Prefers SUPABASE_SECRET_KEY if available to ensure bucket creation and RLS bypass for verified server actions.
+ * Prefers SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY if available to ensure bucket creation and RLS bypass for verified server actions.
  */
 async function getStorageClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secretKey = process.env.SUPABASE_SECRET_KEY;
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (supabaseUrl && secretKey) {
     return createSupabaseClient(supabaseUrl, secretKey, {
@@ -74,7 +76,7 @@ async function ensureBucketExists(supabase: any, bucketName: string): Promise<st
  */
 export async function uploadImageToStorage(
   file: File | Blob,
-  folder: "trips" | "avatars" | "posts",
+  folder: "trips" | "avatars" | "posts" | "community",
   userId: string,
   customFilename?: string
 ): Promise<UploadResult> {
@@ -99,6 +101,7 @@ export async function uploadImageToStorage(
 
     const extMap: Record<string, string> = {
       "image/jpeg": "jpg",
+      "image/jpg": "jpg",
       "image/png": "png",
       "image/webp": "webp",
       "image/gif": "gif",

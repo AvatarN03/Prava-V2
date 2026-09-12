@@ -111,18 +111,18 @@ export function LandingHeader({ user }: LandingHeaderProps) {
               How it Works
             </a>
             <Link
-              href="/stories"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 hover:text-[#2D9BF0] transition-colors"
-            >
-              Travel Stories
-            </Link>
-            <Link
               href="/community"
               onClick={() => setMobileMenuOpen(false)}
               className="py-1.5 hover:text-[#2D9BF0] transition-colors"
             >
-              Community Hub
+              Community
+            </Link>
+            <Link
+              href="/templates"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-1.5 hover:text-[#2D9BF0] transition-colors"
+            >
+              Templates
             </Link>
             <Link
               href="/pricing"

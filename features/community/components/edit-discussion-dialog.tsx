@@ -3,15 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  Compass,
-  Loader2,
-  MapPin,
-  MessageSquare,
-  Plus,
-  Sparkles,
-  Tag,
-} from "lucide-react";
+import { Compass, Edit3, Loader2, MapPin, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -35,43 +27,60 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 import { ImageUpload } from "@/components/storage/image-upload";
-import { createForumDiscussion } from "@/features/community/forum-actions";
+import { updateForumDiscussion } from "@/features/community/forum-actions";
 import { FORUM_CATEGORIES } from "@/features/community/forum-data";
 import {
   ForumCategory,
+  ForumPost,
   UserTripOption,
 } from "@/features/community/forum-types";
 
-interface NewDiscussionDialogProps {
+interface EditDiscussionDialogProps {
+  post: ForumPost;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userTrips?: UserTripOption[];
-  onDiscussionCreated?: () => void;
+  onUpdated?: () => void;
 }
 
-export function NewDiscussionDialog({
+export function EditDiscussionDialog({
+  post,
   open,
   onOpenChange,
   userTrips = [],
-  onDiscussionCreated,
-}: NewDiscussionDialogProps) {
+  onUpdated,
+}: EditDiscussionDialogProps) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<ForumCategory>("ROUTE_ADVICE");
-  const [destination, setDestination] = useState("");
-  const [tags, setTags] = useState("");
-  const [content, setContent] = useState("");
-  const [selectedTripId, setSelectedTripId] = useState<string>("NONE");
-  const [imageUrl, setImageUrl] = useState("");
+  const [title, setTitle] = useState(post.title);
+  const [category, setCategory] = useState<ForumCategory>(post.category);
+  const [destination, setDestination] = useState(post.destination || "");
+  const [tags, setTags] = useState(post.tags?.join(", ") || "");
+  const [content, setContent] = useState(post.content);
+  const [imageUrl, setImageUrl] = useState(
+    post.coverImageUrl || post.images?.[0] || ""
+  );
+  const [selectedTripId, setSelectedTripId] = useState<string>(
+    post.linkedTrip?.id || "NONE"
+  );
   const [isPending, startTransition] = useTransition();
+
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setTitle(post.title);
+      setCategory(post.category);
+      setDestination(post.destination || "");
+      setTags(post.tags?.join(", ") || "");
+      setContent(post.content);
+      setImageUrl(post.coverImageUrl || post.images?.[0] || "");
+      setSelectedTripId(post.linkedTrip?.id || "NONE");
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.error("Please enter a discussion title.");
-      return;
-    }
-    if (title.trim().length < 5) {
+    if (!title.trim() || title.trim().length < 5) {
       toast.error("Title must be at least 5 characters.");
       return;
     }
@@ -86,34 +95,26 @@ export function NewDiscussionDialog({
       .filter(Boolean);
 
     startTransition(async () => {
-      const res = await createForumDiscussion({
+      const res = await updateForumDiscussion(post.id, {
         title: title.trim(),
         content: content.trim(),
         category,
         destination: destination.trim() || undefined,
-        tags: splitTags.length > 0 ? splitTags : ["CommunityAdvice"],
+        tags: splitTags,
         linkedTripId: selectedTripId !== "NONE" ? selectedTripId : null,
-        images: imageUrl.trim() ? [imageUrl.trim()] : [],
         coverImageUrl: imageUrl.trim() || undefined,
+        images: imageUrl.trim() ? [imageUrl.trim()] : [],
       });
 
       if (res.success) {
-        toast.success("Discussion topic published to the Community Forum!");
+        toast.success("Discussion updated successfully!");
         onOpenChange(false);
-        setTitle("");
-        setContent("");
-        setDestination("");
-        setTags("");
-        setImageUrl("");
-        setSelectedTripId("NONE");
-
-        // Refresh Next.js server components and invoke local callback
-        router.refresh();
-        if (onDiscussionCreated) {
-          onDiscussionCreated();
+        if (onUpdated) onUpdated();
+        if (res.slug && res.slug !== post.slug) {
+          router.push(`/community/${res.slug}`);
         }
       } else {
-        toast.error(res.error || "Failed to publish discussion. Please sign in.");
+        toast.error(res.error || "Failed to update discussion.");
       }
     });
   };
@@ -126,26 +127,24 @@ export function NewDiscussionDialog({
         <DialogHeader className="space-y-1 pb-2">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <MessageSquare className="h-4 w-4" />
+              <Edit3 className="h-4 w-4" />
             </span>
             <DialogTitle className="text-lg font-bold text-foreground">
-              Start a Community Discussion
+              Edit Discussion
             </DialogTitle>
           </div>
           <DialogDescription className="text-xs text-muted-foreground">
-            Ask for route advice, share hidden culinary gems, get packing feedback, or share live conditions with fellow travelers.
+            Update your itinerary question, travel dates, or attached workspace trip.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           {/* Title */}
           <div className="space-y-1.5">
-            <Label htmlFor="post-title" className="text-xs font-semibold text-foreground">
-              Discussion Title <span className="text-destructive">*</span>
+            <Label className="text-xs font-semibold text-foreground">
+              Title <span className="text-destructive">*</span>
             </Label>
             <Input
-              id="post-title"
-              placeholder="e.g., Kyoto 7-Day Route: Is pacing realistic for peak foliage?"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="text-xs h-9 bg-background border-border"
@@ -157,7 +156,7 @@ export function NewDiscussionDialog({
           {/* Category & Destination Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="post-category" className="text-xs font-semibold text-foreground">
+              <Label className="text-xs font-semibold text-foreground">
                 Category
               </Label>
               <Select
@@ -165,8 +164,8 @@ export function NewDiscussionDialog({
                 onValueChange={(val) => setCategory(val as ForumCategory)}
                 disabled={isPending}
               >
-                <SelectTrigger id="post-category" className="text-xs h-9 bg-background border-border">
-                  <SelectValue placeholder="Select a topic" />
+                <SelectTrigger className="text-xs h-9 bg-background border-border">
+                  <SelectValue placeholder="Select topic" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {selectableCategories.map((c) => (
@@ -179,13 +178,12 @@ export function NewDiscussionDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="post-dest" className="text-xs font-semibold text-foreground flex items-center gap-1">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
-                Destination (Optional)
+                Destination
               </Label>
               <Input
-                id="post-dest"
-                placeholder="e.g., Kyoto, Japan"
+                placeholder="e.g., Tokyo, Japan"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
                 className="text-xs h-9 bg-background border-border"
@@ -194,20 +192,20 @@ export function NewDiscussionDialog({
             </div>
           </div>
 
-          {/* Attach Workspace Trip (Real Data) */}
+          {/* Attach Workspace Trip */}
           {userTrips.length > 0 && (
             <div className="space-y-1.5">
-              <Label htmlFor="post-trip" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Compass className="h-3.5 w-3.5 text-primary" />
-                Attach Workspace Trip for Context (Optional)
+                Attached Workspace Trip
               </Label>
               <Select
                 value={selectedTripId}
                 onValueChange={setSelectedTripId}
                 disabled={isPending}
               >
-                <SelectTrigger id="post-trip" className="text-xs h-9 bg-background border-border">
-                  <SelectValue placeholder="Choose a trip to link" />
+                <SelectTrigger className="text-xs h-9 bg-background border-border">
+                  <SelectValue placeholder="Choose a trip" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   <SelectItem value="NONE" className="text-xs text-muted-foreground cursor-pointer">
@@ -220,21 +218,16 @@ export function NewDiscussionDialog({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">
-                Community members will be able to inspect your itinerary stops and offer pacing advice.
-              </p>
             </div>
           )}
 
           {/* Tags */}
           <div className="space-y-1.5">
-            <Label htmlFor="post-tags" className="text-xs font-semibold text-foreground flex items-center gap-1">
+            <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
               <Tag className="h-3 w-3 text-muted-foreground" />
               Tags (Comma-separated)
             </Label>
             <Input
-              id="post-tags"
-              placeholder="e.g., Japan, TrainPass, Autumn, FoodGuide"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               className="text-xs h-9 bg-background border-border"
@@ -245,13 +238,10 @@ export function NewDiscussionDialog({
           {/* Dedicated Community Image Upload (1 Image Limit) */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3 w-3 text-primary" />
-                Discussion Visual (Optional — 1 Image)
-              </span>
+              <span>Discussion Visual (Optional — 1 Image)</span>
               {imageUrl && (
                 <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  Uploaded to Community
+                  Image attached
                 </span>
               )}
             </Label>
@@ -267,13 +257,11 @@ export function NewDiscussionDialog({
 
           {/* Content Description */}
           <div className="space-y-1.5">
-            <Label htmlFor="post-content" className="text-xs font-semibold text-foreground">
+            <Label className="text-xs font-semibold text-foreground">
               Details & Questions <span className="text-destructive">*</span>
             </Label>
             <Textarea
-              id="post-content"
               rows={4}
-              placeholder="Provide background on your dates, pacing questions, transit concerns, or specific tips you're seeking..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="text-xs resize-none bg-background border-border focus-visible:ring-primary"
@@ -297,18 +285,15 @@ export function NewDiscussionDialog({
               type="submit"
               size="sm"
               disabled={isPending}
-              className="text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
+              className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold shadow-xs"
             >
               {isPending ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Publishing...
+                  Saving...
                 </>
               ) : (
-                <>
-                  <Plus className="h-3.5 w-3.5" />
-                  Post Discussion
-                </>
+                "Save Changes"
               )}
             </Button>
           </DialogFooter>

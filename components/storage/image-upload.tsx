@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { uploadImageAction } from "@/features/storage/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 interface ImageUploadProps {
-  folder?: "trips" | "avatars" | "posts";
+  folder?: "trips" | "avatars" | "posts" | "community";
   currentImageUrl?: string | null;
   onUploaded: (url: string) => void;
   onRemoved?: () => void;
@@ -36,6 +36,10 @@ export function ImageUpload({
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPreview(currentImageUrl || null);
+  }, [currentImageUrl]);
 
   const aspectClass =
     aspectRatio === "square"

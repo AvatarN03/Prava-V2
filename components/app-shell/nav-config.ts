@@ -1,8 +1,8 @@
 import {
-  BookOpen,
   Compass,
   CreditCard,
   LayoutDashboard,
+  LayoutTemplate,
   LucideIcon,
   ShieldAlert,
   Sparkles,
@@ -43,9 +43,9 @@ export const otherNavItems: NavItem[] = [
     badge: "Active",
   },
   {
-    title: "Stories",
-    href: "/stories",
-    icon: BookOpen,
+    title: "Templates",
+    href: "/templates",
+    icon: LayoutTemplate,
   },
 ];
 

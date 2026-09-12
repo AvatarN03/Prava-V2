@@ -44,16 +44,16 @@ export function LandingFooter() {
             How it Works
           </a>
           <Link
-            href="/stories"
-            className="hover:text-[#2D9BF0] dark:hover:text-sky-400 transition-colors cursor-pointer"
-          >
-            Stories
-          </Link>
-          <Link
             href="/community"
             className="hover:text-[#2D9BF0] dark:hover:text-sky-400 transition-colors cursor-pointer"
           >
             Community
+          </Link>
+          <Link
+            href="/templates"
+            className="hover:text-[#2D9BF0] dark:hover:text-sky-400 transition-colors cursor-pointer"
+          >
+            Templates
           </Link>
           <Link
             href="/pricing"

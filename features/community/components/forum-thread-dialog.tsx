@@ -1,65 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import {
-  MessageSquare,
-  ThumbsUp,
-  Share2,
-  Globe,
-  MapPin,
-  Sparkles,
-  Copy,
-  Send,
-  CheckCircle2,
   Calendar,
-  Layers,
+  CheckCircle2,
+  Compass,
+  Copy,
+  Globe,
+  Loader2,
+  MapPin,
+  MessageSquare,
+  Send,
+  Share2,
+  Sparkles,
+  ThumbsUp,
 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { ForumPost, ForumReply } from "../forum-types";
-import { cloneTripTemplate } from "../actions";
+
+import { cloneTripTemplate } from "@/features/community/actions";
+import {
+  getForumThread,
+  postForumReply,
+  toggleForumPostUpvote,
+} from "@/features/community/forum-actions";
+import { ForumPost, ForumReply } from "@/features/community/forum-types";
 
 interface ForumThreadDialogProps {
   post: ForumPost | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPostUpdate?: (updatedPost: ForumPost) => void;
+  onThreadUpdated?: () => void;
 }
 
 export function ForumThreadDialog({
   post,
   open,
   onOpenChange,
-  onPostUpdate,
+  onThreadUpdated,
 }: ForumThreadDialogProps) {
-  const [upvotes, setUpvotes] = useState(post?.upvotes || 0);
-  const [hasUpvoted, setHasUpvoted] = useState(false);
+  const router = useRouter();
+  const [thread, setThread] = useState<ForumPost | null>(post);
   const [replies, setReplies] = useState<ForumReply[]>(post?.replies || []);
+  const [upvotes, setUpvotes] = useState(post?.upvotes || 0);
+  const [hasUpvoted, setHasUpvoted] = useState(Boolean(post?.hasUpvoted));
   const [newReplyText, setNewReplyText] = useState("");
+  const [isSubmittingReply, startSubmitReply] = useTransition();
   const [isCloningTrip, setIsCloningTrip] = useState(false);
 
-  if (!post) return null;
+  // Sync state when post changes or dialog opens
+  useEffect(() => {
+    if (post && open) {
+      setThread(post);
+      setUpvotes(post.upvotes);
+      setHasUpvoted(Boolean(post.hasUpvoted));
+      setReplies(post.replies || []);
 
-  const handleUpvote = () => {
-    if (hasUpvoted) {
-      setUpvotes((prev) => prev - 1);
-      setHasUpvoted(false);
+      // Fetch fresh thread with latest replies
+      getForumThread(post.id).then((fresh) => {
+        if (fresh) {
+          setThread(fresh);
+          setUpvotes(fresh.upvotes);
+          setHasUpvoted(Boolean(fresh.hasUpvoted));
+          setReplies(fresh.replies || []);
+        }
+      });
+    }
+  }, [post, open]);
+
+  if (!thread) return null;
+
+  const handleUpvote = async () => {
+    const prevUpvoted = hasUpvoted;
+    const prevCount = upvotes;
+
+    // Optimistic UI update
+    setUpvotes(prevUpvoted ? Math.max(0, prevCount - 1) : prevCount + 1);
+    setHasUpvoted(!prevUpvoted);
+
+    const res = await toggleForumPostUpvote(thread.id);
+    if (!res.success) {
+      // Rollback
+      setUpvotes(prevCount);
+      setHasUpvoted(prevUpvoted);
+      toast.error(res.error || "Failed to update upvote. Please sign in.");
     } else {
-      setUpvotes((prev) => prev + 1);
-      setHasUpvoted(true);
-      toast.success("Upvoted discussion!");
+      if (onThreadUpdated) onThreadUpdated();
     }
   };
 
@@ -67,237 +108,283 @@ export function ForumThreadDialog({
     e.preventDefault();
     if (!newReplyText.trim()) return;
 
-    const newReply: ForumReply = {
-      id: `reply-${Date.now()}`,
-      authorName: "You (Traveler)",
-      content: newReplyText.trim(),
-      createdAt: "Just now",
-      upvotes: 1,
-    };
-
-    const updated = [...replies, newReply];
-    setReplies(updated);
-    setNewReplyText("");
-    toast.success("Reply posted to community thread!");
-
-    if (onPostUpdate) {
-      onPostUpdate({
-        ...post,
-        upvotes: hasUpvoted ? upvotes : upvotes,
-        repliesCount: updated.length,
-        replies: updated,
-      });
-    }
+    startSubmitReply(async () => {
+      const res = await postForumReply(thread.id, newReplyText.trim());
+      if (res.success) {
+        toast.success("Reply added to discussion!");
+        setNewReplyText("");
+        // Reload replies
+        const fresh = await getForumThread(thread.id);
+        if (fresh) {
+          setReplies(fresh.replies || []);
+        }
+        if (onThreadUpdated) onThreadUpdated();
+      } else {
+        toast.error(res.error || "Failed to post reply. Please sign in.");
+      }
+    });
   };
 
   const handleCloneLinkedTrip = async () => {
-    if (!post.linkedTrip) return;
+    if (!thread.linkedTrip) return;
     setIsCloningTrip(true);
     try {
-      const res = await cloneTripTemplate(post.linkedTrip.id);
+      const res = await cloneTripTemplate(thread.linkedTrip.id);
       if (res.success && res.tripId) {
-        toast.success(`Cloned "${post.linkedTrip.title}" to your workspace!`);
+        toast.success(`Cloned "${thread.linkedTrip.title}" to your workspace!`);
+        router.push(`/trips/${res.tripId}/overview`);
       } else {
-        toast.error(res.error || "Failed to clone trip. Please sign in.");
+        toast.error(res.error || "Failed to clone attached trip.");
       }
     } catch {
-      toast.error("Failed to clone trip.");
+      toast.error("An error occurred while cloning.");
     } finally {
       setIsCloningTrip(false);
     }
   };
 
+  const getAuthorInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border-slate-200 shadow-xl">
-        {/* Thread Header */}
-        <div className="p-6 pb-4 bg-gradient-to-b from-sky-50/50 via-white to-white space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="bg-sky-100 text-sky-800 border-sky-200 text-xs font-semibold">
-              {post.categoryLabel}
-            </Badge>
-            {post.destination && (
-              <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
-                <MapPin className="h-3.5 w-3.5 text-[#2D9BF0]" />
-                {post.destination}
-              </span>
-            )}
-            <span className="text-xs text-slate-400 ml-auto">{post.createdAt}</span>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl border-border bg-card text-card-foreground shadow-2xl">
+        <DialogHeader className="space-y-3 pb-2 border-b border-border">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs font-semibold">
+                {thread.categoryLabel}
+              </Badge>
+              {thread.destination && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3 text-primary" />
+                  {thread.destination}
+                </span>
+              )}
+            </div>
+
+            <span className="text-[11px] text-muted-foreground">{thread.createdAt}</span>
           </div>
 
-          <DialogTitle className="text-xl font-bold text-slate-900 leading-snug">
-            {post.title}
+          <DialogTitle className="text-xl font-bold tracking-tight text-foreground leading-snug">
+            {thread.title}
           </DialogTitle>
 
-          {/* Author info row */}
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 border border-sky-200 shadow-2xs">
-                {post.authorAvatarUrl && (
-                  <AvatarImage src={post.authorAvatarUrl} alt={post.authorName} />
-                )}
-                <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-xs">
-                  {post.authorName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+          {/* Author Attribution */}
+          <div className="flex items-center gap-3 pt-1">
+            <Avatar className="h-9 w-9 border border-border">
+              {thread.authorAvatarUrl && (
+                <AvatarImage src={thread.authorAvatarUrl} alt={thread.authorName} />
+              )}
+              <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                {getAuthorInitials(thread.authorName)}
+              </AvatarFallback>
+            </Avatar>
 
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-slate-900">{post.authorName}</span>
-                  {post.isCreatorPublic && (
-                    <span className="flex items-center gap-0.5 rounded-full bg-sky-100 px-2 py-0.2 text-[10px] font-bold text-sky-800">
-                      <Globe className="h-2.5 w-2.5" />
-                      Creator
-                    </span>
-                  )}
-                </div>
-                {post.authorUsername && (
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-foreground">
+                  {thread.authorName}
+                </span>
+                {thread.authorUsername && (
                   <Link
-                    href={`/u/${post.authorUsername}`}
-                    className="text-xs text-[#2D9BF0] hover:underline"
+                    href={`/u/${thread.authorUsername}`}
+                    className="text-xs text-primary hover:underline"
                   >
-                    @{post.authorUsername}
+                    @{thread.authorUsername}
                   </Link>
                 )}
+                {thread.isCreatorPublic && (
+                  <Badge variant="outline" className="text-[10px] py-0 px-1 text-muted-foreground">
+                    Creator
+                  </Badge>
+                )}
               </div>
-            </div>
-
-            {/* Upvote & Share Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant={hasUpvoted ? "default" : "outline"}
-                size="sm"
-                className={`gap-1.5 rounded-xl text-xs h-9 px-3.5 cursor-pointer ${
-                  hasUpvoted
-                    ? "bg-[#2D9BF0] hover:bg-[#1A82D2] text-white shadow-sm shadow-[#2D9BF0]/30"
-                    : "border-slate-200 hover:bg-sky-50 text-slate-700"
-                }`}
-                onClick={handleUpvote}
-              >
-                <ThumbsUp className="h-3.5 w-3.5" />
-                <span>{upvotes} Upvotes</span>
-              </Button>
+              {thread.authorBio && (
+                <p className="text-[11px] text-muted-foreground line-clamp-1">
+                  {thread.authorBio}
+                </p>
+              )}
             </div>
           </div>
-        </div>
+        </DialogHeader>
 
-        <Separator className="bg-slate-100" />
-
-        {/* Thread Body */}
-        <div className="p-6 space-y-6">
-          {/* Post Content */}
-          <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-            {post.content}
+        {/* Post Main Body */}
+        <div className="space-y-4 py-3">
+          <div className="text-xs sm:text-sm text-foreground leading-relaxed whitespace-pre-line">
+            {thread.content}
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 pt-2">
-            {post.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-medium"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-
-          {/* Linked Itinerary Attachment Card */}
-          {post.linkedTrip && (
-            <div className="rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50/70 via-white to-sky-50/40 p-4 space-y-3 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-sky-950">
-                  <Sparkles className="h-4 w-4 text-[#2D9BF0]" />
-                  <span>Attached Trip Workspace Itinerary</span>
-                </div>
-                <Badge variant="secondary" className="bg-sky-100 text-sky-800 border-sky-200 text-[10px]">
-                  {post.linkedTrip.durationDays} Days
+          {thread.tags && thread.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {thread.tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="text-[10px] font-normal border-border bg-muted/40 text-muted-foreground"
+                >
+                  #{tag}
                 </Badge>
-              </div>
+              ))}
+            </div>
+          )}
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">{post.linkedTrip.title}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 text-[#2D9BF0]" />
-                    {post.linkedTrip.destination} • {post.linkedTrip.activityCount} planned activities
-                  </p>
-                </div>
-
+          {/* Attached Workspace Trip */}
+          {thread.linkedTrip && (
+            <div className="mt-4 rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                  <Compass className="h-4 w-4" />
+                  Attached Workspace Trip
+                </span>
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-[#2D9BF0] to-[#1279CE] hover:from-[#1D8BE0] hover:to-[#0D6AB9] text-white text-xs font-semibold h-9 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer shrink-0"
+                  variant="outline"
                   onClick={handleCloneLinkedTrip}
                   disabled={isCloningTrip}
+                  className="h-7 text-xs gap-1.5 border-border hover:bg-muted"
                 >
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>Clone to Workspace</span>
+                  {isCloningTrip ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                  Clone Trip
                 </Button>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-foreground">
+                  {thread.linkedTrip.title}
+                </h4>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {thread.linkedTrip.destination}
+                  </span>
+                  <span>•</span>
+                  <span>{thread.linkedTrip.durationDays} Days</span>
+                </div>
               </div>
             </div>
           )}
 
-          <Separator className="bg-slate-100" />
+          {/* Upvote & Action Bar */}
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={hasUpvoted ? "default" : "outline"}
+                size="sm"
+                onClick={handleUpvote}
+                className={`h-8 text-xs gap-1.5 cursor-pointer ${
+                  hasUpvoted ? "bg-primary text-primary-foreground" : "border-border text-foreground"
+                }`}
+              >
+                <ThumbsUp className={`h-3.5 w-3.5 ${hasUpvoted ? "fill-current" : ""}`} />
+                <span>{upvotes}</span>
+                <span className="hidden sm:inline">Upvotes</span>
+              </Button>
 
-          {/* Replies Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-[#2D9BF0]" />
-              <span>Community Replies ({replies.length})</span>
-            </h3>
+              <span className="text-xs text-muted-foreground ml-2">
+                {thread.views} views
+              </span>
+            </div>
 
-            {/* Replies List */}
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>{replies.length} replies</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Replies Section */}
+        <div className="space-y-4 pt-2 border-t border-border">
+          <h3 className="text-sm font-bold text-foreground">
+            Replies & Advice ({replies.length})
+          </h3>
+
+          {replies.length === 0 ? (
+            <div className="text-center py-6 border border-dashed border-border rounded-xl bg-muted/20 space-y-1">
+              <p className="text-xs font-medium text-foreground">No replies yet</p>
+              <p className="text-[11px] text-muted-foreground">
+                Be the first to offer route advice or answers!
+              </p>
+            </div>
+          ) : (
             <div className="space-y-3">
               {replies.map((reply) => (
                 <div
                   key={reply.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-2"
+                  className="rounded-xl border border-border bg-card p-3.5 space-y-2"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7 border border-sky-200">
+                      <Avatar className="h-6 w-6 border border-border">
                         {reply.authorAvatarUrl && (
                           <AvatarImage src={reply.authorAvatarUrl} alt={reply.authorName} />
                         )}
-                        <AvatarFallback className="bg-sky-100 text-sky-800 text-[10px] font-bold">
-                          {reply.authorName.charAt(0)}
+                        <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
+                          {getAuthorInitials(reply.authorName)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs font-bold text-slate-900">{reply.authorName}</span>
-                      {reply.isHelpful && (
-                        <span className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.2 text-[10px] font-bold text-emerald-700">
-                          <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Top Tip
-                        </span>
+                      <span className="text-xs font-semibold text-foreground">
+                        {reply.authorName}
+                      </span>
+                      {reply.authorUsername && (
+                        <Link
+                          href={`/u/${reply.authorUsername}`}
+                          className="text-[11px] text-primary hover:underline"
+                        >
+                          @{reply.authorUsername}
+                        </Link>
                       )}
                     </div>
-                    <span className="text-[10px] text-slate-400">{reply.createdAt}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {reply.createdAt}
+                    </span>
                   </div>
 
-                  <p className="text-xs text-slate-700 leading-relaxed pl-9">{reply.content}</p>
+                  <p className="text-xs text-foreground leading-relaxed whitespace-pre-line pl-8">
+                    {reply.content}
+                  </p>
                 </div>
               ))}
             </div>
+          )}
 
-            {/* Post a Reply Form */}
-            <form onSubmit={handleSendReply} className="space-y-3 pt-3">
-              <Textarea
-                placeholder="Share your travel advice or answer this discussion..."
-                value={newReplyText}
-                onChange={(e) => setNewReplyText(e.target.value)}
-                className="text-xs min-h-[80px] rounded-xl border-slate-200"
-              />
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="bg-gradient-to-r from-[#2D9BF0] to-[#1279CE] hover:from-[#1D8BE0] hover:to-[#0D6AB9] text-white text-xs font-semibold h-9 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer"
-                >
+          {/* New Reply Form */}
+          <form onSubmit={handleSendReply} className="space-y-2 pt-2">
+            <Textarea
+              rows={2}
+              placeholder="Write a helpful response, recommend an alternative route, or share your experience..."
+              value={newReplyText}
+              onChange={(e) => setNewReplyText(e.target.value)}
+              className="text-xs resize-none bg-background border-border"
+              disabled={isSubmittingReply}
+            />
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSubmittingReply || !newReplyText.trim()}
+                className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold shadow-xs"
+              >
+                {isSubmittingReply ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
                   <Send className="h-3.5 w-3.5" />
-                  <span>Post Reply</span>
-                </Button>
-              </div>
-            </form>
-          </div>
+                )}
+                Post Reply
+              </Button>
+            </div>
+          </form>
         </div>
       </DialogContent>
     </Dialog>

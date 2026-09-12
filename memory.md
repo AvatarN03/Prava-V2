@@ -508,9 +508,105 @@
     - Graded code quality, resilience, and architectural cohesion as **A+ (Production-Ready)**.
     - Confirmed zero reliance on Gemini API within Travel Essentials, high-performance in-memory and localStorage cache hierarchies with TTLs, and fault-tolerant fallbacks (Open-Meteo, Frankfurter FX, Overpass OSM, Groq/OpenRouter cascade).
   - **Verification**: Verified with clean Next.js 16 production build (`npm run build`, exit code 0, 0 TypeScript errors).
+- **Task 63 (Explore Section: Community & Templates Naming Convention & Routing Swap)**:
+  - **Realigned Explore Section Naming Conventions**:
+    - Replaced the former "Stories" section with **Community** (`/community`, `Users` icon) to represent the user social forum / feed for trip details, discussions, and travel posts.
+    - Replaced the previous "Community" feature (which only showed trip templates) with **Templates** (`/templates`, `LayoutTemplate` icon).
+  - **App Shell & Navigation Updates**:
+    - Updated `components/app-shell/nav-config.ts`: `otherNavItems` now cleanly exposes `Community` (`/community`) and `Templates` (`/templates`).
+    - Updated `components/app-shell/top-bar.tsx`: `getPageTitle()` accurately renders "Community" for `/community` and "Templates" for `/templates`.
+    - Updated `components/app-shell/nav-Items.tsx`, `features/landing/components/landing-header.tsx`, and `landing-footer.tsx`: Aligned all navigation links from "Stories" and "Community Hub" to "Community" and "Templates".
+  - **Routing & Templates Foundation**:
+    - Created `features/community/components/templates-view.tsx`: Built dedicated templates exploration view with search, region and travel style filters, trip preview modal, and 1-click cloning.
+    - Created `app/(app)/templates/page.tsx`: Connected server-rendered trip templates route to `getCommunityTrips()`.
+    - Updated `lib/supabase/middleware.ts`: Added `/templates` to protected application paths.
+  - **Verification**: Verified TypeScript compilation with `tsc --noEmit` (exit code 0, 0 errors).
+
+- **Task 64 (Community Forum: Real PostgreSQL Data, shadcn/ui Redesign & Theme Responsiveness)**:
+  - **100% Real PostgreSQL Data (Demo Data Pruned)**:
+    - Completely removed fake mock posts (`SEED_FORUM_POSTS` in `forum-data.ts`).
+    - Initialized live PostgreSQL tables (`community_posts`, `community_replies`, `community_post_upvotes`) with foreign keys to `profiles` and `trips`.
+    - Created `features/community/forum-actions.ts`: Typed Server Actions for querying discussions with author profiles & attached trips, viewing complete threads with real replies, creating discussions, posting replies, toggling upvotes, and loading real user workspace trips.
+  - **shadcn/ui & Theme-Responsive Redesign**:
+    - Refactored `features/community/components/community-forum-view.tsx`: Uses `Card`, `Badge`, `Avatar`, `Button`, `Input`, `Separator` with semantic Tailwind tokens (`bg-card`, `text-card-foreground`, `border-border`, `bg-muted`) that adapt to both Light and Dark modes.
+    - Refactored `features/community/components/new-discussion-dialog.tsx`: Theme-responsive modal allowing travelers to start discussions, pick categories, add tags, and attach actual workspace trips.
+    - Refactored `features/community/components/forum-thread-dialog.tsx`: Modal to view full thread, author attribution, inspect attached trips, toggle upvotes, and post real replies.
+    - Updated `app/(app)/community/page.tsx`: Server component fetching live discussions and user trips in parallel.
+  - **Codebase Pruning**:
+    - Deleted unreferenced `community-view.tsx` to maintain a clean codebase.
+  - **Verification**: Verified TypeScript compilation with `tsc --noEmit` (exit code 0, zero compilation errors).
+
+- **Task 65 (Community Forum Enhancements: 2–3 Column Grid, Dedicated Slug Routes, Post/Reply Editing & Workspace Note Bridge)**:
+  - **Schema & Database Enhancements**:
+    - Added `slug`, `images`, and `is_edited` columns to `community_posts`.
+    - Added `is_edited` to `community_replies`.
+    - Created `community_saved_posts` table for traveler discussion bookmarks.
+  - **2–3 Column Responsive Grid Layout**:
+    - Updated `features/community/components/community-forum-view.tsx` with a responsive grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5`).
+    - Added image visual thumbnails, bookmark toggles, category badge, and direct "View Thread" links.
+  - **Dedicated Discussion Route (`/community/[slug]`)**:
+    - Created `app/(app)/community/[slug]/page.tsx` and `features/community/components/forum-thread-view.tsx`.
+    - Full-page thread view with back button, image gallery, tags, author bio, attached trip card with 1-click clone, bookmarking, and live replies stream.
+  - **Editing Posts & Replies**:
+    - Built `EditDiscussionDialog` allowing post authors to update their discussion, categories, destination, tags, and attached trips.
+    - Added inline reply editing and deletion for comment authors.
+  - **The Workspace Bridge ("Save Tip to Trip")**:
+    - Built `SaveTipDialog` and `saveForumTipToTripNote` action allowing travelers to click "Save to Trip" on any post or comment to inject the advice directly into their Trip Workspace's **Notes** tab with author attribution.
+- **Task 66 (Community Forum: Auto-Refresh on Create & Slug 404 Thread Bug Fix)**:
+  - **Auto-Refresh on Creation Fix**:
+    - `NewDiscussionDialog`: Added `router.refresh()` upon successful creation so Next.js server components revalidate and push updated initial posts down to the view.
+    - `CommunityForumView`: Added `useEffect(() => setPosts(initialPosts), [initialPosts])` to keep local state synced with server revalidations.
+    - `refreshPosts()`: Updated to fetch fresh discussions and automatically reset category filtering to `"ALL"` and clear search input, ensuring newly created posts appear immediately at the top of the grid without requiring a manual browser reload.
+  - **404 Thread Bug Fix**:
+    - Diagnosed root cause in `features/community/forum-actions.ts`: `getForumPostBySlug` was executing `UPDATE community_posts SET views = views + 1 WHERE cp.slug = $1`. PostgreSQL threw `ERROR: missing FROM-clause entry for table "cp"` because the table update had no alias `cp`. This caught an error and returned `null`, triggering `notFound()` (404).
+    - Fixed view count update query to use direct column identifiers (`id = $1 OR slug = $1`) wrapped in a non-fatal `try...catch`.
+    - Added `decodeURIComponent(slug)` in `app/(app)/community/[slug]/page.tsx` and `getForumPostBySlug`.
+    - Changed `JOIN profiles p` to `LEFT JOIN profiles p` in `getForumPostBySlug`, `getForumDiscussions`, and `community_replies` to prevent missing-profile edge cases from blocking discussion threads.
+    - Cleaned `baseSlug` in `createForumDiscussion` to strip trailing hyphens before attaching `shortId`, preventing double hyphens (`--`).
+- **Task 67 (Community Forum: Real Supabase Storage Image Upload & Linear 2-Column Thread Redesign)**:
+  - **Supabase Storage Image Upload Integration**:
+    - Added `"community"` to the allowed storage folder union in `lib/storage/supabase-storage.ts`, `features/storage/actions.ts`, and `components/storage/image-upload.tsx`.
+    - Images are uploaded under `community/${userId}/${filename}` inside the `prava-media` Supabase bucket.
+    - Replaced raw URL text inputs in `NewDiscussionDialog` and `EditDiscussionDialog` with the interactive `ImageUpload` component enforcing a strict 1-image limit with drag-and-drop, real-time preview, upload progress, and removal.
+  - **Linear / Notion 2-Column Asymmetrical Thread Redesign**:
+    - Eliminated bulky "AI slop" and oversized rounded cards in `features/community/components/forum-thread-view.tsx`.
+    - Implemented desktop asymmetrical split grid (`grid-cols-1 lg:grid-cols-12 gap-6`):
+      - **Left (7/12 cols)**: Main post, streamlined author attribution, readable typography, single high-res visual frame, compact attached trip banner with 1-click clone, and tags.
+      - **Right (5/12 cols, Sticky)**: Quick reply composer with markdown support, advice stream with clean comment cards, author badges, and workspace tip save bridge.
+- **Task 68 (Community Forum: Descending Comments, Single Parent Card, 3-Dot Save Tip & UI Refinements)**:
+  - **Descending Comment Order**:
+    - Updated `getForumPostBySlug` in `features/community/forum-actions.ts` to `ORDER BY cr.created_at DESC`, displaying the latest comments and advice at the top of the stream.
+  - **Single Parent Card for Comments**:
+    - Replaced individual nested reply cards with a single parent card (`<Card className="rounded-md border border-border bg-card shadow-2xs overflow-hidden">`) featuring clean horizontal divider lines (`divide-y divide-border/60`).
+  - **3-Dot Menu Options on Every Comment**:
+    - Moved the **"Save Tip to Trip"** action into the 3-dot dropdown menu of every comment (accessible to all travelers), while retaining author "Edit Reply" and "Delete Reply" options.
+  - **Storage Image Upload Resilience**:
+    - Added `"image/jpg"` to `ALLOWED_IMAGE_TYPES` and `extMap` in `lib/storage/supabase-storage.ts`.
+    - Supported `SUPABASE_SERVICE_ROLE_KEY` fallback in `getStorageClient()`.
+    - Added normalized MIME-type and extension fallback check in `uploadImageAction` (`features/storage/actions.ts`).
+    - Added `useEffect` in `components/storage/image-upload.tsx` to keep preview reactively synced with `currentImageUrl`.
+  - **Reduced Rounding (Anti-AI Slop Standards)**:
+    - Reduced all card and modal border radiuses from `rounded-2xl` / `rounded-xl` to crisp `rounded-md` and `rounded-sm` across `ForumThreadView`, `CommunityForumView`, `NewDiscussionDialog`, `EditDiscussionDialog`, and `SaveTipDialog`, aligning strictly with Notion/Linear/GitHub design standards.
+- **Task 69 (Community Forum: Live Polling, Bookmarks Quick Filter & Visual Polish)**:
+  - **Category Cover Image Fallback**:
+    - Every community discussion card now features curated visual imagery using `DEFAULT_CATEGORY_IMAGES[post.category] || DEFAULT_CATEGORY_IMAGES.ALL` whenever the author has not uploaded a custom photo.
+  - **Realigned "View Thread" CTA**:
+    - Realigned "View Thread" and the arrow icon together at the bottom right corner (`justify-end gap-1.5`) with hover translation animation, eliminating the wide gap across the card footer.
+  - **1-Click Bookmarked Filter & Count Badge**:
+    - Added an instant "Bookmarked" toggle filter in the category strip with an active count badge, allowing travelers to immediately isolate all saved threads.
+    - Added custom empty state for zero saved bookmarks directing users to click the bookmark icon.
+  - **Background Live Polling on Discussion Threads**:
+    - Integrated a 30-second silent background polling cycle in `ForumThreadView` that re-syncs upvotes and replies when the tab is active (`document.visibilityState === "visible"`).
+    - Automatically pauses when the user is actively typing or editing a comment to prevent disruption.
+  - **Verification**: Verified with `tsc --noEmit` (exit code 0, 0 compilation errors).
 
 ## Next Steps
-- Implement Emergency Contacts Hub (`features/travel-essentials/emergency/`) with Indian emergency numbers (112, 100, 108) and embassy contact directory.
+- Continue updating Explore pages one-by-one as requested:
+  1. Templates Page (`/templates`): Refine features, card visuals, preview modal, and 1-click cloning.
+  2. Stories / Blog (`/stories`): Refine the independent stories feed, creator showcase, and markdown editor.
+
+
+
 
 
 

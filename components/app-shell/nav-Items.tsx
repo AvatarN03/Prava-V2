@@ -15,13 +15,13 @@ const navItems = [
         type: "anchor",
     },
     {
-        label: "Travel Stories",
-        href: "/stories",
+        label: "Community",
+        href: "/community",
         type: "link",
     },
     {
-        label: "Community Hub",
-        href: "/community",
+        label: "Templates",
+        href: "/templates",
         type: "link",
     },
     {
