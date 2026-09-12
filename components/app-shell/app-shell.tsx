@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
 
       {/* Right Content Canvas with Left-Side Rounded Corners Only (Pure flex-1 sibling, no margin overflow) */}
-      <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden md:py-2 md:pr-0">
+      <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden md:py-1.5 md:pr-0">
         <div className="flex-1 h-full flex flex-col min-h-0 rounded-none md:rounded-tl-[20px] md:rounded-bl-[20px] bg-slate-50 text-slate-900 dark:bg-[#0A0F1D] dark:text-slate-100 shadow-2xl overflow-hidden md:border-l-8 border-blue-500 dark:border-blue-300/60 transition-colors">
           <TopBar onMobileMenuOpen={() => setMobileOpen(true)} />
           <main className="flex-1 min-h-0 overflow-y-auto w-full p-4 sm:p-6 lg:p-8 thin-scrollbar">
