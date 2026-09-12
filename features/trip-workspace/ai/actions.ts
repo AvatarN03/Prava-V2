@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
-import { getGeminiClient, GEMINI_MODEL } from "@/lib/ai/gemini-client";
 import { buildTripContext } from "@/services/ai/context-builder";
 import {
   aiProposalPayloadSchema,
@@ -11,12 +10,16 @@ import {
   AiProposalDTO,
 } from "./schema";
 
+import { runTripAgentGraph } from "@/services/ai/trip-agent-graph";
+
 export interface MessageDTO {
   id: string;
   role: "user" | "model" | "system";
   content: string;
   createdAt: string;
   proposal?: AiProposalDTO | null;
+  modelUsed?: string;
+  toolBadge?: string | null;
 }
 
 /**
@@ -360,75 +363,39 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
       },
     });
 
-    // Check Gemini API key
-    const gemini = getGeminiClient();
-    if (!gemini) {
-      const fallbackMsg = await db.aiMessage.create({
-        data: {
-          conversationId: conversation.id,
-          role: "model",
-          content:
-            "⚠️ **Gemini API Key Required**\n\nPlease add `GEMINI_API_KEY` to your environment variables (`.env`) to enable real-time AI itinerary suggestions, structured proposal actions, and local recommendations.",
-        },
-      });
-
-      return {
-        success: true,
-        userMessage: {
-          id: userMsg.id,
-          role: "user" as const,
-          content: userMsg.content,
-          createdAt: userMsg.createdAt.toISOString(),
-        },
-        assistantMessage: {
-          id: fallbackMsg.id,
-          role: "model" as const,
-          content: fallbackMsg.content,
-          createdAt: fallbackMsg.createdAt.toISOString(),
-          proposal: null,
-        },
-      };
-    }
-
-    // Build chat contents
-    const contents = [
-      ...conversation.messages.map((m) => ({
-        role: m.role === "user" ? "user" : "model",
-        parts: [{ text: m.content }],
-      })),
-      {
-        role: "user",
-        parts: [{ text: trimmedPrompt }],
-      },
-    ];
-
-    const response = await gemini.models.generateContent({
-      model: GEMINI_MODEL,
-      contents,
-      config: {
-        systemInstruction: contextResult.systemInstruction,
-        temperature: 0.5,
-        maxOutputTokens: 2000,
-      },
+    // Lookup user's currency preference (default to INR for seamless Indian & global traveler support)
+    const profile = await db.profile.findUnique({
+      where: { id: user.id },
+      select: { defaultCurrency: true },
     });
+    const userCurrency = profile?.defaultCurrency || "INR";
 
-    const rawResponseText =
-      response.text ||
-      "I was unable to generate a response. Please check your query or try again.";
+    // Build chat history for graph
+    const history = conversation.messages.map((m) => ({
+      role: m.role as "user" | "model" | "system",
+      content: m.content,
+    }));
 
-    // Extract proposal if present
-    const { cleanedText, payload } = extractProposal(rawResponseText);
+    // Execute Trip Agent Graph: Tools (Weather/Currency) -> OpenRouter Free Cascade -> Gemini 2.0 Flash Lite
+    const agentResult = await runTripAgentGraph({
+      tripId,
+      userId: user.id,
+      prompt: trimmedPrompt,
+      history,
+      userCurrency,
+    });
 
     // Persist assistant message
     const assistantMsg = await db.aiMessage.create({
       data: {
         conversationId: conversation.id,
         role: "model",
-        content: cleanedText,
+        content: agentResult.responseText,
       },
     });
 
     let savedProposalDTO: AiProposalDTO | null = null;
+    const payload = agentResult.proposalPayload;
 
     if (payload && payload.changes.length > 0) {
       const savedProposal = await db.aiProposal.create({
@@ -471,6 +438,8 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
         content: assistantMsg.content,
         createdAt: assistantMsg.createdAt.toISOString(),
         proposal: savedProposalDTO,
+        modelUsed: agentResult.modelUsed,
+        toolBadge: agentResult.toolBadge,
       },
     };
   } catch (error) {

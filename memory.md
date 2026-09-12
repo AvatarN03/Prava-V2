@@ -761,8 +761,36 @@
     - Re-architected `app/(app)/dashboard/page.tsx` with dynamic time-aware greetings, journey countdown summaries, and 2-column balanced productivity grid.
   - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 29 routes).
 
+- **Task 79 (Workspace AI: Agentic State Graph, OpenRouter Free 3-Model Cascade, Travel Essentials Tool Calling & UI Optimization)**:
+  - **Context & Optimization Goals**:
+    - User reported conversation latency and excessive token/rate-limiting consumption on Gemini free tier.
+    - Requirement to eliminate redundant conversation re-fetch queries, add live travel essential tool execution (weather, currency FX with Indian Rupee/local default support), use free models for conversational reasoning/chat, and fallback to Gemini 2.0 Flash Lite (500–1,500 RPD) for proposal generation (`json:proposal`) and unconfigured environments.
+  - **Live Free Tier Catalog Inspection & Verified Models**:
+    - Queried `https://openrouter.ai/api/v1/models` and verified current active free models after confirming DeepSeek and Llama 3.3 were removed from the free tier.
+    - Active 3-model free cascade:
+      1. `google/gemma-4-31b-it:free` (Google Gemma 4, 262k context, fast multilingual reasoning)
+      2. `nvidia/nemotron-3.5-lightning:free` (NVIDIA Nemotron 3.5, 1M context, instruction following)
+      3. `openrouter/free` (Dynamic free load balancer)
+      - Fallback: `gemini-2.0-flash-lite` (Google AI Studio 500–1,500 RPD free tier).
+  - **Agentic State Graph Architecture**:
+    - Built `lib/ai/openrouter-client.ts`: Sequential failover across the 3 active free models with strict 12-second abort timeout and JSON parsing.
+    - Built `services/ai/travel-tools-dispatcher.ts`: Direct dispatching of live Open-Meteo/OpenWeather (`fetchWeather`) and European Central Bank FX rates (`fetchFxRates`), returning structured `ToolExecutionResult`.
+    - Built `services/ai/trip-agent-graph.ts` (`runTripAgentGraph`): Orchestrates travel intent detection, live tool execution, OpenRouter free cascade for conversational and planning interactions, and Gemini 2.0 Flash Lite for structured workspace mutations and proposals.
+  - **Action & UI Polish**:
+    - Refactored `sendTripMessage` in `features/trip-workspace/ai/actions.ts` to delegate directly to `runTripAgentGraph` with user currency preference lookup (defaulting to INR).
+    - Updated `MessageDTO` to include `modelUsed` and `toolBadge`.
+    - Enhanced `WorkspaceAiPanel` (`features/trip-workspace/ai/components/workspace-ai-panel.tsx`):
+      - Added "Free Cascade" pulse indicator in top bar.
+      - Rendered live `toolBadge` with weather (`CloudSun`) and FX conversion (`Coins`) indicators.
+      - Rendered model attribution badge (`Cpu`, `formatModelName`).
+  - **Header & Message Bubble Polish**:
+    - Reordered `OPENROUTER_FREE_MODELS` in `lib/ai/openrouter-client.ts` to `nvidia/nemotron-3.5-lightning:free` → `openrouter/free` → `google/gemma-4-31b-it:free`, enabling instant responses without requiring a Google account connection on OpenRouter.
+    - Updated `services/ai/trip-agent-graph.ts` prompt and added sanitization in `extractProposalBlock` to completely prevent models from outputting raw JSON code blocks or developer citations.
+    - Enhanced `WorkspaceAiPanel` message bubbles with `FormattedMessageContent` featuring real semantic HTML (`<strong>`, `<em>`, `<ul><li>`), stripping raw asterisks/dashes and enforcing `break-words [overflow-wrap:anywhere] overflow-hidden` to eliminate horizontal text clipping.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 29 routes).
+
 ## Next Steps
-- Continue iterating on user feedback or proceed to next feature module.
+- Continue testing AI Assistant interactions and iterate based on user feedback.
 
 
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import Link from "next/link";
+
 import {
   Sparkles,
   Send,
@@ -15,11 +15,15 @@ import {
   History,
   Plus,
   MessageSquare,
-  Zap,
-  ArrowRight,
+  CloudSun,
+  Coins,
+  Cpu,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { AiProposalCard } from "./ai-proposal-card";
+import { UpgradeDialog } from "@/features/pricing/components/upgrade-dialog";
+
 import {
   getTripConversation,
   getTripConversationThreads,
@@ -30,9 +34,134 @@ import {
   MessageDTO,
   ConversationThreadDTO,
 } from "../actions";
-import { AiProposalCard } from "./ai-proposal-card";
+
 import { AiProposalDTO } from "../schema";
-import { UpgradeDialog } from "@/features/pricing/components/upgrade-dialog";
+
+function formatModelName(model?: string): string | null {
+  if (!model) return null;
+  if (model.includes("gemma-4")) return "Gemma 4 31B (Free)";
+  if (model.includes("nemotron")) return "Nemotron 3.5 (Free)";
+  if (model.includes("openrouter/free")) return "OpenRouter Free";
+  if (model.includes("gemini-2.0-flash-lite")) return "Gemini 2.0 Flash Lite";
+  if (model.includes("gemini")) return "Gemini Flash";
+  return model.split("/").pop() || model;
+}
+
+function renderInlineSpans(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+    const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
+
+    let earliestIdx = Infinity;
+    let type: "bold" | "italic" | null = null;
+    let match: RegExpMatchArray | null = null;
+
+    if (boldMatch && boldMatch.index !== undefined && boldMatch.index < earliestIdx) {
+      earliestIdx = boldMatch.index;
+      type = "bold";
+      match = boldMatch;
+    }
+    if (italicMatch && italicMatch.index !== undefined && italicMatch.index < earliestIdx) {
+      earliestIdx = italicMatch.index;
+      type = "italic";
+      match = italicMatch;
+    }
+
+    if (!type || !match || earliestIdx === Infinity) {
+      parts.push(remaining);
+      break;
+    }
+
+    if (earliestIdx > 0) {
+      parts.push(remaining.substring(0, earliestIdx));
+    }
+
+    if (type === "bold") {
+      parts.push(
+        <strong key={`b-${key++}`} className="font-semibold text-foreground">
+          {match[1]}
+        </strong>
+      );
+    } else if (type === "italic") {
+      parts.push(
+        <em key={`i-${key++}`} className="italic text-muted-foreground">
+          {match[1]}
+        </em>
+      );
+    }
+
+    remaining = remaining.substring(earliestIdx + match[0].length);
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
+function FormattedMessageContent({
+  content,
+  isUser,
+}: {
+  content: string;
+  isUser: boolean;
+}) {
+  if (isUser) {
+    return <div className="break-words [overflow-wrap:anywhere]">{content}</div>;
+  }
+
+  // Strip accidental developer JSON code blocks or citations
+  const sanitized = content
+    .replace(/(?:\*{0,2}Live Data Citation:?\*{0,2}\s*)?```(?:json)?\s*\{[\s\S]*?\}\s*```/gi, "")
+    .trim();
+
+  const lines = sanitized.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let currentList: string[] = [];
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      nodes.push(
+        <ul key={`ul-${nodes.length}`} className="my-1.5 space-y-1 pl-4 list-disc list-outside text-foreground/90">
+          {currentList.map((item, i) => (
+            <li key={i} className="leading-relaxed">
+              {renderInlineSpans(item)}
+            </li>
+          ))}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
+
+  lines.forEach((rawLine, idx) => {
+    const line = rawLine.trimEnd();
+    if (!line.trim()) {
+      flushList();
+      return;
+    }
+
+    // List item
+    if (/^[-*+]\s+/.test(line.trim())) {
+      currentList.push(line.trim().replace(/^[-*+]\s+/, ""));
+      return;
+    }
+
+    flushList();
+
+    // Regular line / paragraph
+    nodes.push(
+      <p key={`p-${idx}`} className="leading-relaxed my-0.5 break-words [overflow-wrap:anywhere]">
+        {renderInlineSpans(line)}
+      </p>
+    );
+  });
+
+  flushList();
+
+  return <div className="space-y-1 break-words [overflow-wrap:anywhere] overflow-hidden">{nodes}</div>;
+}
 
 interface WorkspaceAiPanelProps {
   tripId: string;
@@ -158,7 +287,10 @@ export function WorkspaceAiPanel({
         res.userMessage!,
         res.assistantMessage!,
       ]);
-      loadThreadsList();
+      // Avoid repetitive roundtrips: only reload threads list on very first message
+      if (messages.length === 0) {
+        loadThreadsList();
+      }
     } else {
       setError(res.error || "Failed to generate AI response");
       if (res.limitReached) {
@@ -177,10 +309,10 @@ export function WorkspaceAiPanel({
   };
 
   const quickPrompts = [
-    `Summarize my current itinerary and scheduled activities.`,
-    `Add an activity: "Morning Zen Meditation at Ryoan-ji" on Day 1 at 08:00 AM.`,
-    `Suggest 3 must-visit local spots for ${destination || tripTitle} and add them to my plan.`,
-    `What is my total spend and biggest expense category so far?`,
+    `Check live weather forecast for ${destination || tripTitle}`,
+    `Convert 150 USD to INR (live ECB exchange rates)`,
+    `Summarize my current itinerary and scheduled activities`,
+    `Add an activity: "Morning Zen Meditation" on Day 1 at 08:00 AM`,
   ];
 
   if (!isOpen) return null;
@@ -188,30 +320,29 @@ export function WorkspaceAiPanel({
   return (
     <div className="fixed inset-y-0 right-0 z-50 flex w-full sm:w-[480px] flex-col border-l border-border bg-card shadow-2xl animate-in slide-in-from-right duration-200">
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b border-border px-4 bg-background">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary/10 text-primary">
+      <div className="flex h-14 items-center justify-between border-b border-border px-3.5 bg-background gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
             <Sparkles className="h-4 w-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-foreground truncate max-w-[140px]">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs font-bold text-foreground truncate block">
                 {activeConversationTitle || "Workspace AI"}
               </span>
-              <Badge
-                variant="planning"
-                className="text-[10px] py-0 px-1.5 bg-blue-100 text-blue-800 border-blue-200"
-              >
-                Proposals
-              </Badge>
             </div>
-            <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">
-              {messages.length} / 30 messages in chat
-            </p>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground truncate leading-tight">
+              <span className="inline-flex items-center gap-1 text-emerald-600 font-medium shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Free Cascade
+              </span>
+              <span className="text-muted-foreground/40">•</span>
+              <span className="shrink-0">{messages.length}/30 msgs</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {/* History Drawer Toggle Button */}
           <Button
             variant="ghost"
@@ -245,7 +376,7 @@ export function WorkspaceAiPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
               onClick={handleClear}
               disabled={isClearing}
               title="Clear current chat"
@@ -257,8 +388,9 @@ export function WorkspaceAiPanel({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
             onClick={onClose}
+            title="Close Assistant"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -372,13 +504,36 @@ export function WorkspaceAiPanel({
                 )}
 
                 <div
-                  className={`rounded-sm p-3 max-w-[85%] text-xs leading-relaxed space-y-1 ${
+                  className={`rounded-sm p-3 max-w-[85%] text-xs leading-relaxed space-y-1.5 break-words [overflow-wrap:anywhere] overflow-hidden ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground font-medium"
-                      : "bg-muted/40 border border-border text-foreground whitespace-pre-wrap"
+                      : "bg-muted/40 border border-border text-foreground"
                   }`}
                 >
-                  {msg.content}
+                  {/* Live Travel Essential Tool Badge */}
+                  {msg.toolBadge && (
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-100/80 border border-blue-200 text-blue-900 text-[11px] font-medium w-fit mb-1 not-italic">
+                      {msg.toolBadge.toLowerCase().includes("weather") ? (
+                        <CloudSun className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      ) : (
+                        <Coins className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      )}
+                      <span>{msg.toolBadge}</span>
+                    </div>
+                  )}
+
+                  <FormattedMessageContent
+                    content={msg.content}
+                    isUser={msg.role === "user"}
+                  />
+
+                  {/* Model attribution badge */}
+                  {msg.role === "model" && msg.modelUsed && (
+                    <div className="pt-1 flex items-center gap-1 text-[9px] text-muted-foreground/75 font-mono select-none">
+                      <Cpu className="w-2.5 h-2.5" />
+                      <span>{formatModelName(msg.modelUsed)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {msg.role === "user" && (

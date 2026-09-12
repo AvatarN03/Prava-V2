@@ -19,5 +19,5 @@ export function getGeminiClient(): GoogleGenAI | null {
   return genAIClient;
 }
 
-// Configurable model name with fallback to active flash tier
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+// Configurable model name with fallback to high-quota Flash Lite tier (500–1,500 RPD)
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash-lite";
