@@ -112,6 +112,15 @@ const TOUR_VIBE_FALLBACKS: UnsplashImage[] = [
   },
 ];
 
+export function getFallbackCoverImages(page: number = 1): UnsplashImage[] {
+  const startIndex = ((page - 1) * 6) % TOUR_VIBE_FALLBACKS.length;
+  let selected = TOUR_VIBE_FALLBACKS.slice(startIndex, startIndex + 6);
+  if (selected.length < 6) {
+    selected = [...selected, ...TOUR_VIBE_FALLBACKS.slice(0, 6 - selected.length)];
+  }
+  return selected;
+}
+
 const TOUR_VIBE_KEYWORDS = [
   "travel scenic adventure",
   "wanderlust landscape",
@@ -131,20 +140,20 @@ export async function searchTourCoverImages(
   page: number = 1
 ): Promise<{ success: boolean; images: UnsplashImage[]; source: "unsplash" | "fallback" }> {
   const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  const trimmedDest = destination?.trim();
+
+  // If no destination specified, return instant curated fallbacks without consuming Unsplash rate limits
+  if (!trimmedDest) {
+    return { success: true, images: getFallbackCoverImages(page), source: "fallback" };
+  }
 
   // Build query: If destination given, search destination + tour vibe; otherwise pick randomized tour vibe keywords
-  const trimmedDest = destination?.trim();
   const randomVibe = TOUR_VIBE_KEYWORDS[(page - 1 + Math.floor(Math.random() * TOUR_VIBE_KEYWORDS.length)) % TOUR_VIBE_KEYWORDS.length];
-  const searchQuery = trimmedDest ? `${trimmedDest} travel ${randomVibe.split(" ")[0]}` : randomVibe;
+  const searchQuery = `${trimmedDest} travel ${randomVibe.split(" ")[0]}`;
 
   if (!accessKey) {
     // If no key configured, return shuffled fallback slice
-    const startIndex = ((page - 1) * 6) % TOUR_VIBE_FALLBACKS.length;
-    let selected = TOUR_VIBE_FALLBACKS.slice(startIndex, startIndex + 6);
-    if (selected.length < 6) {
-      selected = [...selected, ...TOUR_VIBE_FALLBACKS.slice(0, 6 - selected.length)];
-    }
-    return { success: true, images: selected, source: "fallback" };
+    return { success: true, images: getFallbackCoverImages(page), source: "fallback" };
   }
 
   try {

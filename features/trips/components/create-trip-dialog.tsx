@@ -95,12 +95,12 @@ export function CreateTripDialog({
     }
   }, []);
 
-  // Initial load of tour vibe images once when dialog opens
+  // Initial load of fallback images when dialog opens (zero Unsplash API rate limit consumption)
   useEffect(() => {
     if (isOpen && images.length === 0) {
-      fetchCoverImages(formData.destination, 1);
+      fetchCoverImages("", 1);
     }
-  }, [isOpen, fetchCoverImages, formData.destination, images.length]);
+  }, [isOpen, fetchCoverImages, images.length]);
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -111,7 +111,7 @@ export function CreateTripDialog({
     };
   }, []);
 
-  // Trigger search only when user finishes typing and leaves the destination input (onBlur / Enter)
+  // Trigger search only when user types a destination and leaves input (onBlur / Enter)
   const triggerDestinationSearch = useCallback((dest: string) => {
     const trimmed = dest.trim();
     if (trimmed === lastSearchedDest.current) return;
@@ -122,16 +122,23 @@ export function CreateTripDialog({
       clearTimeout(debounceTimerRef.current);
     }
 
+    // If destination is empty, serve local fallbacks with zero Unsplash API calls
+    if (!trimmed) {
+      fetchCoverImages("", 1);
+      return;
+    }
+
+    // Only query Unsplash API when user has typed a destination
     debounceTimerRef.current = setTimeout(() => {
       fetchCoverImages(trimmed, 1);
-    }, 350);
+    }, 400);
   }, [fetchCoverImages]);
 
   const handleRefreshImages = (e: React.MouseEvent) => {
     e.preventDefault();
     const nextPage = imagePage + 1;
     setImagePage(nextPage);
-    fetchCoverImages(formData.destination, nextPage);
+    fetchCoverImages(lastSearchedDest.current, nextPage);
   };
 
   const resetForm = () => {
