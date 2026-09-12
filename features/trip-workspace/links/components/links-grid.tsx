@@ -37,22 +37,22 @@ export function LinksGrid({ tripId, items }: LinksGridProps) {
 
   if (items.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardHeader className="text-center py-12">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
-            <Link2 className="h-6 w-6 text-primary" />
+      <Card className="border-dashed rounded-md">
+        <CardHeader className="text-center py-14">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
+            <Link2 className="h-6 w-6" />
           </div>
-          <CardTitle className="text-lg">No links saved yet</CardTitle>
-          <CardDescription className="max-w-sm mx-auto">
-            Bookmark travel blogs, hotel listings, Google Maps pins, flight trackers, or ticket confirmation URLs.
+          <CardTitle className="text-lg font-bold">No bookmarks saved yet</CardTitle>
+          <CardDescription className="max-w-md mx-auto text-xs mt-1">
+            Bookmark travel blogs, hotel listings, Google Maps pins, transit trackers, or ticket confirmation URLs.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center pb-12">
+        <CardContent className="flex justify-center pb-14">
           <AddLinkDialog
             tripId={tripId}
             trigger={
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-1.5" />
+              <Button size="sm" className="cursor-pointer gap-1.5">
+                <Plus className="w-4 h-4" />
                 Add First Link
               </Button>
             }
@@ -70,20 +70,20 @@ export function LinksGrid({ tripId, items }: LinksGridProps) {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search links..."
+              placeholder="Search links & URLs..."
               className="pl-8 h-8 text-xs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
             <button
               type="button"
               onClick={() => setCategoryFilter("ALL")}
               className={`px-2.5 py-1 text-xs rounded-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
                 categoryFilter === "ALL"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                   : "bg-secondary text-secondary-foreground hover:bg-accent"
               }`}
             >
@@ -96,7 +96,7 @@ export function LinksGrid({ tripId, items }: LinksGridProps) {
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-2.5 py-1 text-xs rounded-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
                   categoryFilter === cat
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                     : "bg-secondary text-secondary-foreground hover:bg-accent"
                 }`}
               >
@@ -109,12 +109,19 @@ export function LinksGrid({ tripId, items }: LinksGridProps) {
         <AddLinkDialog tripId={tripId} />
       </div>
 
-      {/* Grid of Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredItems.map((link) => (
-          <LinkCard key={link.id} item={link} />
-        ))}
-      </div>
+      {/* Links Grid */}
+      {filteredItems.length === 0 ? (
+        <Card className="rounded-md border border-dashed p-8 text-center">
+          <p className="text-sm font-semibold text-foreground">No links found</p>
+          <p className="text-xs text-muted-foreground mt-1">Try adjusting your search query or category filter.</p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredItems.map((link) => (
+            <LinkCard key={link.id} item={link} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -33,7 +33,7 @@ export default async function ItineraryPage({ params }: ItineraryPageProps) {
 
   return (
     <div className="space-y-4">
-      <ItineraryView tripId={trip.id} items={items} />
+      <ItineraryView tripId={trip.id} items={items} tripStartDate={trip.startDate} />
     </div>
   );
 }

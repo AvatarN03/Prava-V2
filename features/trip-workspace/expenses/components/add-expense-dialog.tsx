@@ -29,6 +29,7 @@ import { ExpenseCategory } from "../schema";
 interface AddExpenseDialogProps {
   tripId: string;
   trigger?: React.ReactNode;
+  defaultCurrency?: string;
 }
 
 const CATEGORIES: { value: ExpenseCategory; label: string }[] = [
@@ -52,7 +53,7 @@ const CURRENCIES = [
   { value: "CHF", label: "CHF (Fr)" },
 ];
 
-export function AddExpenseDialog({ tripId, trigger }: AddExpenseDialogProps) {
+export function AddExpenseDialog({ tripId, trigger, defaultCurrency = "USD" }: AddExpenseDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -60,7 +61,7 @@ export function AddExpenseDialog({ tripId, trigger }: AddExpenseDialogProps) {
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
-    currency: "USD",
+    currency: defaultCurrency || "USD",
     category: "FOOD" as ExpenseCategory,
     date: new Date().toISOString().split("T")[0],
     paidBy: "",

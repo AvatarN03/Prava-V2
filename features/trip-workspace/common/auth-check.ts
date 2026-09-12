@@ -41,12 +41,37 @@ export async function verifyTripOwnership(tripId: string) {
     console.error("Error syncing profile in auth-check:", err);
   }
 
+  const includeConfig = {
+    _count: {
+      select: {
+        itinerary: true,
+        accommodations: true,
+        checklistItems: true,
+        notes: true,
+        expenses: true,
+        links: true,
+      },
+    },
+    expenses: {
+      select: {
+        amount: true,
+        currency: true,
+      },
+    },
+    checklistItems: {
+      select: {
+        isCompleted: true,
+      },
+    },
+  };
+
   // First check if user is owner
   const ownedTrip = await db.trip.findFirst({
     where: {
       id: tripId,
       profileId: user.id,
     },
+    include: includeConfig,
   });
 
   if (ownedTrip) {
@@ -59,6 +84,7 @@ export async function verifyTripOwnership(tripId: string) {
       id: tripId,
       isPublic: true,
     },
+    include: includeConfig,
   });
 
   if (publicTrip) {

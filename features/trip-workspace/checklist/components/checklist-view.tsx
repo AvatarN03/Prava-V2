@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, CheckSquare, Sparkles } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, CheckSquare, Sparkles, Loader2, CheckCircle2, ListFilter } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ChecklistItem } from "@prisma/client";
 import { TaskItem } from "./task-item";
 import { AddTaskDialog } from "./add-task-dialog";
+import { seedEssentialChecklist } from "../actions";
 
 interface ChecklistViewProps {
   tripId: string;
@@ -14,11 +17,15 @@ interface ChecklistViewProps {
 }
 
 export function ChecklistView({ tripId, items }: ChecklistViewProps) {
+  const router = useRouter();
   const [filter, setFilter] = useState<"ALL" | "PENDING" | "COMPLETED">("ALL");
+  const [isSeeding, startSeeding] = useTransition();
 
   const completedCount = useMemo(() => {
     return items.filter((i) => i.isCompleted).length;
   }, [items]);
+
+  const pendingCount = items.length - completedCount;
 
   const percentage = useMemo(() => {
     if (items.length === 0) return 0;
@@ -44,28 +51,50 @@ export function ChecklistView({ tripId, items }: ChecklistViewProps) {
     return Array.from(map.entries());
   }, [items, filter]);
 
+  const handleSeedEssentials = () => {
+    startSeeding(async () => {
+      const res = await seedEssentialChecklist(tripId);
+      if (res.success) {
+        toast.success(`Added ${res.count} essential travel tasks!`);
+        router.refresh();
+      } else {
+        toast.error(res.error || "Failed to add starter checklist");
+      }
+    });
+  };
+
   if (items.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardHeader className="text-center py-12">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
-            <CheckSquare className="h-6 w-6 text-primary" />
+      <Card className="border-dashed rounded-md">
+        <CardHeader className="text-center py-14">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
+            <CheckSquare className="h-6 w-6" />
           </div>
-          <CardTitle className="text-lg">No checklist tasks created</CardTitle>
-          <CardDescription className="max-w-sm mx-auto">
+          <CardTitle className="text-lg font-bold">No checklist tasks created</CardTitle>
+          <CardDescription className="max-w-md mx-auto text-xs mt-1">
             Stay on track with packing lists, visa applications, bookings, and pre-departure preparation.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center pb-12">
+        <CardContent className="flex flex-col sm:flex-row items-center justify-center gap-3 pb-14">
           <AddTaskDialog
             tripId={tripId}
             trigger={
-              <Button size="sm">
-                <Plus className="w-4 h-4 mr-1.5" />
-                Add First Task
+              <Button size="sm" className="cursor-pointer gap-1.5">
+                <Plus className="w-4 h-4" />
+                Add Custom Task
               </Button>
             }
           />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSeedEssentials}
+            disabled={isSeeding}
+            className="cursor-pointer gap-1.5 border-primary/40 hover:bg-primary/5 text-primary"
+          >
+            {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            Add Essential Travel Checklist
+          </Button>
         </CardContent>
       </Card>
     );
@@ -73,76 +102,105 @@ export function ChecklistView({ tripId, items }: ChecklistViewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Progress Header */}
-      <Card className="border-border bg-card p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+      {/* Progress Header Card */}
+      <Card className="rounded-md border border-border bg-card p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">
-              Preparation Progress
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-primary" /> Preparation Progress
             </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {completedCount} of {items.length} tasks completed ({percentage}%)
             </p>
           </div>
 
-          <div className="flex items-center gap-1">
-            {(["ALL", "PENDING", "COMPLETED"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFilter(f)}
-                className={`px-2.5 py-1 text-xs rounded-sm font-medium transition-colors cursor-pointer ${
-                  filter === f
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-accent"
-                }`}
-              >
-                {f === "ALL" ? "All" : f === "PENDING" ? "To-Do" : "Done"}
-              </button>
-            ))}
-            <AddTaskDialog tripId={tripId} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedEssentials}
+              disabled={isSeeding}
+              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-primary cursor-pointer"
+            >
+              {isSeeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-primary" />}
+              <span>+ Travel Essentials</span>
+            </Button>
+
+            <AddTaskDialog
+              tripId={tripId}
+              trigger={
+                <Button size="sm" className="h-8 gap-1.5 text-xs cursor-pointer">
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Task
+                </Button>
+              }
+            />
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mt-3">
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full bg-primary transition-all duration-300 rounded-full"
+            className={`h-full rounded-full transition-all duration-300 ${
+              percentage === 100
+                ? "bg-emerald-500"
+                : percentage >= 50
+                ? "bg-primary"
+                : "bg-sky-500"
+            }`}
             style={{ width: `${percentage}%` }}
           />
         </div>
+
+        {/* Filter Pills */}
+        <div className="flex items-center gap-1.5 pt-1 text-xs">
+          {[
+            { label: "All Tasks", value: "ALL" as const, count: items.length },
+            { label: "To Do", value: "PENDING" as const, count: pendingCount },
+            { label: "Completed", value: "COMPLETED" as const, count: completedCount },
+          ].map(({ label, value, count }) => {
+            const isActive = filter === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setFilter(value)}
+                className={`px-3 py-1 rounded-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 text-xs ${
+                  isActive
+                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <span>{label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                    isActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </Card>
 
-      {/* Grouped Categories */}
-      {groupedCategories.length === 0 ? (
-        <div className="text-center py-8 rounded-sm border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">No tasks matching this filter.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {groupedCategories.map(([category, catItems]) => (
-            <div
-              key={category}
-              className="rounded-sm border border-border bg-card p-4 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      {/* Categorized Tasks Groups */}
+      <div className="space-y-6">
+        {groupedCategories.length === 0 ? (
+          <div className="text-center py-8 text-xs text-muted-foreground rounded-md border border-dashed p-6">
+            No {filter === "PENDING" ? "pending" : "completed"} tasks found in this view.
+          </div>
+        ) : (
+          groupedCategories.map(([category, catItems]) => (
+            <div key={category} className="space-y-2">
+              <div className="flex items-center justify-between pb-1 border-b border-border/60">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {category} ({catItems.length})
                 </h4>
-                <AddTaskDialog
-                  tripId={tripId}
-                  defaultCategory={category}
-                  trigger={
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add
-                    </Button>
-                  }
-                />
+                <span className="text-[11px] text-muted-foreground">
+                  {catItems.filter((i) => i.isCompleted).length}/{catItems.length} done
+                </span>
               </div>
 
               <div className="space-y-1.5">
@@ -151,9 +209,9 @@ export function ChecklistView({ tripId, items }: ChecklistViewProps) {
                 ))}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

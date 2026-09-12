@@ -15,6 +15,9 @@ import {
   MapPin,
   Check,
   Pin,
+  Sparkles,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +33,7 @@ import {
 } from "@prisma/client";
 import { AddItineraryDialog } from "@/features/trip-workspace/itinerary/components/add-itinerary-dialog";
 import { AddExpenseDialog } from "@/features/trip-workspace/expenses/components/add-expense-dialog";
+import { AddAccommodationDialog } from "@/features/trip-workspace/accommodations/components/add-accommodation-dialog";
 import { AddTaskDialog } from "@/features/trip-workspace/checklist/components/add-task-dialog";
 import { TaskItem } from "@/features/trip-workspace/checklist/components/task-item";
 
@@ -55,13 +59,152 @@ export function OverviewDashboard({
   const totalSpent = expenses.reduce((acc, curr) => acc + curr.amount, 0);
   const completedTasks = checklist.filter((i) => i.isCompleted).length;
   const checklistPercent = checklist.length > 0 ? Math.round((completedTasks / checklist.length) * 100) : 0;
-  const pinnedNotes = notes.filter((n) => n.isPinned);
+  const pendingTasks = checklist.filter((i) => !i.isCompleted);
+
+  // Compute Trip Timeline Context
+  const now = new Date();
+  const startDate = trip.startDate ? new Date(trip.startDate) : null;
+  const endDate = trip.endDate ? new Date(trip.endDate) : null;
+
+  let tripTimelineStatus: "FUTURE" | "ACTIVE_TODAY" | "PAST" | "UNSET" = "UNSET";
+  let activeDayNumber = 1;
+  let daysUntilStart = 0;
+  let totalTripDays = 1;
+
+  if (startDate) {
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startMidnight = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+    daysUntilStart = Math.round((startMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+
+    if (endDate) {
+      const endMidnight = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
+      totalTripDays = Math.max(1, Math.round((endMidnight - startMidnight) / (1000 * 60 * 60 * 24)) + 1);
+
+      if (todayMidnight >= startMidnight && todayMidnight <= endMidnight) {
+        tripTimelineStatus = "ACTIVE_TODAY";
+        activeDayNumber = Math.min(
+          totalTripDays,
+          Math.max(1, Math.round((todayMidnight - startMidnight) / (1000 * 60 * 60 * 24)) + 1)
+        );
+      } else if (todayMidnight < startMidnight) {
+        tripTimelineStatus = "FUTURE";
+      } else {
+        tripTimelineStatus = "PAST";
+      }
+    } else {
+      if (daysUntilStart > 0) tripTimelineStatus = "FUTURE";
+      else if (daysUntilStart === 0) tripTimelineStatus = "ACTIVE_TODAY";
+      else tripTimelineStatus = "PAST";
+    }
+  }
+
+  // Filter items for today if active
+  const todayActivities = itinerary.filter((i) => (i.dayNumber || 1) === activeDayNumber);
 
   return (
     <div className="space-y-6">
+      {/* Dynamic Trip Spotlight / Focus Banner */}
+      {tripTimelineStatus === "ACTIVE_TODAY" && (
+        <Card className="rounded-md border-primary/30 bg-gradient-to-r from-primary/5 via-sky-500/5 to-transparent p-4 shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-primary/15">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-primary text-primary-foreground">
+                <Compass className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="active" className="text-[10px] font-semibold uppercase">
+                    Happening Today
+                  </Badge>
+                  <span className="text-xs font-semibold text-foreground">
+                    Day {activeDayNumber} of {totalTripDays}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+                  {trip.destination ? ` • ${trip.destination}` : ""}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href={`/trips/${trip.id}/itinerary`}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              Open Day {activeDayNumber} Schedule <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {todayActivities.length > 0 ? (
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+              {todayActivities.slice(0, 3).map((act) => (
+                <div
+                  key={act.id}
+                  className="p-2.5 rounded-sm border border-border/80 bg-background/80 text-xs space-y-1"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground truncate">{act.title}</span>
+                    {act.time && (
+                      <span className="font-mono text-[10px] text-muted-foreground">{act.time}</span>
+                    )}
+                  </div>
+                  {act.location && (
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate">
+                      <MapPin className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                      <span className="truncate">{act.location}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground bg-background/60 p-2.5 rounded-sm border border-border/50">
+              <span>No activities scheduled specifically for Day {activeDayNumber}.</span>
+              <AddItineraryDialog
+                tripId={trip.id}
+                defaultDayNumber={activeDayNumber}
+                trigger={
+                  <Button variant="outline" size="sm" className="h-6 px-2 text-[11px]">
+                    <Plus className="w-3 h-3 mr-1" /> Add Activity
+                  </Button>
+                }
+              />
+            </div>
+          )}
+        </Card>
+      )}
+
+      {tripTimelineStatus === "FUTURE" && daysUntilStart <= 14 && (
+        <Card className="rounded-md border-border bg-gradient-to-r from-sky-500/5 via-primary/5 to-transparent p-4 shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-sky-500/10 text-primary">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">
+                  Departure in {daysUntilStart} day{daysUntilStart === 1 ? "" : "s"}!
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {pendingTasks.length} packing or preparation items remaining on your checklist.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href={`/trips/${trip.id}/checklist`}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              Review Checklist ({completedTasks}/{checklist.length}) <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </Card>
+      )}
+
       {/* 4-Stat Metric Header */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-border bg-card">
+        {/* Itinerary Events */}
+        <Card className="border-border bg-card shadow-2xs rounded-md">
           <CardHeader className="p-3.5 pb-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-muted-foreground">Itinerary</span>
@@ -72,14 +215,15 @@ export function OverviewDashboard({
             <div className="text-lg font-bold text-foreground">{itinerary.length} Events</div>
             <Link
               href={`/trips/${trip.id}/itinerary`}
-              className="text-[10px] text-primary hover:underline inline-flex items-center"
+              className="text-[10px] text-primary hover:underline inline-flex items-center font-medium mt-0.5"
             >
               View timeline <ArrowUpRight className="w-2.5 h-2.5 ml-0.5" />
             </Link>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
+        {/* Total Spent */}
+        <Card className="border-border bg-card shadow-2xs rounded-md">
           <CardHeader className="p-3.5 pb-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-muted-foreground">Total Spent</span>
@@ -90,14 +234,15 @@ export function OverviewDashboard({
             <div className="text-lg font-bold font-mono text-foreground">${totalSpent.toFixed(2)}</div>
             <Link
               href={`/trips/${trip.id}/expenses`}
-              className="text-[10px] text-primary hover:underline inline-flex items-center"
+              className="text-[10px] text-primary hover:underline inline-flex items-center font-medium mt-0.5"
             >
               {expenses.length} records <ArrowUpRight className="w-2.5 h-2.5 ml-0.5" />
             </Link>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
+        {/* Preparation / Checklist */}
+        <Card className="border-border bg-card shadow-2xs rounded-md">
           <CardHeader className="p-3.5 pb-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-muted-foreground">Preparation</span>
@@ -108,14 +253,15 @@ export function OverviewDashboard({
             <div className="text-lg font-bold text-foreground">{checklistPercent}% Ready</div>
             <Link
               href={`/trips/${trip.id}/checklist`}
-              className="text-[10px] text-primary hover:underline inline-flex items-center"
+              className="text-[10px] text-primary hover:underline inline-flex items-center font-medium mt-0.5"
             >
               {completedTasks}/{checklist.length} tasks <ArrowUpRight className="w-2.5 h-2.5 ml-0.5" />
             </Link>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
+        {/* Lodging & Links */}
+        <Card className="border-border bg-card shadow-2xs rounded-md">
           <CardHeader className="p-3.5 pb-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-muted-foreground">Lodging & Links</span>
@@ -128,7 +274,7 @@ export function OverviewDashboard({
             </div>
             <Link
               href={`/trips/${trip.id}/accommodations`}
-              className="text-[10px] text-primary hover:underline inline-flex items-center"
+              className="text-[10px] text-primary hover:underline inline-flex items-center font-medium mt-0.5"
             >
               View bookings <ArrowUpRight className="w-2.5 h-2.5 ml-0.5" />
             </Link>
@@ -141,7 +287,7 @@ export function OverviewDashboard({
         {/* Left 2 Columns: Itinerary & Stays */}
         <div className="lg:col-span-2 space-y-6">
           {/* Upcoming Itinerary Activities */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card shadow-2xs rounded-md">
             <CardHeader className="p-4 pb-2 border-b border-border/60 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
@@ -156,7 +302,7 @@ export function OverviewDashboard({
                 <AddItineraryDialog
                   tripId={trip.id}
                   trigger={
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs cursor-pointer">
                       <Plus className="w-3 h-3 mr-1" />
                       Add Event
                     </Button>
@@ -205,7 +351,7 @@ export function OverviewDashboard({
                             {item.time}
                           </span>
                         )}
-                        <Badge variant="planning">{item.category}</Badge>
+                        <Badge variant="planning">{item.category || "Activity"}</Badge>
                       </div>
                     </div>
                   ))}
@@ -215,7 +361,7 @@ export function OverviewDashboard({
           </Card>
 
           {/* Stays & Accommodations */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card shadow-2xs rounded-md">
             <CardHeader className="p-4 pb-2 border-b border-border/60 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
@@ -226,12 +372,23 @@ export function OverviewDashboard({
                   Lodging reservations & check-in details
                 </CardDescription>
               </div>
-              <Link
-                href={`/trips/${trip.id}/accommodations`}
-                className="text-xs text-primary font-medium hover:underline inline-flex items-center"
-              >
-                All ({accommodations.length}) <ArrowUpRight className="w-3 h-3 ml-0.5" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <AddAccommodationDialog
+                  tripId={trip.id}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs cursor-pointer">
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add Stay
+                    </Button>
+                  }
+                />
+                <Link
+                  href={`/trips/${trip.id}/accommodations`}
+                  className="text-xs text-primary font-medium hover:underline inline-flex items-center"
+                >
+                  All ({accommodations.length}) <ArrowUpRight className="w-3 h-3 ml-0.5" />
+                </Link>
+              </div>
             </CardHeader>
 
             <CardContent className="p-4">
@@ -271,7 +428,7 @@ export function OverviewDashboard({
         {/* Right 1 Column: Checklist, Pinned Notes & Quick Links */}
         <div className="space-y-6">
           {/* Checklist Snapshot */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card shadow-2xs rounded-md">
             <CardHeader className="p-4 pb-2 border-b border-border/60 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
@@ -282,12 +439,23 @@ export function OverviewDashboard({
                   Pending preparations
                 </CardDescription>
               </div>
-              <Link
-                href={`/trips/${trip.id}/checklist`}
-                className="text-xs text-primary font-medium hover:underline inline-flex items-center"
-              >
-                View all <ArrowUpRight className="w-3 h-3 ml-0.5" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <AddTaskDialog
+                  tripId={trip.id}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs cursor-pointer">
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add Task
+                    </Button>
+                  }
+                />
+                <Link
+                  href={`/trips/${trip.id}/checklist`}
+                  className="text-xs text-primary font-medium hover:underline inline-flex items-center"
+                >
+                  All ({checklist.length}) <ArrowUpRight className="w-3 h-3 ml-0.5" />
+                </Link>
+              </div>
             </CardHeader>
 
             <CardContent className="p-4 space-y-2">
@@ -304,7 +472,7 @@ export function OverviewDashboard({
           </Card>
 
           {/* Pinned & Recent Notes */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card shadow-2xs rounded-md">
             <CardHeader className="p-4 pb-2 border-b border-border/60 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-sm font-semibold flex items-center gap-1.5">

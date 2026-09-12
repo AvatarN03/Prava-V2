@@ -17,7 +17,8 @@ interface ConfirmDeleteDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
-  onConfirm: () => Promise<void>;
+  onConfirm: () => Promise<void> | void;
+  isDeleting?: boolean;
 }
 
 /**
@@ -30,8 +31,10 @@ export function ConfirmDeleteDialog({
   title,
   description = "This action cannot be undone.",
   onConfirm,
+  isDeleting: externalIsDeleting,
 }: ConfirmDeleteDialogProps) {
   const [isPending, startTransition] = useTransition();
+  const isBusy = externalIsDeleting || isPending;
 
   const handleConfirm = () => {
     startTransition(async () => {
@@ -41,7 +44,7 @@ export function ConfirmDeleteDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={isPending ? undefined : onOpenChange}>
+    <Dialog open={open} onOpenChange={isBusy ? undefined : onOpenChange}>
       <DialogContent className="sm:max-w-[380px]">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -58,7 +61,7 @@ export function ConfirmDeleteDialog({
             variant="outline"
             size="sm"
             onClick={() => onOpenChange(false)}
-            disabled={isPending}
+            disabled={isBusy}
           >
             Cancel
           </Button>
@@ -67,9 +70,9 @@ export function ConfirmDeleteDialog({
             variant="destructive"
             size="sm"
             onClick={handleConfirm}
-            disabled={isPending}
+            disabled={isBusy}
           >
-            {isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+            {isBusy && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
             Delete
           </Button>
         </DialogFooter>

@@ -8,7 +8,8 @@ export interface TripCounts {
   checklistItems: number;
   notes: number;
   expenses: number;
-  linkedBlogPosts: number;
+  linkedBlogPosts?: number;
+  links?: number;
 }
 
 export type TripWithCounts = PrismaTrip & {

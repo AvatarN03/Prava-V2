@@ -702,6 +702,48 @@
     - Added cover image preview with Remove option, Unsplash suggestion choices (rate-limit protected with fallbacks), and direct custom upload via Supabase Storage (`ImageUpload` in `folder="trips"`).
   - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 errors across 29 routes).
 
+- **Task 76 (Individual Trip Workspace Modernization Across All 7 Tabs & Multi-Currency Expenses)**:
+  - **Workspace Shell & Live Dynamic Tab Badges**:
+    - Extended `verifyTripOwnership()` in `features/trip-workspace/common/auth-check.ts` to fetch relational entity counts (`itinerary`, `accommodations`, `checklistItems`, `notes`, `expenses`, `links`), total expense amounts, and checklist completion states.
+    - Updated `WorkspaceNav` ([`features/trip-workspace/common/workspace-nav.tsx`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/features/trip-workspace/common/workspace-nav.tsx)) to display real-time count badges on every tab trigger: `Itinerary (N)`, `Stays (N)`, `Expenses ($N)`, `Notes (N)`, `Checklist (N/M)`, and `Links (N)`.
+    - Updated `WorkspaceHeader` ([`features/trip-workspace/common/workspace-header.tsx`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/features/trip-workspace/common/workspace-header.tsx)) with a quick trip status switcher dropdown (`PLANNING`, `ACTIVE`, `COMPLETED`, `ARCHIVED`), departure countdown badge (`"Happening Now"`, `"Tomorrow"`, `"In N days"`), 1-click **Copy Trip Link**, and **Duplicate Trip** in the 3-dot dropdown.
+  - **Tab 1: Overview Dashboard**:
+    - Created a dynamic **Trip Spotlight Hero Focus Card** in `overview-dashboard.tsx`: if the trip is currently active, it spotlights today's day schedule; if upcoming, it displays a departure countdown badge and urgent pending checklist items.
+    - Added quick-action grid and Notion/Linear metric cards (Schedule, Stays, Total Spend, Checklist Progress, and Notes).
+  - **Tab 2: Itinerary**:
+    - Replaced all legacy browser `confirm()` calls with official `ConfirmDeleteDialog`.
+    - Aligned card styling with Notion/Linear standards (`rounded-md`, `border-border bg-card`), added semantic category badges and Lucide icons.
+    - Added dynamic calendar date calculation mapping day numbers to actual dates (e.g. `Day 1 • Oct 14, Wed`) derived from `trip.startDate`.
+    - Added daily cost subtotals and updated day filter chips.
+  - **Tab 3: Accommodations**:
+    - Added automatic nights duration calculation (`N nights`), 1-click **Copy Confirmation Code**, direct **Call Stay** (`tel:`) and **Open in Google Maps** links.
+    - Integrated `ConfirmDeleteDialog` with non-blocking delete transitions.
+  - **Tab 4: Expenses & Multi-Currency Groundwork**:
+    - Implemented multi-currency display: each expense renders both its native currency amount and the live converted amount in the user's primary/preferred currency (`profile.defaultCurrency`, e.g. `≈ $102.50 USD`) powered by Frankfurter FX rates.
+    - Added target budget meter with dynamic visual progress bar, category filter pills, instant search input, and 1-click **Export to CSV**.
+    - Updated `AddExpenseDialog` to accept `defaultCurrency` prop and `EditExpenseDialog` with type-safe props.
+  - **Tab 5: Notes**:
+    - Integrated `MarkdownRenderer` for rich note markdown styling, expand/collapse toggles for long notes, 1-click **Copy Content** button, and `ConfirmDeleteDialog`.
+  - **Tab 6: Checklist**:
+    - Added `seedEssentialChecklist(tripId)` Server Action populating 9 universal travel essentials (Passport, Visa, Travel Insurance, Charger, First-aid, Offline Maps, Local Currency, etc.).
+    - Added 1-click **"+ Travel Essentials"** seeding button, visual completion progress bar, and filter tabs (`All`, `To Do`, `Completed`).
+  - **Tab 7: Reference Links**:
+    - Added smart domain detection badges (Google Maps, Airbnb, Booking.com, TripAdvisor, Flights, General), 1-click copy link button, and `ConfirmDeleteDialog`.
+  - **Verification**: Verified with `npx tsc --noEmit` (0 errors) and `npm run build` (Turbopack, exit code 0, 0 errors across all 29 routes).
+
+- **Task 77 (App Shell: Elimination of Redundant Outer Window Scrollbar & Viewport Pinning)**:
+  - **Root-Cause Analysis**:
+    - The outer scrollbar was generated on the browser window (`html`/`document.body`) because:
+      1. `components/app-shell/app-shell.tsx` was using `h-screen` (100vh) in normal flow while `body` in `app/layout.tsx` had `min-h-full flex flex-col`. Any injected child (e.g. Sonner `<Toaster />`, Next.js dev overlay indicator button, or browser toolbar discrepancies) caused `document.body.scrollHeight` to exceed 100vh.
+      2. The right canvas wrapper div had `flex-1` with `md:my-2` (margin-top & margin-bottom 8px) on an inner child container, which in CSS flexbox caused the inner container to size to 100% + 16px.
+      3. `globals.css` applies custom Prava blue scrollbars globally via `* { scrollbar-width: thin; ... }`, so when the root window established overflow, it rendered a visible blue scrollbar directly adjacent to `<main>`'s inner content scrollbar.
+  - **Implemented Solution**:
+    - **Locked Viewport Shell**: Updated `AppShell` ([`components/app-shell/app-shell.tsx`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/components/app-shell/app-shell.tsx)) to `fixed inset-0 h-dvh w-screen overflow-hidden`, pinning the entire workspace to the exact browser viewport boundaries.
+    - **Body Overflow Guard**: Added a client-side `useEffect` in `AppShell` setting `document.body.style.overflow = "hidden"` while in the workspace, restoring it on unmount (e.g. navigating to public landing/auth pages).
+    - **Flexbox Margin Fix**: Replaced `md:my-2` on the inner flex-1 child with parent padding (`md:py-2 md:pr-0`), completely preventing the 16px margin overflow.
+    - **Single Unified Scroll Container**: `<main className="flex-1 min-h-0 overflow-y-auto thin-scrollbar">` is now the sole scroll container on the page, smoothly scrolling content as intended.
+  - **Verification**: Verified with `npx tsc --noEmit` (exit code 0) and `npm run build` (Turbopack, exit code 0 across all 29 routes).
+
 ## Next Steps
 - Move to the next workspace sidebar page: **Dashboard** (`/dashboard`).
 

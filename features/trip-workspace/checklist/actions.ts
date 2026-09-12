@@ -109,6 +109,48 @@ export async function deleteChecklistItem(input: DeleteChecklistItemInput) {
   }
 }
 
+/**
+ * Server Action: 1-Click Seed of Essential Travel Packing & Document Checklist
+ */
+export async function seedEssentialChecklist(tripId: string) {
+  try {
+    const { authorized } = await verifyTripOwnership(tripId);
+    if (!authorized) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const ESSENTIALS = [
+      { title: "Check Passport expiration (valid for 6+ months)", category: "Documents" },
+      { title: "Verify Visa and entry requirements", category: "Documents" },
+      { title: "Purchase Travel Insurance policy", category: "Documents" },
+      { title: "Universal travel power adapter & plug converter", category: "Packing" },
+      { title: "Prescription medications & mini first-aid kit", category: "Packing" },
+      { title: "Portable power bank & charging cables", category: "Packing" },
+      { title: "Download offline maps (Google Maps / Maps.me)", category: "Preparation" },
+      { title: "Notify credit card bank / check international fees", category: "Finance" },
+      { title: "Save copies of lodging bookings & confirmation codes", category: "Documents" },
+    ];
+
+    await db.checklistItem.createMany({
+      data: ESSENTIALS.map((item, idx) => ({
+        tripId,
+        title: item.title,
+        category: item.category,
+        isCompleted: false,
+        order: idx,
+      })),
+    });
+
+    revalidatePath(`/trips/${tripId}/checklist`);
+    revalidatePath(`/trips/${tripId}/overview`);
+
+    return { success: true, count: ESSENTIALS.length };
+  } catch (error) {
+    console.error("Error seeding checklist:", error);
+    return { success: false, error: "Failed to add starter checklist" };
+  }
+}
+
 export async function toggleChecklistItem(input: ToggleChecklistItemInput) {
   try {
     const validated = toggleChecklistItemSchema.safeParse(input);
