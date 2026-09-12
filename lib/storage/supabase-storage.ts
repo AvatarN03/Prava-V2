@@ -1,16 +1,57 @@
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const STORAGE_BUCKET = "prava-media";
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
-  "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",
   "image/avif",
 ];
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+/**
+ * Normalizes browser-supplied MIME types and file extensions into standard IANA MIME types
+ * supported by Supabase Storage bucket configurations (e.g. image/jpg -> image/jpeg).
+ */
+export function normalizeMimeType(mimeType: string, filename?: string): string {
+  const lowerMime = (mimeType || "").toLowerCase().trim();
+  const lowerName = (filename || "").toLowerCase().trim();
+
+  if (
+    lowerMime === "image/jpeg" ||
+    lowerMime === "image/jpg" ||
+    lowerMime === "image/pjpeg" ||
+    lowerMime === "image/jfif" ||
+    lowerName.endsWith(".jpg") ||
+    lowerName.endsWith(".jpeg")
+  ) {
+    return "image/jpeg";
+  }
+
+  if (
+    lowerMime === "image/png" ||
+    lowerMime === "image/x-png" ||
+    lowerName.endsWith(".png")
+  ) {
+    return "image/png";
+  }
+
+  if (lowerMime === "image/webp" || lowerName.endsWith(".webp")) {
+    return "image/webp";
+  }
+
+  if (lowerMime === "image/gif" || lowerName.endsWith(".gif")) {
+    return "image/gif";
+  }
+
+  if (lowerMime === "image/avif" || lowerName.endsWith(".avif")) {
+    return "image/avif";
+  }
+
+  return lowerMime || "image/jpeg";
+}
 
 export interface UploadResult {
   success: boolean;
@@ -40,10 +81,10 @@ async function getStorageClient() {
 /**
  * Ensures the target bucket exists, attempting to create it as public if missing.
  */
-async function ensureBucketExists(supabase: any, bucketName: string): Promise<string> {
+async function ensureBucketExists(supabase: SupabaseClient, bucketName: string): Promise<string> {
   try {
     const { data: buckets } = await supabase.storage.listBuckets();
-    if (buckets && buckets.some((b: any) => b.name === bucketName)) {
+    if (buckets && buckets.some((b) => b.name === bucketName)) {
       return bucketName;
     }
 
@@ -60,7 +101,7 @@ async function ensureBucketExists(supabase: any, bucketName: string): Promise<st
 
     // If bucket creation failed (e.g., non-admin permissions), check if any public bucket exists
     if (buckets && buckets.length > 0) {
-      const publicBucket = buckets.find((b: any) => b.public) || buckets[0];
+      const publicBucket = buckets.find((b) => b.public) || buckets[0];
       return publicBucket.name;
     }
   } catch (err) {
@@ -76,16 +117,19 @@ async function ensureBucketExists(supabase: any, bucketName: string): Promise<st
  */
 export async function uploadImageToStorage(
   file: File | Blob,
-  folder: "trips" | "avatars" | "posts" | "community",
+  folder: "trips" | "avatars" | "posts" | "community" | "stories",
   userId: string,
   customFilename?: string
 ): Promise<UploadResult> {
   try {
     const supabase = await getStorageClient();
 
-    // Determine extension
-    const mimeType = file.type || "image/jpeg";
-    if (!ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+    // Determine extension and normalize MIME type
+    const rawMime = file.type || "";
+    const rawName = file instanceof File ? file.name : (customFilename || "");
+    const normalizedMime = normalizeMimeType(rawMime, rawName);
+
+    if (!ALLOWED_IMAGE_TYPES.includes(normalizedMime)) {
       return {
         success: false,
         error: "Invalid file type. Allowed formats: JPEG, PNG, WebP, GIF, AVIF.",
@@ -101,13 +145,12 @@ export async function uploadImageToStorage(
 
     const extMap: Record<string, string> = {
       "image/jpeg": "jpg",
-      "image/jpg": "jpg",
       "image/png": "png",
       "image/webp": "webp",
       "image/gif": "gif",
       "image/avif": "avif",
     };
-    const extension = extMap[mimeType] || "jpg";
+    const extension = extMap[normalizedMime] || "jpg";
     const filename = customFilename || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${extension}`;
     const storagePath = `${folder}/${userId}/${filename}`;
 
@@ -119,7 +162,7 @@ export async function uploadImageToStorage(
     const { data, error: uploadError } = await supabase.storage
       .from(targetBucket)
       .upload(storagePath, buffer, {
-        contentType: mimeType,
+        contentType: normalizedMime,
         upsert: true,
       });
 
@@ -132,7 +175,7 @@ export async function uploadImageToStorage(
         const { data: fbData, error: fbError } = await supabase.storage
           .from(fallbackBucket)
           .upload(storagePath, buffer, {
-            contentType: mimeType,
+            contentType: normalizedMime,
             upsert: true,
           });
 

@@ -144,7 +144,7 @@ export function ForumThreadView({
     const res = await deleteForumDiscussion(post.id);
     if (res.success) {
       toast.success("Discussion deleted.");
-      router.push("/community");
+      router.push("/forum");
     } else {
       toast.error(res.error || "Failed to delete discussion.");
     }
@@ -228,7 +228,7 @@ export function ForumThreadView({
       {/* Top Breadcrumb & Action Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border">
         <div className="flex items-center gap-2">
-          <Link href="/community">
+          <Link href="/forum">
             <Button
               variant="ghost"
               size="sm"

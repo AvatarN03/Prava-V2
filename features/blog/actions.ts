@@ -32,7 +32,7 @@ export async function createBlogPost(input: BlogPostInput) {
     const { title, excerpt, content, coverImageUrl, tags, status, linkedTripId } = parsed.data;
 
     // Generate unique slug
-    let baseSlug = parsed.data.slug || generateSlug(title);
+    const baseSlug = parsed.data.slug || generateSlug(title);
     let slug = baseSlug;
     let attempt = 0;
 
@@ -103,7 +103,7 @@ export async function updateBlogPost(postId: string, input: BlogPostInput) {
     // Handle slug changes
     let slug = existing.slug;
     if (parsed.data.slug && parsed.data.slug !== existing.slug) {
-      let baseSlug = parsed.data.slug;
+      const baseSlug = parsed.data.slug;
       slug = baseSlug;
       let attempt = 0;
       while (true) {
@@ -341,6 +341,13 @@ export async function getAllPublishedStories() {
             isPublic: true,
           },
         },
+        linkedTrip: {
+          select: {
+            id: true,
+            title: true,
+            destination: true,
+          },
+        },
       },
       orderBy: { publishedAt: "desc" },
     });
@@ -351,3 +358,48 @@ export async function getAllPublishedStories() {
     return { success: false, error: "Failed to load stories", stories: [] };
   }
 }
+
+/**
+ * Toggle a story between DRAFT and PUBLISHED status.
+ */
+export async function toggleStoryPublishStatus(postId: string) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const existing = await db.blogPost.findFirst({
+      where: { id: postId, profileId: user.id },
+    });
+
+    if (!existing) {
+      return { success: false, error: "Story not found or unauthorized" };
+    }
+
+    const nextStatus = existing.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+    const post = await db.blogPost.update({
+      where: { id: postId },
+      data: {
+        status: nextStatus,
+        publishedAt:
+          nextStatus === "PUBLISHED"
+            ? existing.publishedAt || new Date()
+            : null,
+      },
+    });
+
+    revalidatePath("/stories");
+    revalidatePath("/stories/manage");
+    return { success: true, post };
+  } catch (error) {
+    console.error("Error toggling story status:", error);
+    return { success: false, error: "Failed to update story status" };
+  }
+}
+

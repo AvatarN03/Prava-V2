@@ -1,5 +1,7 @@
-import { getCommunityTrips } from "@/features/community/actions";
-import { TemplatesView } from "@/features/community/components/templates-view";
+import { getPublicTripTemplates } from "@/features/templates/actions";
+import { TemplatesView } from "@/features/templates/components/templates-view";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Trip Templates & Curated Itineraries | Prava AI",
@@ -8,7 +10,8 @@ export const metadata = {
 };
 
 export default async function TemplatesPage() {
-  const trips = await getCommunityTrips();
+  const trips = await getPublicTripTemplates();
 
   return <TemplatesView initialTrips={trips} />;
 }
+

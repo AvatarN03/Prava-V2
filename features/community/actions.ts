@@ -4,8 +4,6 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { CommunityTripItem, CommunityCreatorItem } from "./types";
-import { SEED_COMMUNITY_TEMPLATES } from "./data/seed-templates";
-import { syncUserProfile } from "@/lib/auth/sync-profile";
 
 /**
  * Fetch all publicly shared community trips and seed templates.
@@ -77,188 +75,20 @@ export async function getCommunityTrips(): Promise<CommunityTripItem[]> {
       };
     });
 
-    return [...SEED_COMMUNITY_TEMPLATES, ...mappedDbTrips];
+    return mappedDbTrips;
   } catch (error) {
     console.error("Error fetching community trips:", error);
-    return SEED_COMMUNITY_TEMPLATES;
+    return [];
   }
 }
 
+import { cloneTripTemplate as baseCloneTripTemplate } from "@/features/templates/actions";
+
 /**
- * Clone a community trip or curated template directly into the authenticated user's workspace.
+ * Re-export wrapper for cloneTripTemplate adhering to Next.js "use server" async function requirements.
  */
-export async function cloneTripTemplate(templateId: string) {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      return { success: false, error: "Please sign in to clone this itinerary." };
-    }
-
-    // Ensure user profile exists in Postgres safely without email collisions
-    await syncUserProfile(user);
-
-    // 1. Check if cloning from a SEED template
-    const seed = SEED_COMMUNITY_TEMPLATES.find((s) => s.id === templateId);
-    if (seed) {
-      const today = new Date();
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + seed.durationDays - 1);
-
-      // Create new private trip for user
-      const newTrip = await db.trip.create({
-        data: {
-          profileId: user.id,
-          title: seed.title,
-          description: seed.description,
-          destination: seed.destination,
-          startDate: today,
-          endDate: endDate,
-          status: "PLANNING",
-          isPublic: false,
-          isTemplate: false,
-        },
-      });
-
-      // Clone Itinerary items
-      if (seed.itineraryPreview.length > 0) {
-        await db.itineraryItem.createMany({
-          data: seed.itineraryPreview.map((item, idx) => ({
-            tripId: newTrip.id,
-            dayNumber: item.day,
-            title: item.title,
-            description: item.description || null,
-            category: item.category || "Activity",
-            order: idx,
-          })),
-        });
-      }
-
-      // Clone Packing Checklist
-      if (seed.packingHighlights && seed.packingHighlights.length > 0) {
-        await db.checklistItem.createMany({
-          data: seed.packingHighlights.map((task, idx) => ({
-            tripId: newTrip.id,
-            title: task,
-            category: "Packing",
-            order: idx,
-            isCompleted: false,
-          })),
-        });
-      }
-
-      // Clone Tips into Notes
-      if (seed.tips && seed.tips.length > 0) {
-        await db.note.createMany({
-          data: seed.tips.map((tip) => ({
-            tripId: newTrip.id,
-            title: "Local Tip",
-            content: tip,
-            category: "Advice",
-            isPinned: false,
-          })),
-        });
-      }
-
-      revalidatePath("/trips");
-      revalidatePath("/dashboard");
-      return { success: true, tripId: newTrip.id };
-    }
-
-    // 2. Clone from a User-published Postgres trip
-    const sourceTrip = await db.trip.findFirst({
-      where: { id: templateId, isPublic: true },
-      include: {
-        itinerary: true,
-        accommodations: true,
-        checklistItems: true,
-        notes: true,
-      },
-    });
-
-    if (!sourceTrip) {
-      return { success: false, error: "Trip template not found or not public." };
-    }
-
-    const today = new Date();
-    const clonedTrip = await db.trip.create({
-      data: {
-        profileId: user.id,
-        title: `${sourceTrip.title} (Cloned)`,
-        description: sourceTrip.description,
-        destination: sourceTrip.destination,
-        startDate: today,
-        status: "PLANNING",
-        isPublic: false,
-        isTemplate: false,
-      },
-    });
-
-    // Copy relations
-    if (sourceTrip.itinerary.length > 0) {
-      await db.itineraryItem.createMany({
-        data: sourceTrip.itinerary.map((item) => ({
-          tripId: clonedTrip.id,
-          dayNumber: item.dayNumber,
-          time: item.time,
-          title: item.title,
-          description: item.description,
-          location: item.location,
-          category: item.category,
-          cost: item.cost,
-          order: item.order,
-        })),
-      });
-    }
-
-    if (sourceTrip.accommodations.length > 0) {
-      await db.accommodation.createMany({
-        data: sourceTrip.accommodations.map((acc) => ({
-          tripId: clonedTrip.id,
-          name: acc.name,
-          type: acc.type,
-          address: acc.address,
-          currency: acc.currency,
-          notes: acc.notes,
-        })),
-      });
-    }
-
-    if (sourceTrip.checklistItems.length > 0) {
-      await db.checklistItem.createMany({
-        data: sourceTrip.checklistItems.map((c) => ({
-          tripId: clonedTrip.id,
-          title: c.title,
-          category: c.category,
-          order: c.order,
-          isCompleted: false,
-        })),
-      });
-    }
-
-    if (sourceTrip.notes.length > 0) {
-      await db.note.createMany({
-        data: sourceTrip.notes.map((n) => ({
-          tripId: clonedTrip.id,
-          title: n.title,
-          content: n.content,
-          category: n.category,
-          isPinned: n.isPinned,
-        })),
-      });
-    }
-
-    revalidatePath("/trips");
-    revalidatePath("/dashboard");
-    return { success: true, tripId: clonedTrip.id };
-  } catch (error) {
-    console.error("Error cloning trip template:", error);
-    return { success: false, error: "Failed to clone trip template." };
-  }
+export async function cloneTripTemplate(templateId: string, customInstructions?: string) {
+  return await baseCloneTripTemplate(templateId, customInstructions);
 }
 
 /**

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, BookOpen, Sparkles, SlidersHorizontal, ArrowUpRight } from "lucide-react";
+import { BookOpen, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAllPublishedStories } from "@/features/blog/actions";
 import { StoryCard } from "@/features/blog/components/story-card";
@@ -70,7 +70,7 @@ export default async function StoriesPage() {
 
       {/* Stories Grid */}
       {stories.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center space-y-4">
+        <div className="rounded-md border border-dashed border-border bg-card/40 p-12 text-center space-y-4">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="h-7 w-7 text-primary" />
           </div>
@@ -87,7 +87,7 @@ export default async function StoriesPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {stories.map((story) => (
             <StoryCard key={story.id} story={story} />
           ))}

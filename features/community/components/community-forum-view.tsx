@@ -197,7 +197,7 @@ export function CommunityForumView({
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-1">
-            Community Forum
+            Traveler Forum
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
             Ask for route advice, share secret viewpoints and culinary spots, discuss gear packing, or inspect fellow travelers&apos; itineraries.
@@ -350,7 +350,7 @@ export function CommunityForumView({
               CATEGORY_THEME_BADGES[post.category] ||
               CATEGORY_THEME_BADGES.DISCUSSIONS;
 
-            const postHref = `/community/${post.slug || post.id}`;
+            const postHref = `/forum/${post.slug || post.id}`;
             const coverImage =
               post.coverImageUrl ||
               DEFAULT_CATEGORY_IMAGES[post.category] ||

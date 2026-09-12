@@ -600,10 +600,110 @@
     - Automatically pauses when the user is actively typing or editing a comment to prevent disruption.
   - **Verification**: Verified with `tsc --noEmit` (exit code 0, 0 compilation errors).
 
+- **Task 70 (Forum Rebrand, Sidebar Restructure & Travel Stories Integration)**:
+  - **Sidebar Navigation Restructure**:
+    - Renamed `"Community"` to **`"Forum"`** with route `/forum` and Lucide icon `MessageSquare`.
+    - Removed the `"Active"` tag/badge from the sidebar item.
+    - Added **`"Stories"`** (`/stories`, `BookOpen` icon) into the primary explore navigation.
+    - Navigation now cleanly presents: **Forum**, **Stories**, and **Templates**.
+  - **TopBar Breadcrumbs & Forum Rebranding**:
+    - Updated `getPageTitle()` to dynamically display `"Forum"` when visiting `/forum` or `/community`, and `"Travel Stories"` when visiting `/stories`.
+    - Renamed headers and titles in `CommunityForumView` to "Traveler Forum".
+    - Updated internal links and back buttons in `ForumThreadView` to point to `/forum`.
+  - **Route Architecture with Backward Compatibility**:
+    - Created primary routes `app/(app)/forum/page.tsx` and `app/(app)/forum/[slug]/page.tsx`.
+    - Configured `app/(app)/community/page.tsx` and `app/(app)/community/[slug]/page.tsx` to redirect cleanly to `/forum` and `/forum/${slug}`.
+  - **Travel Stories System Polish**:
+    - **Story Cards**: Aligned with Notion/Linear standards (`rounded-md`, clean borders, `shadow-2xs hover:shadow-xs`), added high-res Unsplash fallback visual, and added "Cloneable Trip" badge for stories with an attached itinerary.
+    - **Story Editor**: Replaced manual URL input with direct Supabase storage upload (`ImageUpload` targeting bucket `prava-media`, folder `stories/${userId}/${filename}`). Added `"stories"` folder support to storage actions and client. Reorganized desktop layout into an asymmetrical 2-column grid (`lg:grid-cols-12`): story details, summary, and markdown editor on the left (`lg:col-span-7 xl:col-span-8`), and cover image upload, tags, trip link dropdown, and sticky publish action bar on the right (`lg:col-span-5 xl:col-span-4`).
+    - **Personal Stories**: Added instant 1-click publish/unpublish toggle button with toast feedback via new `toggleStoryPublishStatus` server action.
+  - **Verification**: Verified with `tsc --noEmit` (0 type errors) and targeted `eslint` (0 errors, 0 warnings across all modified components).
+
+- **Task 71 (Supabase Storage & Next.js Server Action Image Upload Fix)**:
+  - **Root-Cause Analysis**:
+    1. **Next.js Server Action Body Size Limit**: By default, Next.js Server Actions enforce a strict 1MB payload limit (`Error: Body exceeded 1 MB limit. To configure the body size limit for Server Actions, see: ...`). Uploading standard camera or high-res photos exceeded this threshold.
+    2. **Supabase Storage MIME Type Whitelisting**: Supabase Storage validates the uploaded file's `contentType` against bucket `allowed_mime_types: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']`. When browsers send `"image/jpg"`, Supabase throws HTTP 415 `InvalidMimeType (mime type image/jpg is not supported)`.
+  - **Implemented Solution**:
+    - **Configured Server Action Payload Limit**: Updated `next.config.ts` to set `experimental.serverActions.bodySizeLimit: "10mb"`.
+    - **MIME Type Normalization Engine**: Created `normalizeMimeType(mimeType, filename)` in `lib/storage/supabase-storage.ts` that maps all JPEG aliases (`image/jpg`, `image/pjpeg`, `image/jfif`, `.jpg`, `.jpeg`) to standard `image/jpeg`, and cleanly normalizes PNG, WebP, GIF, and AVIF.
+    - **Targeted Storage Uploads**: Ensured `uploadImageToStorage` and `uploadImageAction` validate and send the normalized IANA MIME type to Supabase Storage.
+    - **Client-Side Image Optimization (`ImageUpload`)**: Integrated client-side canvas compression (`resizeImageToBlob`) to automatically optimize large non-GIF images to high-quality 1920x1080 WebP files before dispatching, dramatically accelerating upload speed and preventing oversized payloads.
+    - **Input Compatibility**: Expanded `accept` attribute in `ImageUpload` to include `.jpg,.jpeg,.png,.webp,.gif,.avif` alongside standard MIME types.
+  - **Verification**: Verified with `tsc --noEmit` (exit code 0, 0 errors) and ESLint (exit code 0, 0 errors, 0 warnings across all modified files).
+
+- **Task 72 (Stories Workspace Wrapper Integration & Back Navigation)**:
+  - **Identified Route Scope Mismatch**:
+    - `stories/[slug]/page.tsx` had previously been placed outside the `(app)` route group in root `app/stories/[slug]/page.tsx`, causing individual stories to render as unstyled standalone pages with a disconnected public header instead of the workspace `AppShell` (Sidebar + TopBar).
+  - **Implemented Solution**:
+    - **Moved Story Detail to AppShell**: Created `app/(app)/stories/[slug]/page.tsx` and removed the legacy `app/stories` directory. Story detail pages now seamlessly inherit the Notion/Linear workspace wrapper with persistent sidebar, sticky topbar, and breadcrumbs.
+    - **Back Navigation to Stories**: Added explicit "Back to Stories" breadcrumbs and buttons across `MyStoriesList` (`/stories/manage`), `BlogEditor` (`/stories/new` and `/stories/[slug]/edit`), and `StoryDetailPage` (`/stories/[slug]`).
+    - **In-App Story Navigation**: Removed `target="_blank"` from story links in `MyStoriesList` so viewing stories transitions smoothly within the same workspace tab.
+    - **Story Header Actions**: Added `StoryHeaderActions` client component with 1-click URL sharing and contextual "Edit Story" button for story authors.
+    - **Route Protection**: Added `/forum` path to `lib/supabase/middleware.ts` protected application routes.
+  - **Verification**: Verified with `tsc --noEmit` (exit code 0, 0 compilation errors) and ESLint (exit code 0, 0 errors, 0 warnings across all modified components).
+
+- **Task 73 (My Stories Management: Card Grid Layout with Cover Images & Status Filter)**:
+  - **Redesigned Management View**:
+    - Replaced the monotonous full-width horizontal table/row format in `MyStoriesList` ([`features/blog/components/my-stories-list.tsx`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/features/blog/components/my-stories-list.tsx)) with a responsive Notion/Linear grid (`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5`).
+    - **Visual Cover Preview**: Each card features the story's high-res cover image (with high-res tour-vibe Unsplash fallback) and subtle gradient overlay.
+    - **Status Overlay Badges**: Clear visual status chips on the cover image: `PUBLISHED` (emerald green with live radio pulse icon) or `DRAFT` (slate/neutral badge).
+    - **Quick Reading Metric**: Dynamically calculates and displays estimated reading time badge on the top right of each card.
+    - **Filter Status Tabs**: Added 1-click filter tabs (`All (N)`, `Published (N)`, `Drafts (N)`) with dynamic counts.
+    - **Card Action Bar**: Compact footer providing direct `View` (for published stories), `Edit` (opens markdown editor), `Publish/Unpublish` toggle with spinner, and `Delete` action.
+    - **Layout Container**: Expanded `app/(app)/stories/manage/page.tsx` container width to `max-w-7xl` to comfortably present 3-column cards on desktop.
+  - **Verification**: Verified with `tsc --noEmit` (exit code 0, 0 compilation errors) and ESLint (exit code 0, 0 errors, 0 warnings across all modified components).
+
+- **Task 74 (Authentic Trip Templates & Curated Itineraries Engine in Dedicated `features/templates`)**:
+  - **Modular Architecture Refactoring**:
+    - Created dedicated `features/templates/` folder (`types.ts`, `actions.ts`, and `components/` for `templates-view.tsx`, `template-card.tsx`, `template-preview-dialog.tsx`) to clearly decouple templates from community/forum logic for superior developer readability and clean boundaries.
+    - Removed `features/community/data/seed-templates.ts` and deleted unbacked template components from `features/community/components/`.
+  - **100% Real Database Grounding**:
+    - Replaced all mock/seed data with live PostgreSQL queries (`db.trip.findMany({ where: { OR: [{ isPublic: true }, { isTemplate: true }] } })`).
+    - Stripped out unbacked, hardcoded "Travel Style" and "Region" filters.
+    - Introduced authentic, schema-grounded filters:
+      - **Instant Search**: Matches destination, title, description, activity names, and creator names.
+      - **Duration Chips**: `All`, `Weekend (1–3d)`, `Short Trip (4–7d)`, `Extended (8–14d)`, `Long Journey (15+d)`.
+      - **Inclusions Filters**: `Has Stays`, `Has Budget`, `Has Packing List`, `Has Creator Story`.
+      - **Sorting**: `Newest First`, `Most Actionable`, `Duration`.
+  - **Card Visuals & "What's Included" Asset Strip**:
+    - Redesigned `TemplateCard` with high-res tour-vibe covers, duration and destination badges, and native currency expense totals (e.g. `~$1,450 USD`).
+    - Added "What's Included" grid chips showing counts for Activities, Stays, Packing items, and Local Tips.
+    - Cross-links directly to connected Travel Stories (`trip.linkedBlogPosts`) with 1-click read pill.
+  - **Deep-Dive Preview & Atomic Clone with Free AI Tailoring**:
+    - Created `TemplatePreviewDialog` displaying tabbed Day-by-Day schedule, Stays, and Packing & Tips.
+    - Integrated optional AI Itinerary Customizer on clone using OpenRouter free models (`inclusionai/ling-3.0-flash-sante:free`, `nex-agi/nex-n2.5-mini:free`) to tailor activities to user instructions (e.g. dietary restrictions, child pacing, budget) before atomic cloning.
+    - Executed atomic Prisma transaction copying all days, stays, checklists, and notes into the user's workspace.
+  - **Verification**: Verified with `tsc --noEmit` (exit code 0, 0 errors) and ESLint (exit code 0, 0 errors, 0 warnings across all files).
+
+- **Task 75 (Trips Workspace Module Overhaul: Metrics Strip, Tier Meter, Dual Grid/Table Views, Quick Clone & Rate-Limit Shielded Imagery)**:
+  - **Rate-Limit Shielded Unsplash Integration**:
+    - Extracted and exported `getFallbackCoverImages` in `services/unsplash.ts`.
+    - In `searchTourCoverImages`, if destination is unset/empty (`!destination.trim()`), returns curated local high-res fallbacks immediately without contacting the Unsplash API.
+    - Updated `CreateTripDialog` and `EditTripDialog` so opening dialogs serves instant local fallbacks with zero Unsplash API calls, only querying Unsplash when a traveler actually types a destination and blurs/hits enter.
+  - **Database & Relational Aggregations**:
+    - Extended `getTrips()` in `features/trips/actions.ts` to query `_count` across `itinerary`, `accommodations`, `checklistItems`, `notes`, `expenses`, and `linkedBlogPosts`.
+    - Calculated and attached `totalSpend` and `completedTasksCount` to each trip.
+    - Added `duplicateTrip(tripId)` Server Action: atomic Prisma `$transaction` cloning the trip and its itinerary days, accommodations, checklist tasks (reset to uncompleted), and notes.
+    - Added `toggleTripPublicStatus(tripId)` Server Action: quick toggle for community visibility directly from trips cards.
+    - Added `getTripUsageQuota()` Server Action returning current user trip count, tier limit (`MAX_FREE_TRIPS = 10`, `MAX_PRO_TRIPS = 25`), and pro status.
+  - **Elevated Trip Card & Visual Polish**:
+    - Curated gradient & compass fallback banner when `coverImageUrl` is empty, completely eliminating blank card voids.
+    - Added dynamic departure countdown badges (`"Happening Now"`, `"Starts Today"`, `"Tomorrow"`, `"In N days"`).
+    - Added compact item inclusion chips for activities, stays, completed checklist items, and total spent.
+    - Expanded 3-dot dropdown with: Open Workspace, Edit Details & Cover, Duplicate Trip, Toggle Community Sharing, and Delete Trip.
+  - **Linear / Notion High-Density Table View (`TripTableView`)**:
+    - Created `features/trips/components/trip-table-view.tsx` rendering a high-density tabular view with cover thumbnail, title, destination, status badge, date range, inclusion counts, spent totals, visibility chip, workspace direct link, and full 3-dot action menu.
+  - **Metrics Strip & View Switcher in `TripList`**:
+    - Top summary cards: Active Trips (in progress), Planning Trips (drafts), Completed Trips, and Workspace Tier & Quota Meter (`N / 10` or `N / 25` with colored progress bar and upgrade trigger).
+    - Status tabs with live counts: `All (N)`, `Active (N)`, `Planning (N)`, `Completed (N)`, `Archived (N)`.
+    - Sorting dropdown: `Departure (Soonest)`, `Recently Updated`, `Newest Created`, `Title (A–Z)`.
+    - View mode toggle buttons (`Grid` vs `Table`).
+  - **Cover Image Management in `EditTripDialog`**:
+    - Added cover image preview with Remove option, Unsplash suggestion choices (rate-limit protected with fallbacks), and direct custom upload via Supabase Storage (`ImageUpload` in `folder="trips"`).
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 errors across 29 routes).
+
 ## Next Steps
-- Continue updating Explore pages one-by-one as requested:
-  1. Templates Page (`/templates`): Refine features, card visuals, preview modal, and 1-click cloning.
-  2. Stories / Blog (`/stories`): Refine the independent stories feed, creator showcase, and markdown editor.
+- Move to the next workspace sidebar page: **Dashboard** (`/dashboard`).
 
 
 

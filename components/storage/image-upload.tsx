@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { uploadImageAction } from "@/features/storage/actions";
+import { useRef, useState } from "react";
+import { AlertCircle, Loader2, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  UploadCloud,
-  Loader2,
-  X,
-  ImageIcon,
-  AlertCircle,
-  CheckCircle2,
-} from "lucide-react";
+import { uploadImageAction } from "@/features/storage/actions";
+import { resizeImageToBlob } from "@/lib/utils/image-resize";
 
 interface ImageUploadProps {
-  folder?: "trips" | "avatars" | "posts" | "community";
+  folder?: "trips" | "avatars" | "posts" | "community" | "stories";
   currentImageUrl?: string | null;
   onUploaded: (url: string) => void;
   onRemoved?: () => void;
@@ -37,9 +31,11 @@ export function ImageUpload({
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const [prevImageUrl, setPrevImageUrl] = useState(currentImageUrl);
+  if (currentImageUrl !== prevImageUrl) {
+    setPrevImageUrl(currentImageUrl);
     setPreview(currentImageUrl || null);
-  }, [currentImageUrl]);
+  }
 
   const aspectClass =
     aspectRatio === "square"
@@ -59,8 +55,27 @@ export function ImageUpload({
     setPreview(objectUrl);
 
     try {
+      // Client-side optimize large non-GIF images to reduce payload size and speed up upload
+      let fileToUpload = file;
+      const isGif = file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
+      if (!isGif) {
+        try {
+          const isAvatar = folder === "avatars" || aspectRatio === "square";
+          fileToUpload = await resizeImageToBlob(file, {
+            maxWidth: isAvatar ? 512 : 1920,
+            maxHeight: isAvatar ? 512 : 1080,
+            quality: 0.85,
+            format: "image/webp",
+            squareCrop: isAvatar,
+          });
+        } catch (resizeErr) {
+          console.warn("Client-side image resize skipped, using original file:", resizeErr);
+          fileToUpload = file;
+        }
+      }
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       formData.append("folder", folder);
 
       const res = await uploadImageAction(formData);
@@ -127,7 +142,7 @@ export function ImageUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+          accept="image/jpeg,image/png,image/webp,image/gif,image/avif,.jpg,.jpeg,.png,.webp,.gif,.avif"
           className="hidden"
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {

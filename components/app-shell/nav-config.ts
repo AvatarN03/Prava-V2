@@ -1,13 +1,14 @@
 import {
+  BookOpen,
   Compass,
   CreditCard,
   LayoutDashboard,
   LayoutTemplate,
   LucideIcon,
+  MessageSquare,
   ShieldAlert,
   Sparkles,
   User,
-  Users,
 } from "lucide-react";
 
 export interface NavItem {
@@ -37,10 +38,14 @@ export const workspaceNavItems: NavItem[] = [
 
 export const otherNavItems: NavItem[] = [
   {
-    title: "Community",
-    href: "/community",
-    icon: Users,
-    badge: "Active",
+    title: "Forum",
+    href: "/forum",
+    icon: MessageSquare,
+  },
+  {
+    title: "Stories",
+    href: "/stories",
+    icon: BookOpen,
   },
   {
     title: "Templates",

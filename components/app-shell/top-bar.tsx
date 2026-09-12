@@ -104,9 +104,10 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
     if (pathname.startsWith("/dashboard")) return "Dashboard";
     if (pathname.startsWith("/trips")) return "Trips";
     if (pathname.startsWith("/travel-essentials")) return "Travel Essentials";
-    if (pathname.startsWith("/community")) return "Community";
+    if (pathname.startsWith("/forum")) return "Forum";
+    if (pathname.startsWith("/community")) return "Forum";
+    if (pathname.startsWith("/stories")) return "Travel Stories";
     if (pathname.startsWith("/templates")) return "Templates";
-    if (pathname.startsWith("/stories")) return "Community";
     if (pathname.startsWith("/profile")) return "Account & Settings";
     if (pathname.startsWith("/pricing")) return "Subscription & Usage";
     return "Workspace";
