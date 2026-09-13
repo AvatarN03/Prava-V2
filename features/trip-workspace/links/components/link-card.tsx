@@ -39,7 +39,7 @@ export function LinkCard({ item }: LinkCardProps) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handleDelete = async () => {
-    const res = await deleteLink({ id: item.id, tripId: item.tripId });
+    const res = await deleteLink({ id: item.id, tripId: item.tripId! });
     if (res.success) {
       toast.success("Bookmark deleted.");
       setIsDeleteOpen(false);

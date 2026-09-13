@@ -8,7 +8,10 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { Expense } from "@prisma/client";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { TravelFinancialsDialog } from "./travel-financials-dialog";
 
 interface DashboardMetricsProps {
   metrics: {
@@ -17,9 +20,12 @@ interface DashboardMetricsProps {
     planningTrips: number;
     completedTrips: number;
     totalSpend: number;
+    tripSpend?: number;
+    generalSpend?: number;
     pendingTasksCount: number;
     totalItineraryCount: number;
   };
+  generalExpenses?: Expense[];
   currency?: string;
 }
 
@@ -48,7 +54,11 @@ const getCurrencyConfig = (currency: string = "INR") => {
   }
 };
 
-export function DashboardMetrics({ metrics, currency = "INR" }: DashboardMetricsProps) {
+export function DashboardMetrics({
+  metrics,
+  generalExpenses = [],
+  currency = "INR",
+}: DashboardMetricsProps) {
   const { symbol, locale } = getCurrencyConfig(currency);
 
   const formattedSpend = `${symbol}${metrics.totalSpend.toLocaleString(locale, {
@@ -94,8 +104,16 @@ export function DashboardMetrics({ metrics, currency = "INR" }: DashboardMetrics
           <div className="text-2xl font-bold font-mono text-foreground">
             {formattedSpend}
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            Across all travel workspaces
+          <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+            <TravelFinancialsDialog
+              metrics={{
+                totalSpend: metrics.totalSpend,
+                tripSpend: metrics.tripSpend ?? metrics.totalSpend,
+                generalSpend: metrics.generalSpend ?? 0,
+              }}
+              generalExpenses={generalExpenses}
+              currency={currency}
+            />
           </div>
         </CardContent>
       </Card>

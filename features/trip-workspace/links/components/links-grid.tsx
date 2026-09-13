@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Link as PrismaLink } from "@prisma/client";
 import { LinkCard } from "./link-card";
 import { AddLinkDialog } from "./add-link-dialog";
+import { ImportFromVaultDialog } from "./import-from-vault-dialog";
 
 interface LinksGridProps {
   tripId: string;
@@ -47,7 +48,11 @@ export function LinksGrid({ tripId, items }: LinksGridProps) {
             Bookmark travel blogs, hotel listings, Google Maps pins, transit trackers, or ticket confirmation URLs.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center pb-14">
+        <CardContent className="flex items-center justify-center gap-2.5 pb-14">
+          <ImportFromVaultDialog
+            tripId={tripId}
+            existingUrls={items.map((i) => i.url)}
+          />
           <AddLinkDialog
             tripId={tripId}
             trigger={
@@ -106,7 +111,13 @@ export function LinksGrid({ tripId, items }: LinksGridProps) {
           </div>
         </div>
 
-        <AddLinkDialog tripId={tripId} />
+        <div className="flex items-center gap-2">
+          <ImportFromVaultDialog
+            tripId={tripId}
+            existingUrls={items.map((i) => i.url)}
+          />
+          <AddLinkDialog tripId={tripId} />
+        </div>
       </div>
 
       {/* Links Grid */}

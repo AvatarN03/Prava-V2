@@ -4,15 +4,16 @@ import { TravelEssentialsShell } from "./travel-essentials-shell";
 
 import { getCurrentProfile } from "@/features/profile/actions";
 import { fetchCurrencyPerformance, fetchFxRates } from "@/features/travel-essentials/currency/currency-service";
+import { getVaultLinks } from "@/features/travel-essentials/vault/actions";
 import { fetchCitySuggestions, fetchWeather } from "@/features/travel-essentials/weather/weather-service";
 
 export const metadata = {
   title: "Travel Essentials | Prava",
   description:
-    "Real-time travel companion utilities: live weather forecasts, currency conversions, interactive maps, country guides, emergency contacts, and local phrasebooks.",
+    "Real-time travel companion utilities: live weather forecasts, currency conversions, interactive maps, country guides, emergency contacts, local phrasebooks, and your global resource vault.",
 };
 
-const VALID_TABS = ["weather", "currency", "maps", "guide", "language"] as const;
+const VALID_TABS = ["weather", "currency", "maps", "guide", "language", "vault"] as const;
 type TabType = (typeof VALID_TABS)[number];
 
 interface PageProps {
@@ -35,11 +36,15 @@ export default async function TravelEssentialsPage({ searchParams }: PageProps) 
   // On-demand SSR fetching based on requested tab
   let initialWeather = null;
   let initialFxRates = null;
+  let initialVaultLinks = null;
 
   if (activeTab === "weather") {
     initialWeather = await fetchWeather("Mumbai");
   } else if (activeTab === "currency") {
     initialFxRates = await fetchFxRates(preferredCurrency);
+  } else if (activeTab === "vault") {
+    const vaultRes = await getVaultLinks();
+    initialVaultLinks = vaultRes.data || [];
   }
 
   async function searchWeatherAction(city: string) {
@@ -80,6 +85,7 @@ export default async function TravelEssentialsPage({ searchParams }: PageProps) 
         initialTab={activeTab}
         initialWeather={initialWeather}
         initialFxRates={initialFxRates}
+        initialVaultLinks={initialVaultLinks || []}
         preferredCurrency={preferredCurrency}
         onWeatherSearch={searchWeatherAction}
         onCitySuggestions={searchCitySuggestionsAction}

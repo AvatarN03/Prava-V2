@@ -292,7 +292,26 @@
   - **First-Class Dark & Light Mode Adaptation**: Eliminated hardcoded light-only colors, replacing them with semantic tokens and Tailwind `dark:` variants (`dark:bg-slate-900`, `dark:text-slate-100`, `dark:border-slate-800`, `dark:bg-slate-950`). The landing page seamlessly adapts to the system theme without requiring a duplicate toggle on the page itself.
   - **Interactive Workspace Simulation**: Upgraded the mockup into a living preview where users can switch between **Itinerary**, **Overview**, **Stays**, **Expenses**, and **Essentials** tabs, as well as test the AI Structured Proposal card by clicking "Accept Proposal" (animating an item directly into the Day 1 timeline) or "Dismiss".
   - **Responsive Mobile Navigation**: Added an accessible mobile drawer menu for screens `< lg` with quick links and authentication actions.
-  - **Refactored `app/page.tsx`**: Streamlined `app/page.tsx` into an elegant, thin Server Component following the strict 6-tier import structure.
+- **Task 48 (Global Travel Resource Vault & Cross-Trip Overhead Financials)**:
+  - **Prisma Schema Hardening & Zero-Data-Loss Protection**:
+    - Modeled `CommunityPost`, `CommunityReply`, `CommunityPostUpvote`, and `CommunitySavedPost` into `prisma/schema.prisma` with `@unique` slug constraint and relations to protect existing PostgreSQL community tables from accidental drops.
+    - Updated `Expense` and `Link` models to support optional `tripId` (`tripId String?`) and explicit profile ownership (`profileId String?`) with cascade foreign keys to `Profile`.
+    - Synchronized schema to Supabase PostgreSQL database via `npx prisma db push` with 0 data loss and regenerated Prisma client via `npx prisma generate`.
+  - **Global Travel Resource Vault (`features/travel-essentials/vault/`)**:
+    - Created Zod validation schemas (`createVaultLinkSchema`, `updateVaultLinkSchema`, `attachVaultLinkToTripSchema`).
+    - Authored Server Actions (`getVaultLinks`, `getUserTripOptions`, `createVaultLink`, `updateVaultLink`, `deleteVaultLink`, `attachVaultLinkToTrip`).
+    - Built `AddVaultLinkDialog`, `EditVaultLinkDialog`, and `AttachToTripDialog` modals with official shadcn/ui primitives.
+    - Built `VaultView` component with category filters, search input, external link previews, and 1-click "Attach to Trip" action.
+    - Integrated the 6th tab (`"vault"`, label: **"Resource Vault"**) into `TravelEssentialsShell` and `TravelEssentialsPage` with on-demand SSR fetching.
+  - **Trip Workspace Import Bridge**:
+    - Created `ImportFromVaultDialog` in `features/trip-workspace/links/components/`.
+    - Integrated "Import from Vault" button into `LinksGrid` for both empty states and active toolbar actions, enabling 1-click copying of global bookmarks into any trip workspace without re-typing.
+  - **Cross-Trip Financials & General Travel Overhead**:
+    - Created `createGeneralExpenseSchema` for unassigned travel overheads (Gear, Insurance, Passports/Visas, Subscriptions/SIMs).
+    - Authored Server Actions `createGeneralTravelExpense`, `getGeneralTravelExpenses`, and `deleteGeneralTravelExpense` in `features/trip-workspace/expenses/actions.ts`.
+    - Enhanced `getDashboardSummary` in `features/dashboard/queries.ts` to query general overheads, compute `generalSpend` and `tripSpend`, and aggregate them into `totalSpend`.
+    - Built `TravelFinancialsDialog` in `features/dashboard/components/` and integrated into the Dashboard's "Total Budget Spent" card, enabling travelers to view cross-trip spend distributions and log general gear/insurance items directly.
+  - **Verification**: Verified with clean Next.js 16 production build (`npm run build`, exit code 0, 0 TypeScript errors).
 
 ## Current Architecture State
 - **Framework**: Next.js 16.3.3 (App Router with Turbopack)
@@ -788,9 +807,17 @@
     - Updated `services/ai/trip-agent-graph.ts` prompt and added sanitization in `extractProposalBlock` to completely prevent models from outputting raw JSON code blocks or developer citations.
     - Enhanced `WorkspaceAiPanel` message bubbles with `FormattedMessageContent` featuring real semantic HTML (`<strong>`, `<em>`, `<ul><li>`), stripping raw asterisks/dashes and enforcing `break-words [overflow-wrap:anywhere] overflow-hidden` to eliminate horizontal text clipping.
   - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 29 routes).
+- **Task 78 (Resource Vault & Trips UI Polish)**:
+  - **Resource Vault Attach Dialog (`attach-to-trip-dialog.tsx`)**:
+    - Fixed preview card horizontal overflow where unbroken URLs pushed the box boundary past the right edge of the dialog. Added `overflow-hidden` to `DialogContent`, `min-w-0` to the container and card, `min-w-0 truncate` to title and url, and `title={item.url}` for tooltip clarity.
+    - Added `cursor-pointer` to `SelectTrigger` and `SelectItem`.
+  - **Trips Page Sort Select (`trip-list.tsx`)**:
+    - Widened `SelectTrigger` from `w-[170px]` to `w-[205px]` with `shrink-0` on `ArrowUpDown` and `cursor-pointer`.
+    - Eliminated the `Departure...` truncation issue so `"Departure (Soonest)"` renders fully and comfortably.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors).
 
 ## Next Steps
-- Continue testing AI Assistant interactions and iterate based on user feedback.
+- Continue testing UI interactions and iterate based on user feedback.
 
 
 

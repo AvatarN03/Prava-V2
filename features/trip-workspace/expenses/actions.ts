@@ -1,15 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
+import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { db } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 import { verifyTripOwnership } from "../common/auth-check";
 import {
-  createExpenseSchema,
-  updateExpenseSchema,
-  deleteExpenseSchema,
   CreateExpenseInput,
-  UpdateExpenseInput,
+  createExpenseSchema,
+  CreateGeneralExpenseInput,
+  createGeneralExpenseSchema,
   DeleteExpenseInput,
+  deleteExpenseSchema,
+  UpdateExpenseInput,
+  updateExpenseSchema,
 } from "./schema";
 
 export async function createExpense(input: CreateExpenseInput) {
@@ -20,13 +25,14 @@ export async function createExpense(input: CreateExpenseInput) {
     }
 
     const { tripId, title, amount, currency, category, date, paidBy, notes } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
+    const { authorized, user } = await verifyTripOwnership(tripId);
     if (!authorized) {
       return { success: false, error: "Unauthorized" };
     }
 
     const item = await db.expense.create({
       data: {
+        profileId: user?.id || null,
         tripId,
         title,
         amount,
@@ -110,3 +116,129 @@ export async function deleteExpense(input: DeleteExpenseInput) {
     return { success: false, error: error instanceof Error ? error.message : "Failed to delete expense" };
   }
 }
+
+/**
+ * Record a general travel overhead expense (e.g. Travel Gear, Passport/Visa fees, Annual Multi-Trip Insurance)
+ */
+export async function createGeneralTravelExpense(input: CreateGeneralExpenseInput) {
+  try {
+    const validated = createGeneralExpenseSchema.safeParse(input);
+    if (!validated.success) {
+      return {
+        success: false,
+        error: "Validation failed",
+        fieldErrors: validated.error.flatten().fieldErrors,
+      };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const profile = await syncUserProfile(user);
+
+    const { title, amount, currency, category, date, paidBy, notes } = validated.data;
+
+    const item = await db.expense.create({
+      data: {
+        profileId: profile.id,
+        tripId: null,
+        title,
+        amount,
+        currency: currency || "USD",
+        category,
+        date: date ? new Date(date) : new Date(),
+        paidBy: paidBy || null,
+        notes: notes || null,
+      },
+    });
+
+    revalidatePath("/dashboard");
+    return { success: true, data: item };
+  } catch (error) {
+    console.error("Error creating general travel expense:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to record travel overhead",
+    };
+  }
+}
+
+/**
+ * Fetch all unassigned general travel overhead expenses for the authenticated user
+ */
+export async function getGeneralTravelExpenses() {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      return { success: false, error: "Unauthorized", data: [] };
+    }
+
+    const profile = await syncUserProfile(user);
+
+    const items = await db.expense.findMany({
+      where: {
+        profileId: profile.id,
+        tripId: null,
+      },
+      orderBy: { date: "desc" },
+    });
+
+    return { success: true, data: items };
+  } catch (error) {
+    console.error("Error fetching general travel expenses:", error);
+    return { success: false, error: "Failed to load expenses", data: [] };
+  }
+}
+
+/**
+ * Delete a general travel overhead expense
+ */
+export async function deleteGeneralTravelExpense(id: string) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const profile = await syncUserProfile(user);
+
+    const existing = await db.expense.findFirst({
+      where: { id, profileId: profile.id, tripId: null },
+    });
+
+    if (!existing) {
+      return { success: false, error: "Expense not found or unauthorized" };
+    }
+
+    await db.expense.delete({
+      where: { id },
+    });
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting general travel expense:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to delete expense",
+    };
+  }
+}
+

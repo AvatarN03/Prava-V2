@@ -105,7 +105,7 @@ export function EditExpenseDialog({
     startTransition(async () => {
       const res = await updateExpense({
         id: item.id,
-        tripId: item.tripId,
+        tripId: item.tripId!,
         title: formData.title.trim(),
         amount: parsedAmount,
         currency: formData.currency,

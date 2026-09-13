@@ -8,6 +8,7 @@ import {
   Trip,
 } from "@prisma/client";
 
+import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
@@ -66,6 +67,8 @@ export interface DashboardSummary {
     planningTrips: number;
     completedTrips: number;
     totalSpend: number;
+    tripSpend: number;
+    generalSpend: number;
     pendingTasksCount: number;
     totalItineraryCount: number;
   };
@@ -73,6 +76,7 @@ export interface DashboardSummary {
   recentTrips: Trip[];
   urgentTasks: (ChecklistItem & { tripTitle: string })[];
   allTrips: Trip[];
+  generalExpenses: Expense[];
 }
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
@@ -91,6 +95,8 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
         planningTrips: 0,
         completedTrips: 0,
         totalSpend: 0,
+        tripSpend: 0,
+        generalSpend: 0,
         pendingTasksCount: 0,
         totalItineraryCount: 0,
       },
@@ -98,58 +104,73 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       recentTrips: [],
       urgentTasks: [],
       allTrips: [],
+      generalExpenses: [],
     };
   }
 
-  // Fetch profile for preferred currency and display name
-  const profile = await db.profile.findUnique({
-    where: { id: user.id },
-    select: { fullName: true, defaultCurrency: true },
-  });
+  // Ensure profile is synced safely
+  let profile = null;
+  try {
+    profile = await syncUserProfile(user);
+  } catch {
+    profile = await db.profile.findUnique({
+      where: { id: user.id },
+      select: { id: true, fullName: true, defaultCurrency: true },
+    });
+  }
 
-  // Prioritize user profile currency, defaulting to INR (Indian users focus)
+  const profileId = profile?.id || user.id;
   const defaultCurrency = profile?.defaultCurrency || "INR";
 
   // Fetch all user trips with relations
-  const trips = await db.trip.findMany({
-    where: { profileId: user.id },
-    include: {
-      itinerary: {
-        orderBy: [{ dayNumber: "asc" }, { order: "asc" }],
+  const [trips, generalExpenses] = await Promise.all([
+    db.trip.findMany({
+      where: { profileId },
+      include: {
+        itinerary: {
+          orderBy: [{ dayNumber: "asc" }, { order: "asc" }],
+        },
+        accommodations: {
+          orderBy: { checkIn: "asc" },
+        },
+        expenses: {
+          orderBy: { date: "desc" },
+        },
+        checklistItems: {
+          orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
+        },
+        notes: {
+          orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
+          take: 3,
+        },
+        links: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
       },
-      accommodations: {
-        orderBy: { checkIn: "asc" },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.expense.findMany({
+      where: {
+        profileId: user.id,
+        tripId: null,
       },
-      expenses: {
-        orderBy: { date: "desc" },
-      },
-      checklistItems: {
-        orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
-      },
-      notes: {
-        orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
-        take: 3,
-      },
-      links: {
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { date: "desc" },
+    }),
+  ]);
 
   const totalTrips = trips.length;
   const activeTrips = trips.filter((t) => t.status === "ACTIVE").length;
   const planningTrips = trips.filter((t) => t.status === "PLANNING").length;
   const completedTrips = trips.filter((t) => t.status === "COMPLETED").length;
 
-  let totalSpend = 0;
+  let tripSpend = 0;
   let pendingTasksCount = 0;
   let totalItineraryCount = 0;
   const urgentTasks: (ChecklistItem & { tripTitle: string })[] = [];
 
   trips.forEach((trip) => {
-    totalSpend += trip.expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    tripSpend += trip.expenses.reduce((acc, curr) => acc + curr.amount, 0);
     const pendingItems = trip.checklistItems.filter((i) => !i.isCompleted);
     pendingTasksCount += pendingItems.length;
     totalItineraryCount += trip.itinerary.length;
@@ -161,6 +182,9 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       });
     });
   });
+
+  const generalSpend = generalExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalSpend = tripSpend + generalSpend;
 
   // Identify next upcoming/active trip:
   // First priority: ACTIVE trip, then PLANNING trip with earliest start date, else most recent trip
@@ -332,6 +356,8 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       planningTrips,
       completedTrips,
       totalSpend,
+      tripSpend,
+      generalSpend,
       pendingTasksCount,
       totalItineraryCount,
     },
@@ -339,5 +365,6 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     recentTrips: trips.slice(0, 5),
     urgentTasks: urgentTasks.slice(0, 5),
     allTrips: trips,
+    generalExpenses,
   };
 }

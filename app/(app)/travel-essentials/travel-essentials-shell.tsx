@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
+  Bookmark,
   BookOpen,
   CloudSun,
   Coins,
@@ -12,6 +13,7 @@ import {
   Loader2,
   Map,
 } from "lucide-react";
+import type { Link as PrismaLink } from "@prisma/client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -74,12 +76,21 @@ const LanguageView = dynamic(
   { loading: () => <TabLoadingSkeleton /> }
 );
 
-export type TabType = "weather" | "currency" | "maps" | "guide" | "language";
+const VaultView = dynamic(
+  () =>
+    import("@/features/travel-essentials/vault/components/vault-view").then(
+      (m) => m.VaultView
+    ),
+  { loading: () => <TabLoadingSkeleton /> }
+);
+
+export type TabType = "weather" | "currency" | "maps" | "guide" | "language" | "vault";
 
 interface TravelEssentialsShellProps {
   initialTab?: TabType;
   initialWeather: WeatherData | null;
   initialFxRates: FxRates | null;
+  initialVaultLinks?: PrismaLink[];
   preferredCurrency?: string;
   onWeatherSearch: (city: string) => Promise<WeatherData | null>;
   onCitySuggestions?: (query: string) => Promise<CitySuggestion[]>;
@@ -97,12 +108,14 @@ const TABS: { id: TabType; label: string; icon: React.ElementType; iconColor: st
   { id: "maps", label: "Maps", icon: Map, iconColor: "text-sky-500" },
   { id: "guide", label: "Country Guide", icon: BookOpen, iconColor: "text-indigo-500" },
   { id: "language", label: "Language", icon: Languages, iconColor: "text-violet-500" },
+  { id: "vault", label: "Resource Vault", icon: Bookmark, iconColor: "text-blue-500" },
 ];
 
 export function TravelEssentialsShell({
   initialTab = "weather",
   initialWeather,
   initialFxRates,
+  initialVaultLinks = [],
   preferredCurrency = "INR",
   onWeatherSearch,
   onCitySuggestions,
@@ -210,6 +223,10 @@ export function TravelEssentialsShell({
 
         <TabsContent value="language" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
           {activeTab === "language" && <LanguageView />}
+        </TabsContent>
+
+        <TabsContent value="vault" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+          {activeTab === "vault" && <VaultView initialLinks={initialVaultLinks} />}
         </TabsContent>
       </Tabs>
     </div>

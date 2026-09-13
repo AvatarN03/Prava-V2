@@ -59,7 +59,7 @@ export function EditLinkDialog({ item, open, onOpenChange }: EditLinkDialogProps
     startTransition(async () => {
       const res = await updateLink({
         id: item.id,
-        tripId: item.tripId,
+        tripId: item.tripId!,
         title: formData.title,
         url: finalUrl,
         category: formData.category,

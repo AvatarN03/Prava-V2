@@ -32,6 +32,12 @@ model Profile {
   trips           Trip[]
   aiConversations AiConversation[]
   blogPosts       BlogPost[]
+  expenses        Expense[]
+  links           Link[]
+  communityPosts  CommunityPost[]
+  communityReplies CommunityReply[]
+  communityPostUpvotes CommunityPostUpvote[]
+  communitySavedPosts CommunitySavedPost[]
 
   @@map("profiles")
 }
@@ -68,6 +74,7 @@ model Trip {
   aiConversations AiConversation[]
   aiProposals     AiProposal[]
   linkedBlogPosts BlogPost[]
+  communityPosts  CommunityPost[]
 
   @@map("trips")
 }
@@ -115,7 +122,8 @@ model Accommodation {
 
 model Expense {
   id        String   @id @default(uuid()) @db.Uuid
-  tripId    String   @map("trip_id") @db.Uuid
+  profileId String?  @map("profile_id") @db.Uuid
+  tripId    String?  @map("trip_id") @db.Uuid
   title     String
   amount    Float
   currency  String   @default("USD")
@@ -126,7 +134,8 @@ model Expense {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  profile Profile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  trip    Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@map("expenses")
 }
@@ -164,7 +173,8 @@ model ChecklistItem {
 
 model Link {
   id          String   @id @default(uuid()) @db.Uuid
-  tripId      String   @map("trip_id") @db.Uuid
+  profileId   String?  @map("profile_id") @db.Uuid
+  tripId      String?  @map("trip_id") @db.Uuid
   title       String
   url         String
   category    String?  @default("Resource")
@@ -172,7 +182,8 @@ model Link {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  profile Profile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  trip    Trip?    @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@map("links")
 }
@@ -257,3 +268,69 @@ model BlogPost {
 
   @@map("blog_posts")
 }
+
+model CommunityPost {
+  id            String    @id @default(uuid()) @db.Uuid
+  profileId     String    @map("profile_id") @db.Uuid
+  title         String
+  content       String
+  category      String    @default("DISCUSSIONS")
+  destination   String?
+  tags          String[]  @default([])
+  coverImageUrl String?   @map("cover_image_url")
+  linkedTripId  String?   @map("linked_trip_id") @db.Uuid
+  upvotes       Int?      @default(0)
+  views         Int?      @default(0)
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  slug          String?   @unique
+  images        String[]  @default([])
+  isEdited      Boolean?  @default(false) @map("is_edited")
+
+  profile       Profile               @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  linkedTrip    Trip?                 @relation(fields: [linkedTripId], references: [id], onDelete: SetNull)
+  replies       CommunityReply[]
+  upvoteRecords CommunityPostUpvote[]
+  savedRecords  CommunitySavedPost[]
+
+  @@map("community_posts")
+}
+
+model CommunityReply {
+  id        String    @id @default(uuid()) @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  profileId String    @map("profile_id") @db.Uuid
+  content   String
+  upvotes   Int?      @default(0)
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  isEdited  Boolean?  @default(false) @map("is_edited")
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("community_replies")
+}
+
+model CommunityPostUpvote {
+  profileId String @map("profile_id") @db.Uuid
+  postId    String @map("post_id") @db.Uuid
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, postId])
+  @@map("community_post_upvotes")
+}
+
+model CommunitySavedPost {
+  profileId String    @map("profile_id") @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, postId])
+  @@map("community_saved_posts")
+}
+

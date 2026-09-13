@@ -25,7 +25,7 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const summary = await getDashboardSummary();
-  const { user, metrics, upcomingTrip, recentTrips, urgentTasks } = summary;
+  const { user, metrics, upcomingTrip, recentTrips, urgentTasks, generalExpenses } = summary;
 
   const displayName =
     user?.fullName || (user?.email ? user.email.split("@")[0] : "Traveler");
@@ -137,6 +137,7 @@ export default async function DashboardPage() {
             </div>
             <DashboardMetrics
               metrics={metrics}
+              generalExpenses={generalExpenses || []}
               currency={user?.defaultCurrency || "INR"}
             />
           </div>

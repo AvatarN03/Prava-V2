@@ -301,15 +301,15 @@ export function TripList({ initialTrips, tripUsage }: TripListProps) {
                   value={sortOption}
                   onValueChange={(val) => setSortOption(val as TripSortOption)}
                 >
-                  <SelectTrigger className="h-9 w-[170px] text-xs">
-                    <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectTrigger className="h-9 w-[205px] text-xs cursor-pointer">
+                    <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
                     <SelectValue placeholder="Sort order" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="departure">Departure (Soonest)</SelectItem>
-                    <SelectItem value="recent_updated">Recently Updated</SelectItem>
-                    <SelectItem value="newest">Newest Created</SelectItem>
-                    <SelectItem value="alphabetical">Title (A–Z)</SelectItem>
+                    <SelectItem value="departure" className="cursor-pointer">Departure (Soonest)</SelectItem>
+                    <SelectItem value="recent_updated" className="cursor-pointer">Recently Updated</SelectItem>
+                    <SelectItem value="newest" className="cursor-pointer">Newest Created</SelectItem>
+                    <SelectItem value="alphabetical" className="cursor-pointer">Title (A–Z)</SelectItem>
                   </SelectContent>
                 </Select>
 

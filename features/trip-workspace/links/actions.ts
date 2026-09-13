@@ -20,13 +20,14 @@ export async function createLink(input: CreateLinkInput) {
     }
 
     const { tripId, title, url, category, description } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
+    const { authorized, user } = await verifyTripOwnership(tripId);
     if (!authorized) {
       return { success: false, error: "Unauthorized" };
     }
 
     const link = await db.link.create({
       data: {
+        profileId: user?.id || null,
         tripId,
         title,
         url,

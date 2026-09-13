@@ -203,3 +203,15 @@ html {
 .thin-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(45, 155, 240, 0.75);
 }
+
+/* =========================================================
+   SUBTLE BLUE WORKSPACE BACKGROUND PATTERN (Independent of Theme)
+   ========================================================= */
+
+.bg-prava-pattern {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(45, 155, 240, 0.16) 1.2px, transparent 0),
+    linear-gradient(to right, rgba(45, 155, 240, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(45, 155, 240, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

@@ -84,6 +84,16 @@ export async function syncUserProfile(user: User) {
         data: { profileId: user.id },
       });
 
+      await db.expense.updateMany({
+        where: { profileId: existingByEmail.id },
+        data: { profileId: user.id },
+      });
+
+      await db.link.updateMany({
+        where: { profileId: existingByEmail.id },
+        data: { profileId: user.id },
+      });
+
       // Delete the old profile row
       await db.profile.delete({
         where: { id: existingByEmail.id },
