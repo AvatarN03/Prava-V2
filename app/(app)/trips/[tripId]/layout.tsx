@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+
+import { TripWorkspaceContainer } from "@/features/trip-workspace/common/trip-workspace-container";
+
 import { verifyTripOwnership } from "@/features/trip-workspace/common/auth-check";
-import { WorkspaceHeader } from "@/features/trip-workspace/common/workspace-header";
-import { WorkspaceNav } from "@/features/trip-workspace/common/workspace-nav";
 
 interface TripWorkspaceLayoutProps {
   children: React.ReactNode;
@@ -48,10 +49,9 @@ export default async function TripWorkspaceLayout({
   };
 
   return (
-    <div className="space-y-4">
-      <WorkspaceHeader trip={trip} />
-      <WorkspaceNav tripId={trip.id} counts={counts} />
-      <div className="pt-2">{children}</div>
-    </div>
+    <TripWorkspaceContainer trip={trip} counts={counts}>
+      {children}
+    </TripWorkspaceContainer>
   );
 }
+

@@ -8,7 +8,6 @@
 export const OPENROUTER_FREE_MODELS = [
   "nvidia/nemotron-3.5-lightning:free",
   "openrouter/free",
-  "google/gemma-4-31b-it:free",
 ] as const;
 
 export interface OpenRouterMessage {
@@ -77,6 +76,7 @@ export async function callOpenRouterFree(
           temperature: options.temperature ?? 0.6,
           max_tokens: options.maxTokens ?? 1500,
           response_format: options.responseFormat,
+          include_reasoning: false,
         }),
       });
 
@@ -94,7 +94,7 @@ export async function callOpenRouterFree(
       if (content && typeof content === "string" && content.trim().length > 0) {
         return {
           success: true,
-          text: content.trim(),
+          text: stripReasoning(content.trim()),
           modelUsed: model,
         };
       }
@@ -110,4 +110,22 @@ export async function callOpenRouterFree(
     modelUsed: "none",
     error: lastError || "All free models in cascade were busy or unavailable.",
   };
+}
+
+/**
+ * Strips reasoning tokens, <think> blocks, or "Here's a thinking process:" dumps
+ * that reasoning models (like Nemotron, DeepSeek, Gemma) might emit in content.
+ */
+export function stripReasoning(text: string): string {
+  if (!text) return "";
+  let cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<thought>[\s\S]*?<\/thought>/gi, "")
+    // Remove "Here's a thinking process:" or "Thinking Process:" blocks
+    .replace(/(?:^|\n)(?:Here's a thinking process:?|Thinking Process:?|Thinking:?)\s*[\s\S]*?(?=(?:\n\s*\n(?:[A-Z#*]|Hey|Hello|Hi|Current|The))|$)/gi, "")
+    // Remove lines like "1. Analyze User Input: ... 2. Check Available Data: ... "
+    .replace(/(?:^|\n)\d+\.\s+(?:Analyze User Input|Check Available Data|Identify Constraints|Gap Identification):[\s\S]*?(?=(?:\n\s*\n(?:[A-Z#*]|Hey|Hello|Hi|Current|The))|$)/gi, "")
+    .trim();
+
+  return cleaned || text.trim();
 }

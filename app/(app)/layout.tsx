@@ -1,6 +1,9 @@
 import { AppShell } from "@/components/app-shell/app-shell";
-import { getCurrentProfile } from "@/features/profile/actions";
+
+import { WorkspaceAiProvider } from "@/features/trip-workspace/context/workspace-ai-context";
 import { OfflineSyncProvider } from "@/lib/offline";
+
+import { getCurrentProfile } from "@/features/profile/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +15,15 @@ export default async function AppLayout({
   const res = await getCurrentProfile();
   const userId = res.success && res.profile ? res.profile.id : "";
   const offlineMode = res.success && res.profile ? res.profile.offlineMode : false;
+  const userAvatarUrl = res.success && res.profile ? res.profile.avatarUrl : null;
 
   return (
     <OfflineSyncProvider userId={userId} initialOfflineMode={offlineMode}>
-      <AppShell>{children}</AppShell>
+      <WorkspaceAiProvider userAvatarUrl={userAvatarUrl}>
+        <AppShell>{children}</AppShell>
+      </WorkspaceAiProvider>
     </OfflineSyncProvider>
   );
 }
+
 

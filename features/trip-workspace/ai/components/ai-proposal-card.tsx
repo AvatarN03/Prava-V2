@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AiProposalDTO, AiProposalChange } from "../schema";
-import { acceptAiProposal, rejectAiProposal } from "../actions";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Sparkles,
   Check,
@@ -21,6 +18,13 @@ import {
   Loader2,
   CheckCircle2,
 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+import { acceptAiProposal, rejectAiProposal } from "../actions";
+
+import type { AiProposalDTO, AiProposalChange } from "../schema";
 
 interface AiProposalCardProps {
   proposal: AiProposalDTO;
@@ -130,38 +134,38 @@ export function AiProposalCard({
   };
 
   return (
-    <div className="my-3 rounded-md border border-sky-200 bg-sky-50/50 p-3.5 space-y-3 text-xs shadow-2xs">
+    <div className="my-3 rounded-xs border border-sky-200 bg-sky-50/50 dark:border-sky-900/60 dark:bg-[#111A2E] p-3.5 space-y-3 text-xs shadow-2xs">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 border-b border-sky-200/80 pb-2">
-        <div className="flex items-center gap-1.5 font-bold text-sky-950">
+      <div className="flex items-center justify-between gap-2 border-b border-sky-200/80 dark:border-sky-900/50 pb-2">
+        <div className="flex items-center gap-1.5 font-bold text-sky-950 dark:text-sky-200">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           <span>AI Workspace Action Proposal</span>
         </div>
 
         {status === "PENDING" && (
-          <Badge variant="planning" className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-800 border-amber-200">
+          <Badge variant="planning" className="text-[10px] px-1.5 py-0 rounded-xs bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30">
             Pending Review
           </Badge>
         )}
         {status === "ACCEPTED" && (
-          <Badge variant="active" className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-800 border-emerald-300 flex items-center gap-1">
+          <Badge variant="active" className="text-[10px] px-1.5 py-0 rounded-xs bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 flex items-center gap-1">
             <CheckCircle2 className="h-2.5 w-2.5" /> Accepted
           </Badge>
         )}
         {status === "PARTIAL" && (
-          <Badge variant="active" className="text-[10px] px-1.5 py-0 bg-sky-100 text-sky-800 border-sky-300">
+          <Badge variant="active" className="text-[10px] px-1.5 py-0 rounded-xs bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/30">
             Partially Applied
           </Badge>
         )}
         {status === "REJECTED" && (
-          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 bg-red-50 text-red-700 border-red-200">
+          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 rounded-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30">
             Rejected
           </Badge>
         )}
       </div>
 
       {/* Proposal Summary */}
-      <p className="font-semibold text-sky-900 leading-snug">
+      <p className="font-semibold text-sky-900 dark:text-sky-200 leading-snug">
         {proposal.summary}
       </p>
 
@@ -180,12 +184,12 @@ export function AiProposalCard({
             <div
               key={change.id}
               onClick={() => toggleSelect(change.id)}
-              className={`flex items-start gap-2.5 p-2.5 rounded-sm border transition-colors ${
+              className={`flex items-start gap-2.5 p-2.5 rounded-xs border transition-colors ${
                 status === "PENDING" ? "cursor-pointer" : ""
               } ${
                 isSelected
-                  ? "bg-background border-sky-300 shadow-2xs"
-                  : "bg-background/60 border-border/80 opacity-70"
+                  ? "bg-background dark:bg-[#090E1A] border-sky-300 dark:border-[#2D9BF0] shadow-2xs"
+                  : "bg-background/60 dark:bg-[#090E1A]/60 border-border/80 dark:border-[#1E2B45] opacity-70"
               }`}
             >
               {status === "PENDING" && (
@@ -278,13 +282,13 @@ export function AiProposalCard({
 
       {/* Action Buttons for Pending Proposals */}
       {status === "PENDING" && (
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-sky-200/80">
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-sky-200/80 dark:border-sky-900/50">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleReject}
             disabled={loading}
-            className="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="h-8 px-2.5 text-xs rounded-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
             <X className="h-3.5 w-3.5 mr-1" />
             Reject
@@ -297,7 +301,7 @@ export function AiProposalCard({
                 size="sm"
                 onClick={() => handleAccept(false)}
                 disabled={loading}
-                className="h-8 px-2.5 text-xs"
+                className="h-8 px-2.5 text-xs rounded-xs"
               >
                 {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
                 Apply Selected ({selectedIds.length})
@@ -308,7 +312,7 @@ export function AiProposalCard({
               size="sm"
               onClick={() => handleAccept(true)}
               disabled={loading}
-              className="h-8 px-3 text-xs font-semibold shadow-xs"
+              className="h-8 px-3 text-xs font-semibold shadow-xs rounded-xs"
             >
               {loading ? (
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />

@@ -4,9 +4,15 @@ import { useState, useEffect } from "react";
 
 import { Sidebar } from "@/components/app-shell/sidebar";
 import { TopBar } from "@/components/app-shell/top-bar";
+import { WorkspaceAiPanel } from "@/features/trip-workspace/ai/components/workspace-ai-panel";
+
+import { useWorkspaceAi } from "@/features/trip-workspace/context/workspace-ai-context";
+
+import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isAiOpen, closeAi, activeTrip } = useWorkspaceAi();
 
   useEffect(() => {
     // Lock document.body overflow to completely eliminate redundant outer window scrollbar
@@ -26,9 +32,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      {/* Right Content Canvas with Left-Side Rounded Corners Only (Pure flex-1 sibling, no margin overflow) */}
-      <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden md:py-1.5 md:pr-0">
-        <div className="flex-1 h-full flex flex-col min-h-0 rounded-none md:rounded-tl-[20px] md:rounded-bl-[20px] bg-slate-50 text-slate-900 dark:bg-[#0A0F1D] dark:text-slate-100 shadow-2xl overflow-hidden md:border-l-8 border-blue-500 dark:border-blue-300/60 transition-colors">
+      {/* Center Content Canvas - Flush against AI Assistant Panel */}
+      <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden md:py-1.5 transition-all duration-300 ease-in-out md:pr-0">
+        <div className="flex-1 h-full flex flex-col min-h-0 rounded-none md:rounded-l-[20px] md:rounded-r-none bg-slate-50 text-slate-900 dark:bg-[#0A0F1D] dark:text-slate-100 shadow-2xl overflow-hidden md:border-l-8 border-blue-500 dark:border-blue-300/60 md:border-r-0 transition-all duration-300 ease-in-out">
           <TopBar onMobileMenuOpen={() => setMobileOpen(true)} />
           <main className="flex-1 min-h-0 overflow-y-auto w-full p-4 sm:p-6 lg:p-8 thin-scrollbar bg-prava-pattern">
             <div className="w-full max-w-7xl mx-auto">
@@ -37,7 +43,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+
+      {/* Complete Right: Ichinose AI Assistant Panel (Matching Sidebar Theme) */}
+      {activeTrip && (
+        <WorkspaceAiPanel
+          tripId={activeTrip.tripId}
+          tripTitle={activeTrip.tripTitle}
+          destination={activeTrip.destination}
+          isOpen={isAiOpen}
+          onClose={closeAi}
+        />
+      )}
     </div>
   );
 }
+
 

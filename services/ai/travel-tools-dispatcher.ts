@@ -104,15 +104,29 @@ export function detectTravelToolIntent(
   // 1. Weather Intent detection
   const weatherKeywords = ["weather", "temperature", "forecast", "rain", "sunny", "how cold", "how hot", "climate"];
   const hasWeatherKeyword = weatherKeywords.some((w) => lower.includes(w));
-
   if (hasWeatherKeyword) {
-    // Check if a specific city was mentioned (e.g. "weather in Tokyo", "Kyoto weather")
-    const inMatch = lower.match(/(?:in|for|at)\s+([a-zA-Z\s]+)/i);
-    const city = inMatch ? inMatch[1].trim().split(" ")[0] : defaultDestination || "Tokyo";
+    let city = defaultDestination || "Tokyo";
+
+    // Match "weather in Osaka", "forecast for San Francisco", etc.
+    const inMatch = prompt.match(/(?:in|for|at|about)\s+([a-zA-Z\s]+?)(?:\s+(?:today|tomorrow|this week|right now|forecast|live|weather|please))?$/i);
+    if (inMatch && inMatch[1].trim()) {
+      city = inMatch[1].trim();
+    } else {
+      // Match "Osaka weather", "New York forecast", etc.
+      const beforeMatch = prompt.match(/([a-zA-Z\s]+?)\s+(?:weather|forecast|temperature|climate)/i);
+      if (beforeMatch && beforeMatch[1].trim()) {
+        const potential = beforeMatch[1]
+          .replace(/^(?:check|what is the|how is the|get|live|show me|tell me)\s+/i, "")
+          .trim();
+        if (potential && potential.length > 1) {
+          city = potential;
+        }
+      }
+    }
 
     return {
       type: "weather",
-      params: { city: city.replace(/[^a-zA-Z]/g, "") },
+      params: { city: city.trim() },
     };
   }
 

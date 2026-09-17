@@ -10,7 +10,14 @@ import {
   AiProposalDTO,
 } from "./schema";
 
-import { runTripAgentGraph } from "@/services/ai/trip-agent-graph";
+import { runTripAgentGraph, isItineraryPlanningIntent } from "@/services/ai/trip-agent-graph";
+
+export interface UserAiQuotaDTO {
+  used: number;
+  quota: number;
+  remaining: number;
+  isPro: boolean;
+}
 
 export interface MessageDTO {
   id: string;
@@ -20,33 +27,6 @@ export interface MessageDTO {
   proposal?: AiProposalDTO | null;
   modelUsed?: string;
   toolBadge?: string | null;
-}
-
-/**
- * Helper to extract and parse json:proposal from model response text.
- */
-function extractProposal(text: string): { cleanedText: string; payload: AiProposalPayload | null } {
-  const proposalRegex = /```(?:json:proposal|proposal|json)\s*([\s\S]*?)\s*```/i;
-  const match = text.match(proposalRegex);
-
-  if (!match) {
-    return { cleanedText: text, payload: null };
-  }
-
-  try {
-    const rawJson = JSON.parse(match[1]);
-    const parsed = aiProposalPayloadSchema.safeParse(rawJson);
-
-    if (parsed.success) {
-      // Remove the proposal code block from user-visible text so it is cleanly rendered in UI proposal card
-      const cleanedText = text.replace(proposalRegex, "").trim();
-      return { cleanedText: cleanedText || parsed.data.summary, payload: parsed.data };
-    }
-  } catch {
-    // Malformed JSON proposal, ignore and treat as plain text
-  }
-
-  return { cleanedText: text, payload: null };
 }
 
 export interface ConversationThreadDTO {
@@ -169,7 +149,92 @@ export async function deleteTripConversationThread(conversationId: string) {
 }
 
 /**
- * Get or initialize the AI conversation thread for a specific trip, including proposals.
+ * Rename/update the title of a conversation thread.
+ */
+export async function updateTripConversationTitle(
+  conversationId: string,
+  title: string
+): Promise<{ success: boolean; title?: string; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const trimmed = title.trim();
+    if (!trimmed) {
+      return { success: false, error: "Chat title cannot be empty" };
+    }
+
+    const conversation = await db.aiConversation.findFirst({
+      where: { id: conversationId, profileId: user.id },
+    });
+
+    if (!conversation) {
+      return { success: false, error: "Conversation not found" };
+    }
+
+    const updated = await db.aiConversation.update({
+      where: { id: conversationId },
+      data: { title: trimmed },
+    });
+
+    return { success: true, title: updated.title };
+  } catch (error) {
+    console.error("Error updating conversation title:", error);
+    return { success: false, error: "Failed to update chat title" };
+  }
+}
+
+/**
+ * Calculates current month's user AI credits usage against tier quota.
+ */
+export async function getUserAiCredits(userId: string): Promise<UserAiQuotaDTO> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const isPro = Boolean(
+      user?.user_metadata?.tier === "pro" ||
+      user?.user_metadata?.is_pro === true
+    );
+    const quota = isPro ? 150 : 30;
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const used = await db.aiMessage.count({
+      where: {
+        role: "user",
+        createdAt: { gte: startOfMonth },
+        conversation: {
+          profileId: userId,
+        },
+      },
+    });
+
+    return {
+      used,
+      quota,
+      remaining: Math.max(0, quota - used),
+      isPro,
+    };
+  } catch (err) {
+    console.error("Error calculating user AI credits:", err);
+    return { used: 0, quota: 30, remaining: 30, isPro: false };
+  }
+}
+
+/**
+ * Get or initialize the AI conversation thread for a specific trip, including proposals and quota.
  */
 export async function getTripConversation(tripId: string, conversationId?: string) {
   try {
@@ -269,12 +334,15 @@ export async function getTripConversation(tripId: string, conversationId?: strin
       };
     });
 
+    const userQuota = await getUserAiCredits(user.id);
+
     return {
       success: true,
       conversationId: conversation.id,
       conversationTitle: conversation.title,
       messages,
       totalMessages: messages.length,
+      userQuota,
     };
   } catch (error) {
     console.error("Error loading conversation:", error);
@@ -345,12 +413,26 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
       });
     }
 
-    // Free Tier AI Rate Limit Check (30 messages per thread)
-    if (conversation.messages.length >= 30) {
+    // Thread Message Limit Check (15 messages per thread)
+    const MAX_MESSAGES_PER_THREAD = 15;
+    if (conversation.messages.length >= MAX_MESSAGES_PER_THREAD) {
       return {
         success: false,
-        error: "Free Explorer limit reached (30 messages in this chat). Please click '+ New Chat' to start a fresh thread or upgrade to Pro for unlimited continuous interactions.",
+        error: `Conversation limit reached (${MAX_MESSAGES_PER_THREAD} messages in this thread). Please click '+ New Chat' to start a fresh thread.`,
         limitReached: true,
+      };
+    }
+
+    // Monthly AI Credits Check
+    const userQuota = await getUserAiCredits(user.id);
+    const isPlanning = isItineraryPlanningIntent(trimmedPrompt);
+
+    if (userQuota.remaining <= 0 && isPlanning) {
+      return {
+        success: false,
+        error: `⚠️ **Monthly AI Planning Credits Depleted (0/${userQuota.quota})**\nYou have used all your Gemini AI itinerary planning credits for this month. Upgrade to Pro Wanderer for 150 credits/month, or continue asking travel questions using our free model.`,
+        creditDepleted: true,
+        userQuota,
       };
     }
 
@@ -376,13 +458,15 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
       content: m.content,
     }));
 
-    // Execute Trip Agent Graph: Tools (Weather/Currency) -> OpenRouter Free Cascade -> Gemini 2.0 Flash Lite
+    // Execute Trip Agent Graph: Tools (Weather/Currency) -> Gemini Flash Lite / OpenRouter Free Cascade
     const agentResult = await runTripAgentGraph({
       tripId,
       userId: user.id,
       prompt: trimmedPrompt,
       history,
       userCurrency,
+      preloadedContext: contextResult,
+      forceFreeFallback: userQuota.remaining <= 0,
     });
 
     // Persist assistant message
@@ -441,6 +525,8 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
         modelUsed: agentResult.modelUsed,
         toolBadge: agentResult.toolBadge,
       },
+      proposal: savedProposalDTO,
+      userQuota: await getUserAiCredits(user.id),
     };
   } catch (error) {
     console.error("Gemini AI generation error:", error);

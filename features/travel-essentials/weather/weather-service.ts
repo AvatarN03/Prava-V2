@@ -91,10 +91,10 @@ function mapOpenWeatherIdToCode(id: number): number {
  */
 async function fetchFromOpenWeather(query: string, apiKey: string): Promise<WeatherData | null> {
   try {
-    // 1. Direct Geocoding
+    // 1. Direct Geocoding (fetch top 5 matches to find exact city name)
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
       query.trim()
-    )}&limit=1&appid=${apiKey}`;
+    )}&limit=5&appid=${apiKey}`;
 
     const geoRes = await fetch(geoUrl, { next: { revalidate: 3600 } });
     if (!geoRes.ok) return null;
@@ -104,7 +104,11 @@ async function fetchFromOpenWeather(query: string, apiKey: string): Promise<Weat
       return null;
     }
 
-    const { lat, lon, name, country } = geoData[0];
+    const trimmedQuery = query.trim().toLowerCase();
+    const exactMatch = geoData.find(
+      (item: any) => item.name?.toLowerCase() === trimmedQuery
+    );
+    const { lat, lon, name, country } = exactMatch || geoData[0];
 
     // 2. Current Weather
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
@@ -264,11 +268,16 @@ async function fetchFromOpenMeteo(query: string): Promise<WeatherData | null> {
       return null;
     }
 
+    // Find exact city name match first
+    const trimmed = query.trim().toLowerCase();
+    const exactMatch = geoData.results.find(
+      (r: any) => r.name?.toLowerCase() === trimmed
+    );
     // Prioritize Indian destinations when ambiguous or matching
     const indianMatch = geoData.results.find(
       (r: any) => r.country_code?.toUpperCase() === "IN" || r.country?.toLowerCase() === "india"
     );
-    const place = indianMatch || geoData.results[0];
+    const place = exactMatch || indianMatch || geoData.results[0];
     const { latitude, longitude, name, country } = place;
 
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&timezone=auto`;

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import {
   ArrowLeft,
   MapPin,
@@ -20,6 +22,7 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,13 +39,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trip, TripStatus } from "@/features/trips/types";
+import { CoverImage } from "@/components/storage/cover-image";
+
+import { useWorkspaceAi } from "@/features/trip-workspace/context/workspace-ai-context";
+
 import { EditTripDialog } from "@/features/trips/components/edit-trip-dialog";
 import { DeleteTripDialog } from "@/features/trips/components/delete-trip-dialog";
-import { WorkspaceAiPanel } from "@/features/trip-workspace/ai/components/workspace-ai-panel";
 import { toggleTripPublishStatus } from "@/features/community/actions";
 import { duplicateTrip, updateTrip } from "@/features/trips/actions";
-import { CoverImage } from "@/components/storage/cover-image";
+
+import { Trip, TripStatus } from "@/features/trips/types";
 
 interface WorkspaceHeaderProps {
   trip: Trip & { isPublic?: boolean };
@@ -50,9 +56,9 @@ interface WorkspaceHeaderProps {
 
 export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
   const router = useRouter();
+  const { isAiOpen, toggleAi, userQuota } = useWorkspaceAi();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(Boolean(trip.isPublic));
   const [tripStatus, setTripStatus] = useState<TripStatus>(trip.status);
   const [isPublishing, startPublishing] = useTransition();
@@ -204,15 +210,42 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
               </SelectContent>
             </Select>
 
-            {/* AI Assistant Button */}
+            {/* AI Assistant Button (Ichinose - Prava AI Assistant) */}
             <Button
-              variant="outline"
+              variant={isAiOpen ? "default" : "outline"}
               size="sm"
-              className="h-8 gap-1.5 text-xs font-medium border-primary/30 hover:border-primary hover:bg-primary/5 text-primary cursor-pointer"
-              onClick={() => setIsAiPanelOpen(true)}
+              className={`h-8 gap-1.5 text-xs font-medium cursor-pointer transition-all rounded-xs ${
+                isAiOpen
+                  ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90"
+                  : "border-primary/30 hover:border-primary hover:bg-primary/5 text-primary"
+              }`}
+              onClick={toggleAi}
+              title="Ichinose — Prava AI Assistant"
+              aria-label="Ichinose — Prava AI Assistant"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              AI Assistant
+              <div className="relative h-4 w-4 shrink-0 rounded-full overflow-hidden ring-1 ring-primary/40 shadow-2xs">
+                <Image
+                  src="/ichinose-avatar.jpg"
+                  alt="Ichinose"
+                  width={16}
+                  height={16}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <span>Ichinose</span>
+              {userQuota && (
+                <span
+                  className={`ml-1 px-1.5 py-0.5 rounded-xs text-[10px] font-semibold leading-none ${
+                    userQuota.remaining > 0
+                      ? isAiOpen
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-primary/10 text-primary"
+                      : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                  }`}
+                >
+                  {userQuota.remaining > 0 ? `${userQuota.remaining}` : "Free"}
+                </span>
+              )}
             </Button>
 
             {/* 3-Dot Menu */}
@@ -317,14 +350,6 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
         trip={trip}
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
-      />
-
-      <WorkspaceAiPanel
-        tripId={trip.id}
-        tripTitle={trip.title}
-        destination={trip.destination}
-        isOpen={isAiPanelOpen}
-        onClose={() => setIsAiPanelOpen(false)}
       />
     </>
   );

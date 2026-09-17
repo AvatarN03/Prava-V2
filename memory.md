@@ -815,9 +815,151 @@
     - Widened `SelectTrigger` from `w-[170px]` to `w-[205px]` with `shrink-0` on `ArrowUpDown` and `cursor-pointer`.
     - Eliminated the `Departure...` truncation issue so `"Departure (Soonest)"` renders fully and comfortably.
   - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors).
+- **Task 79 (Workspace Main Section Subtle Blue Background Pattern)**:
+  - **Subtle Blue Pattern (`app/globals.css`)**:
+    - Created `.bg-prava-pattern` utility combining a 24px micro-grid blueprint (`linear-gradient` at `rgba(45, 155, 240, 0.05)`) with intersection point dots (`radial-gradient` at `rgba(45, 155, 240, 0.16)`).
+    - Uses Prava Cerulean `#2D9BF0` brand color, rendering as an elegant architectural blueprint grid in light mode (`bg-slate-50`) and a subtle cyber matrix in dark mode (`dark:bg-[#0A0F1D]`), remaining 100% theme-independent and subtle.
+  - **App Shell Integration (`components/app-shell/app-shell.tsx`)**:
+    - Applied `.bg-prava-pattern` directly to `<main>`, ensuring all workspace sections (Dashboard, Trips, Travel Essentials, Community, Profile, etc.) display the subtle blue pattern continuously across scrollable canvas views.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 errors across all routes).
+- **Task 80 (AI Assistant Editable Chat Titles)**:
+  - **Server Action (`features/trip-workspace/ai/actions.ts`)**:
+    - Implemented `updateTripConversationTitle(conversationId: string, title: string)` to validate, scope ownership, and persist updated chat thread titles to PostgreSQL.
+  - **Inline Editable Chat Title UI (`workspace-ai-panel.tsx`)**:
+    - In the AI panel header: active chat title is clickable with a subtle pencil icon. Clicking turns it into an autofocus input field with instant save on Enter, blur, or checkmark button, and cancel on Escape or X button.
+    - In the History drawer (`showHistory`): each conversation thread title is directly clickable to rename, or accessible via the pencil action button.
+    - Optimistically updates local thread list and header titles with Sonner toast feedback and error recovery.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 errors).
+
+- **Task 81 (Trip AI Assistant: Intent-Driven Dual Routing, Gemini Itinerary Exclusivity & Token Cost Optimization)**:
+  - **Context & Objectives**:
+    - User reported that itinerary creation queries were incorrectly routed to the free conversational model (`Nemotron 3.5`), dumping raw JSON into the chat bubble instead of generating structured proposals through Gemini.
+    - User requested making code concise, logical, cheaper with less token bloat, ensuring Gemini handles all itinerary planning/generation, and preventing raw JSON from ever being displayed in chat text.
+  - **Implemented Architectural Fixes**:
+    - **Context Splitting (`services/ai/context-builder.ts`)**:
+      - Separated `buildTripContext` into `conversationalPrompt` (~150 tokens, clean markdown guidelines, strictly forbidding JSON/code blocks) and `proposalPrompt` (structured database IDs and `json:proposal` schema for entity mutations).
+      - Updated `TripContextResult` interface with `conversationalPrompt`, `proposalPrompt`, `startDate`, and `endDate`.
+    - **Robust Intent Classifier & Routing (`services/ai/trip-agent-graph.ts`)**:
+      - Built `isItineraryPlanningIntent(prompt: string)` capturing planning, creation, scheduling, and mutation intents (`create`, `plan`, `build`, `make`, `suggest`, `generate`, `add`, `schedule`, `itinerary`, `days`, `hotel`, `activity`).
+      - Planning/itinerary requests route **exclusively to Gemini 2.0 Flash Lite** with `proposalPrompt`.
+      - General chat, packing advice, and travel essentials route to **OpenRouter Free Cascade** (`Nemotron 3.5` → `openrouter/free`) with lightweight `conversationalPrompt`.
+    - **Strict JSON Sanitization**:
+      - Updated `extractProposalBlock` to parse `aiProposalPayloadSchema` and excise the JSON codeblock completely from visible text.
+      - Hardened `FormattedMessageContent` in `workspace-ai-panel.tsx` to strip any stray JSON or citation blocks, rendering only clean human-readable prose in the bubble and interactive `AiProposalCard` beneath.
+    - **Elimination of Double Context Query**:
+      - `sendTripMessage` in `actions.ts` passes `preloadedContext` directly into `runTripAgentGraph`, cutting out redundant database queries and reducing response latency.
+      - Removed dead `extractProposal` function from `actions.ts`.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 29 routes).
+
+- **Task 82 (Weather Geocoding Accuracy & Chain-of-Thought Reasoning Dump Elimination)**:
+  - **Issue Investigated**:
+    - When user asked `"Check live weather forecast for Osaka"`, the assistant returned `"Orsk, RU: 18°C, Scattered clouds, Humidity 42%"` followed by an internal reasoning dump (`"Here's a thinking process: 1. Analyze User Input... 2. Check Available Data..."`).
+  - **Root Cause Resolution**:
+    1. **OpenWeather Geocoding Bias (`weather-service.ts`)**:
+       - `fetchFromOpenWeather` previously passed `&limit=1`. OpenWeather returned `Orsk, RU` at index 0 and `Osaka, JP` at index 1 for query `"Osaka"`.
+       - Increased limit to 5 (`&limit=5`) and added exact city name matching (`item.name.toLowerCase() === query.trim().toLowerCase()`), picking Osaka, JP reliably.
+       - Added exact matching to `fetchFromOpenMeteo` as well before falling back to country bias or index 0.
+    2. **Multi-Word & Natural City Intent Detection (`travel-tools-dispatcher.ts`)**:
+       - Refactored `detectTravelToolIntent` regex to accurately extract multi-word cities (e.g., "New York", "San Francisco") and handle both prefix ("weather in Osaka") and postfix ("Osaka weather") queries.
+    3. **Disable & Sanitize Chain-of-Thought Reasoning Dumps**:
+       - **OpenRouter API (`openrouter-client.ts`)**: Added `include_reasoning: false` to the completion payload to instruct reasoning models (such as Nemotron 3.5 and Gemma) not to emit reasoning streams.
+       - **Reasoning Sanitizer Helper (`openrouter-client.ts`)**: Created `stripReasoning(text)` removing `<think>...</think>`, `<thought>...</thought>`, `"Here's a thinking process:"`, and numbered analysis steps (`1. Analyze User Input...`).
+       - **Trip Agent Graph Sanitization (`trip-agent-graph.ts`)**: Applied `stripReasoning` inside `extractProposalBlock` and clarified `conversationalInstruction` prompt when live data is injected.
+       - **Client-Side Defense (`workspace-ai-panel.tsx`)**: Hardened `FormattedMessageContent` to scrub any thinking blocks or scratchpads so historical or edge-case reasoning never surfaces in the chat bubble.
+  - **Verification**:
+- **Task 83 (Model Tier Delegation: Gemini 3.6 for Trips, Gemini 3.1 Flash Lite -> NVIDIA -> OpenRouter Free for Conversational)**:
+  - **Context & Requirement**:
+    - User requested: *"use gemini 3.6 for trips things and gemin flsh 3.1 flash lite for the response for common things then nvidia model and then openrouter free ok"*.
+  - **Implementation**:
+    1. **Gemini Client Configuration (`lib/ai/gemini-client.ts`)**:
+       - Configured `GEMINI_TRIPS_MODELS`: `[process.env.GEMINI_TRIPS_MODEL || "gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]`.
+       - Configured `GEMINI_CONVERSATIONAL_MODELS`: `[process.env.GEMINI_CONVERSATIONAL_MODEL || "gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"]`.
+    2. **OpenRouter Client Order (`lib/ai/openrouter-client.ts`)**:
+       - Cascades strictly: `nvidia/nemotron-3.5-lightning:free` $\rightarrow$ `openrouter/free`.
+    3. **Intent Graph Orchestration (`services/ai/trip-agent-graph.ts`)**:
+       - **Trips / Planning (Path A)**: Handled by `GEMINI_TRIPS_MODELS` with automatic graceful fallback.
+       - **Conversational / Common (Path B)**: Primary $\rightarrow$ `GEMINI_CONVERSATIONAL_MODELS` (Flash Lite, 500–1,500 RPD free tier); Secondary $\rightarrow$ OpenRouter NVIDIA Nemotron 3.5; Tertiary $\rightarrow$ OpenRouter Free.
+    4. **UI Model Display (`workspace-ai-panel.tsx`)**:
+       - Updated `formatModelName` to display `"Gemini 3.6 Flash"` and `"Gemini 3.1 Flash Lite"`.
+  - **Verification**:
+- **Task 84 (Itinerary Proposal Truncation Fix, Auto-Repair JSON, and Intent Broadening)**:
+  - **Issue Investigated**:
+    - Multi-turn conversation led to Gemini 3.6 attempting to generate an 11-activity proposal, but the response was truncated midway through item `c8` (`"id": "c8", "domain": "itinerary...`).
+    - Because of truncation, `JSON.parse` failed, `payload` was `null`, no `AiProposal` was created in PostgreSQL, and the unclosed JSON was exposed in the chat text.
+    - Previous conversational prompts like `"ok add the places ti ititnerary for me randomly"` (typo: `ititnerary`) and `"no gohead add them"` failed to trigger planning because intent regex only matched exact spellings.
+  - **Fixes Applied**:
+    1. **Expanded Token Budget & Low Thinking (`trip-agent-graph.ts`)**:
+       - Increased `maxOutputTokens` from 2,500 to 8,192.
+       - Configured `thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }` from `@google/genai` so reasoning overhead does not eat into output token capacity.
+    2. **Tolerant JSON Auto-Repair (`trip-agent-graph.ts`)**:
+       - Built `tryParseOrRepairProposal` that scans truncated JSON arrays, safely closes brackets (`]}`), and parses valid activities so users still receive an actionable proposal card.
+    3. **Robust Unclosed Codeblock Stripping (`trip-agent-graph.ts` & `workspace-ai-panel.tsx`)**:
+       - Replaced strict closing regex with `(?:```|$)` in backend `extractProposalBlock` and frontend `FormattedMessageContent` to ensure raw proposal JSON is never displayed in the chat bubble even if clipped.
+    4. **Broadened Intent Detection & Anti-Hallucination Prompt Rules**:
+       - `isItineraryPlanningIntent` now matches typos (`ititnerary`, `itinary`, `itinera`) and follow-ups (`add them`, `go ahead add them`, `add the places`).
+       - `proposalPrompt` explicitly instructs the model never to claim it saved items to the database without generating the proposal card.
+  - **Verification**:
+    - Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 29 routes).
+
+- **Task 85 (Docked Side-by-Side AI Panel, Dedicated History Switcher, 15-Message Ceiling & Credit Quota Governance)**:
+  - **Side-by-Side Docked AI Assistant Layout**:
+    - Replaced the intrusive full-page overlay drawer sheet with a responsive docked side panel modeled after modern editor and workspace tools (Linear, Notion, VS Code).
+    - On desktop (`md:` and above), the assistant docks alongside the trip workspace (`w-[380px]` or `w-[420px]`, `sticky top-2`, rounded card with border), allowing travelers to browse and interact with their itinerary, notes, expenses, and maps while simultaneously interacting with the AI.
+    - On mobile screens (`< md:`), the assistant smoothly transitions into a slide-over panel with backdrop blur.
+    - Integrated with `WorkspaceAiProvider` context and `TripWorkspaceContainer` to coordinate panel toggle across all workspace subtabs without unmounting.
+  - **Thread Message Ceiling Limit (15 Messages)**:
+    - Reduced max messages per thread from 30 down to **15** (`MAX_MESSAGES_LIMIT = 15`) to keep conversations concise, highly focused, and token-efficient.
+    - When 15 messages are reached, the assistant automatically displays an alert banner with a 1-click `[+ New Chat]` button, cleanly disabling the input form to prevent context bloating.
+  - **Dedicated History / Threads View**:
+    - Replaced the top drawer overlay with a dedicated subheader tab switcher (`💬 Chat` vs `🕒 Threads ({threads.length})`).
+    - The History tab displays an organized list of conversation threads with active status badges, message counts (`X/15 msgs`), relative date timestamps, inline title renaming, and thread deletion.
+    - Selecting any thread immediately loads its conversation and returns to the active Chat view.
+  - **Strict Quota & Free Fallback Governance**:
+    - Implemented `getUserAiCredits(userId)` tracking user turns in current month against plan quota (30 for Free Explorer, 150 for Pro Wanderer).
+    - When remaining credits reach 0:
+      - Itinerary planning / mutations using Gemini 3.6 Flash are strictly blocked with an explanatory upgrade prompt.
+      - General queries and live essentials (weather forecasts, ECB exchange rates, general travel Q&A) seamlessly fallback to free OpenRouter models (`nvidia/nemotron-3.5-lightning:free` and `openrouter/free`) with an explicit "Free Fallback" badge.
+    - Persistent credit usage indicator displayed in the workspace header button (`AI Assistant [24]` or `AI Assistant [Free]`) and inside the assistant header (`⚡ X/30 Credits` / `0/30 (Free Fallback)`).
+  - **Verification**:
+- **Task 86 (Ichinose Prava AI Assistant Full-Right Companion, Theme Mirroring & Scrollbar Fixes)**:
+  - **Right-Side Companion Architecture (`AppShell` Level)**:
+    - Shifted `WorkspaceAiPanel` out from inside `<main>` to the complete right of the viewport as a top-level flex companion in `AppShell` (`components/app-shell/app-shell.tsx`), creating a 3-column workspace architecture: `[ Sidebar (w-52) ] | [ Center Canvas (flex-1) ] | [ Ichinose Panel (380px/410px) ]`.
+    - Wrapped `AppShell` with `WorkspaceAiProvider` in `app/(app)/layout.tsx` so trip context is shared seamlessly while isolating `<main>` scroll layout.
+  - **Symmetrical Theme Mirroring**:
+    - Mirrored the left sidebar's theme palette exactly: in light mode, the panel is dark navy (`#090E1A` background, `#152033` borders, slate text); in dark mode, the panel is light slate (`slate-100` background, `slate-300` borders, slate-900 text).
+    - Added symmetrical 20px rounded corners and 8px blue border (`md:rounded-tr-[20px] md:rounded-br-[20px] md:border-r-8 border-blue-500`) to the center canvas when Ichinose is open, with smooth margin/padding transitions.
+  - **Assistant Rebranding & Prompt Awareness**:
+    - Rebranded assistant to **Ichinose — Prava AI Assistant**.
+    - Updated system prompts in `services/ai/context-builder.ts` so the assistant explicitly recognizes itself as **Ichinose, Prava AI's Travel Workspace Assistant**.
+    - Updated header button to **Ichinose** with Sparkles icon and credit pill indicator.
+  - **Scrollbar Isolation & Scroll Chaining Prevention**:
+    - Eliminated `messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })`, which caused the underlying trip page to jump and scroll up/down on message updates. Replaced with direct `chatScrollContainerRef.current.scrollTo(...)` and `scrollTop` adjustments strictly contained to the chat feed container.
+    - Added `overscroll-contain` (`overscroll-behavior: contain`) and wheel event propagation stopping to `<aside>`, the message feed container, and the threads list, completely preventing scroll chaining into `<main>` or the outer window.
+- **Task 87 (Ichinose Custom Avatar, 3-Dot Header Menu, Flush Docked Canvas & Subheader Realignment)**:
+  - **Custom Japanese-Minimalist Avatar**:
+    - Created custom circular portrait avatar `/ichinose-avatar.jpg` in dark navy with glowing Cerulean blue headset and "ICHINOSE" collar emblem.
+    - Integrated avatar into `WorkspaceAiPanel` header, empty state hero, AI message bubbles, loading indicator, and `WorkspaceHeader` trigger button.
+  - **Header Decluttering & 3-Dot Actions Menu**:
+    - Removed `Prava AI` badge and inline pencil icon from panel header to provide clean space for session titles.
+    - Added a 3-dot dropdown menu (`DropdownMenu`) consolidating "Rename Chat" (with pencil icon) and "Clear Messages" (with trash icon).
+    - Removed `X` close icon on desktop (`flex md:hidden`), keeping it exclusively for mobile drawers to optimize space readability.
+  - **Flush Canvas-to-Panel Docking**:
+    - Removed right-side padding (`md:pr-0`) and right rounding (`md:rounded-r-none md:border-r-0`) from center canvas in `AppShell`, enabling the center canvas to sit completely flush against the AI panel's divider border.
+  - **Subheader Rearrangement**:
+    - Aligned active `[ Chat 2/15 ]` tab on the left.
+- **Task 88 (User Profile Avatar in Chat, "Delete Chat" Menu Option & Bottom AI Disclaimer Label)**:
+  - **Dynamic User Profile Avatar in Chat**:
+    - Integrated `userAvatarUrl` from active profile (`getCurrentProfile`) into `WorkspaceAiContext` and `WorkspaceAiProvider`.
+    - Generated a default traveler avatar (`/default-avatar.jpg`) as the fallback for accounts without an uploaded avatar.
+    - Updated user message bubbles in `WorkspaceAiPanel` to render the user's real avatar, with automatic graceful fallback to `/default-avatar.jpg`.
+  - **"Delete Chat" Menu Label**:
+    - Renamed the 3-dot dropdown menu action from `"Clear Messages"` to `"Delete Chat"` with `Trash2` icon.
+  - **Footer AI Disclaimer Label**:
+    - Added clean, non-intrusive disclaimer text below the input form:
+      `"AI can make mistakes. Cross-verify important travel details."`
 
 ## Next Steps
-- Continue testing UI interactions and iterate based on user feedback.
+- Continue testing UI and AI assistant interactions and iterate based on user feedback.
 
 
 
