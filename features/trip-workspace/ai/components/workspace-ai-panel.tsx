@@ -229,7 +229,7 @@ export function WorkspaceAiPanel({
   isOpen,
   onClose,
 }: WorkspaceAiPanelProps) {
-  const { userQuota, setUserQuota, userAvatarUrl } = useWorkspaceAi();
+  const { userQuota, setUserQuota, userAvatarUrl, pendingPrompt, clearPendingPrompt } = useWorkspaceAi();
   const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [activeConversationTitle, setActiveConversationTitle] = useState<string>("");
@@ -245,15 +245,26 @@ export function WorkspaceAiPanel({
   const [headerTitleInput, setHeaderTitleInput] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     if (isOpen) {
+      setIsInitialized(false);
       loadInitialConversation();
       loadThreadsList();
     }
   }, [isOpen, tripId]);
+
+  useEffect(() => {
+    if (isOpen && isInitialized && pendingPrompt && !isLoading) {
+      const promptToDispatch = pendingPrompt;
+      clearPendingPrompt();
+      setActiveTab("chat");
+      handleSend(promptToDispatch);
+    }
+  }, [isOpen, isInitialized, pendingPrompt, isLoading]);
 
   useEffect(() => {
     if (activeTab === "chat" && chatScrollContainerRef.current) {
@@ -280,6 +291,7 @@ export function WorkspaceAiPanel({
         setUserQuota(res.userQuota);
       }
     }
+    setIsInitialized(true);
   };
 
   const loadThreadsList = async () => {

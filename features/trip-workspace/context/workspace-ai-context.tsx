@@ -21,6 +21,9 @@ interface WorkspaceAiContextType {
   activeTrip: ActiveTripContext | null;
   setActiveTrip: (trip: ActiveTripContext | null) => void;
   userAvatarUrl: string | null;
+  pendingPrompt: string | null;
+  sendAiPrompt: (prompt: string) => void;
+  clearPendingPrompt: () => void;
 }
 
 const WorkspaceAiContext = createContext<WorkspaceAiContextType | undefined>(undefined);
@@ -37,6 +40,7 @@ export function WorkspaceAiProvider({
   const [isAiOpen, setIsAiOpen] = useState(initialOpen);
   const [userQuota, setUserQuota] = useState<UserAiQuotaDTO | null>(null);
   const [activeTrip, setActiveTrip] = useState<ActiveTripContext | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
   const toggleAi = () => {
     setIsAiOpen((prev) => !prev);
@@ -48,6 +52,15 @@ export function WorkspaceAiProvider({
 
   const closeAi = () => {
     setIsAiOpen(false);
+  };
+
+  const sendAiPrompt = (prompt: string) => {
+    setPendingPrompt(prompt);
+    setIsAiOpen(true);
+  };
+
+  const clearPendingPrompt = () => {
+    setPendingPrompt(null);
   };
 
   return (
@@ -63,6 +76,9 @@ export function WorkspaceAiProvider({
         activeTrip,
         setActiveTrip,
         userAvatarUrl,
+        pendingPrompt,
+        sendAiPrompt,
+        clearPendingPrompt,
       }}
     >
       {children}

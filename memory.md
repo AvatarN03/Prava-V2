@@ -958,6 +958,42 @@
     - Added clean, non-intrusive disclaimer text below the input form:
       `"AI can make mistakes. Cross-verify important travel details."`
 
+- **Task 89 (Systematic Low-Radius UI Polish across Ichinose AI Panel & Proposal Cards)**:
+  - **Comprehensive Border Radius Reduction (`rounded-xs`)**:
+    - Reduced border radius across the entire `WorkspaceAiPanel` UI from standard/large radii to a crisp, modern `rounded-xs` (2px), delivering a high-efficiency Linear/Notion productivity feel:
+      - `+ New Chat` button and `Threads` switcher button
+      - Message count badge and thread quota indicators
+      - Thread history cards and active status badges
+      - Thread inline rename input and action buttons (save/cancel/rename/delete)
+      - Quick suggested prompt chips
+      - User and AI message bubbles, and tool badges
+      - Chat input field and send button
+      - Error and quota fallback alert banners
+      - 3-dot dropdown menu content and dropdown items
+    - Updated `AiProposalCard`:
+      - Outer proposal card container reduced from `rounded-md` to `rounded-xs`
+      - Status badges (`Pending Review`, `Accepted`, `Partially Applied`, `Rejected`) updated with `rounded-xs`
+      - Change item preview cards reduced from `rounded-sm` to `rounded-xs`
+      - Action buttons (`Reject`, `Apply Selected`, `Accept All`) updated with `rounded-xs`
+    - Updated `WorkspaceHeader`:
+      - Ichinose trigger button updated with `rounded-xs`
+      - Quota count badge updated from `rounded-full` to `rounded-xs`
+- **Task 90 (Itinerary Empty-State AI Kickstart Feature)**:
+  - **Context-Aware Dual-Option Empty State**:
+    - Replaced the generic empty state card on `/trips/[tripId]/itinerary` with an intelligent planning hub when `items.length === 0`.
+    - Automatically calculates the total duration in days from `tripStartDate` and `tripEndDate`.
+    - Presents two clear actions:
+      1. **"⚡ Kickstart [X-Day] with AI"**: One-click action with animated sparkles icon that crafts a structured day-by-day starter itinerary.
+      2. **"Plan Manually"**: Retains the manual `AddItineraryDialog` for zero-AI planning workflows.
+    - Displays an informative caption badge: `"AI Proposal • Generates a structured review proposal • Consumes 1 AI credit"`.
+    - Completely disappears once at least 1 itinerary event is scheduled.
+  - **Workspace AI Context & Automated Dispatch**:
+    - Extended `WorkspaceAiContext` with `pendingPrompt`, `sendAiPrompt(prompt)`, and `clearPendingPrompt()`.
+    - Updated `WorkspaceAiPanel` to automatically open, switch to the `"chat"` tab, clear the pending prompt once initialized, and dispatch the query without requiring manual user typing or double-clicking.
+    - Returns a structured `AiProposal` card allowing the traveler to preview, selectively toggle items, and commit changes atomically via Prisma.
+  - **Production Build Verification**:
+    - Validated through `npm run build` with Turbopack — zero TypeScript or compilation errors across all static and dynamic routes.
+
 ## Next Steps
 - Continue testing UI and AI assistant interactions and iterate based on user feedback.
 

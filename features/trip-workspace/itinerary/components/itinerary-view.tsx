@@ -1,22 +1,59 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Calendar, Compass, Clock, DollarSign } from "lucide-react";
+import { Plus, Calendar, Compass, Clock, DollarSign, Sparkles } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ItineraryItem } from "@prisma/client";
 import { ItineraryCard } from "./itinerary-card";
 import { AddItineraryDialog } from "./add-itinerary-dialog";
+
+import { useWorkspaceAi } from "@/features/trip-workspace/context/workspace-ai-context";
+
+import type { ItineraryItem } from "@prisma/client";
 
 interface ItineraryViewProps {
   tripId: string;
   items: ItineraryItem[];
+  tripTitle?: string;
+  destination?: string | null;
   tripStartDate?: Date | string | null;
+  tripEndDate?: Date | string | null;
 }
 
-export function ItineraryView({ tripId, items, tripStartDate }: ItineraryViewProps) {
+export function ItineraryView({
+  tripId,
+  items,
+  tripTitle,
+  destination,
+  tripStartDate,
+  tripEndDate,
+}: ItineraryViewProps) {
   const [selectedDay, setSelectedDay] = useState<number | "ALL">("ALL");
+  const { sendAiPrompt } = useWorkspaceAi();
+
+  // Compute total trip days if dates are present
+  const tripDurationDays = useMemo(() => {
+    if (!tripStartDate || !tripEndDate) return null;
+    try {
+      const start = new Date(tripStartDate);
+      const end = new Date(tripEndDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+      const diffTime = end.getTime() - start.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays > 0 ? diffDays : 1;
+    } catch {
+      return null;
+    }
+  }, [tripStartDate, tripEndDate]);
+
+  const handleKickstartWithAi = () => {
+    const dest = destination || tripTitle || "my destination";
+    const daysCount = tripDurationDays || 3;
+    const prompt = `Please propose a comprehensive, day-by-day starter itinerary for my ${daysCount}-day trip to ${dest}. Organize 2 to 3 well-timed activities per day (morning, afternoon, evening) with estimated start times, recommended durations, and locations. Provide this as a structured itinerary proposal so I can review and add it to my workspace.`;
+    sendAiPrompt(prompt);
+  };
 
   // Helper to format date for a day number
   const getDayDateLabel = (dayNum: number) => {
@@ -72,28 +109,57 @@ export function ItineraryView({ tripId, items, tripStartDate }: ItineraryViewPro
   }, [items]);
 
   if (items.length === 0) {
+    const destName = destination || tripTitle || "your destination";
+
     return (
-      <Card className="border-dashed rounded-md">
-        <CardHeader className="text-center py-14">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
-            <Calendar className="h-6 w-6" />
+      <Card className="border-dashed rounded-md bg-card/50">
+        <CardHeader className="text-center pt-12 pb-6 px-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 border border-primary/20 shadow-xs">
+            <Compass className="h-7 w-7" />
           </div>
-          <CardTitle className="text-lg font-bold">No itinerary activities planned</CardTitle>
-          <CardDescription className="max-w-md mx-auto text-xs mt-1">
-            Schedule day-by-day sightseeing, museum reservations, dining spots, and travel transit.
+          <CardTitle className="text-xl font-bold tracking-tight">
+            Ready to plan your trip to {destName}?
+          </CardTitle>
+          <CardDescription className="max-w-md mx-auto text-xs sm:text-sm mt-1.5 text-muted-foreground leading-relaxed">
+            Your itinerary is currently empty. You can kickstart a full{" "}
+            {tripDurationDays ? `${tripDurationDays}-day ` : ""}day-by-day draft with Ichinose AI, or craft your schedule manually from scratch.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center pb-14">
-          <AddItineraryDialog
-            tripId={tripId}
-            defaultDayNumber={1}
-            trigger={
-              <Button size="sm" className="cursor-pointer gap-1.5">
-                <Plus className="w-4 h-4" />
-                Add First Event
-              </Button>
-            }
-          />
+        <CardContent className="flex flex-col items-center justify-center pb-12 px-4 gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-md justify-center">
+            <Button
+              size="default"
+              onClick={handleKickstartWithAi}
+              className="w-full sm:w-auto cursor-pointer gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm font-medium transition-all"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span>
+                Kickstart {tripDurationDays ? `${tripDurationDays}-Day ` : ""}with AI
+              </span>
+            </Button>
+
+            <AddItineraryDialog
+              tripId={tripId}
+              defaultDayNumber={1}
+              trigger={
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="w-full sm:w-auto cursor-pointer gap-1.5 hover:bg-accent"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Plan Manually</span>
+                </Button>
+              }
+            />
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-normal border-primary/30 text-primary">
+              AI Proposal
+            </Badge>
+            <span>Generates a structured review proposal • Consumes 1 AI credit</span>
+          </div>
         </CardContent>
       </Card>
     );

@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+
+import { ItineraryView } from "@/features/trip-workspace/itinerary/components/itinerary-view";
+
 import { db } from "@/lib/db";
 import { verifyTripOwnership } from "@/features/trip-workspace/common/auth-check";
-import { ItineraryView } from "@/features/trip-workspace/itinerary/components/itinerary-view";
 
 interface ItineraryPageProps {
   params: Promise<{
@@ -33,7 +35,14 @@ export default async function ItineraryPage({ params }: ItineraryPageProps) {
 
   return (
     <div className="space-y-4">
-      <ItineraryView tripId={trip.id} items={items} tripStartDate={trip.startDate} />
+      <ItineraryView
+        tripId={trip.id}
+        items={items}
+        tripTitle={trip.title}
+        destination={trip.destination}
+        tripStartDate={trip.startDate}
+        tripEndDate={trip.endDate}
+      />
     </div>
   );
 }
