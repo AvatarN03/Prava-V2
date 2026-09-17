@@ -425,7 +425,7 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
 
     // Monthly AI Credits Check
     const userQuota = await getUserAiCredits(user.id);
-    const isPlanning = isItineraryPlanningIntent(trimmedPrompt);
+    const isPlanning = isItineraryPlanningIntent(trimmedPrompt, conversation.messages);
 
     if (userQuota.remaining <= 0 && isPlanning) {
       return {

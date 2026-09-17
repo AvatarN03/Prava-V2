@@ -493,17 +493,17 @@ export function WorkspaceAiPanel({
           // Theme matching the left sidebar: dark in light mode, light in dark mode
           "bg-[#090E1A] text-slate-200 dark:bg-slate-100 dark:text-slate-900",
           // Mobile fixed overlay drawer:
-          "fixed inset-y-0 right-0 z-40 w-full sm:w-[380px] border-l border-[#152033] dark:border-slate-300 md:border-l-0",
+          "fixed inset-y-0 right-0 z-40 w-full sm:w-[440px] border-l border-[#152033] dark:border-slate-300 md:border-l-0",
           // Desktop: static flex child that smoothly expands from width 0
           "md:static md:z-auto",
           isOpen
-            ? "translate-x-0 md:w-[380px] lg:w-[410px] md:opacity-100"
+            ? "translate-x-0 md:w-[440px] lg:w-[470px] xl:w-[500px] md:opacity-100"
             : "translate-x-full md:translate-x-0 md:w-0 md:opacity-0 md:overflow-hidden md:pointer-events-none"
         )}
         style={{ overscrollBehavior: "contain" }}
         aria-hidden={!isOpen}
       >
-        <div className="w-full md:w-[380px] lg:w-[410px] h-full flex flex-col min-w-0">
+        <div className="w-full md:w-[440px] lg:w-[470px] xl:w-[500px] h-full flex flex-col min-w-0">
           {/* Header */}
           <div className="flex flex-col border-b border-[#152033] dark:border-slate-300 bg-[#090E1A] dark:bg-slate-100 shrink-0">
             {/* Top Title & Action Bar */}

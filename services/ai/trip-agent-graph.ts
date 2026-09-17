@@ -41,9 +41,12 @@ export interface AgentGraphOutput {
 
 /**
  * Classifies if a user prompt is asking to plan, generate, or mutate an itinerary or stay.
- * Robust against typos (e.g. 'ititnerary', 'itinary') and conversational follow-ups ('add them', 'go ahead').
+ * Robust against typos (e.g. 'ititnerary', 'itinary') and conversational follow-ups ('add them', 'try again').
  */
-export function isItineraryPlanningIntent(prompt: string): boolean {
+export function isItineraryPlanningIntent(
+  prompt: string,
+  history?: Array<{ role: string; content: string }>
+): boolean {
   const p = prompt.toLowerCase().trim();
 
   const patterns = [
@@ -61,7 +64,32 @@ export function isItineraryPlanningIntent(prompt: string): boolean {
     /\bwhat\s+should\s+i\s+do\s+on\s+day\b/i,
   ];
 
-  return patterns.some((rx) => rx.test(p));
+  if (patterns.some((rx) => rx.test(p))) {
+    return true;
+  }
+
+  // Handle follow-ups/retries ("try again", "retry", "redo", "generate again", "do it")
+  const isRetry =
+    /\b(try\s+again|retry|redo|regenerate|do\s+it\s+again|repeat|yes\s+please|generate\s+it|yes\s+do\s+it|please\s+continue|continue)\b/i.test(
+      p
+    ) || p === "try" || p === "again";
+
+  if (isRetry && history && history.length > 0) {
+    const recent = history.slice(-3);
+    const hadPlanningIntent = recent.some(
+      (m) =>
+        patterns.some((rx) => rx.test(m.content)) ||
+        m.content.toLowerCase().includes("itinerary proposal") ||
+        m.content.toLowerCase().includes("starter itinerary") ||
+        m.content.toLowerCase().includes("proposal") ||
+        m.content.toLowerCase().includes("itinerary")
+    );
+    if (hadPlanningIntent) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -159,8 +187,8 @@ export async function runTripAgentGraph(
   const context = preloadedContext || (await buildTripContext(tripId, userId));
   const destination = context?.destination || null;
 
-  // 2. Classify intent: Planning/Mutation vs Conversational
-  const isPlanning = isItineraryPlanningIntent(prompt);
+  // 2. Classify intent: Planning/Mutation vs Conversational (with history awareness)
+  const isPlanning = isItineraryPlanningIntent(prompt, history);
 
   // =========================================================================
   // PATH A: Itinerary Planning / Generation / Workspace Mutations (GEMINI)
