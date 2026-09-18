@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { ArrowRight, Menu, X } from "lucide-react";
 
-import { AnimatedNav } from "@/components/app-shell/nav-Items";
+import { AnimatedNav } from "./animated-nav";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 
@@ -20,7 +20,7 @@ export function LandingHeader({ user }: LandingHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-sky-100/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md transition-all">
+    <header className="sticky top-0 z-50 w-full border-b border-sky-100/80 dark:border-slate-200/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md transition-all">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-8 md:px-12">
         {/* Logo & Brand */}
         <Link
@@ -49,7 +49,7 @@ export function LandingHeader({ user }: LandingHeaderProps) {
             <Link href="/dashboard" className="hidden sm:inline-flex">
               <Button
                 size="lg"
-                className="gap-2 px-5 h-10 text-sm font-semibold bg-gradient-to-r from-[#2D9BF0] to-[#1279CE] hover:from-[#1D8BE0] hover:to-[#0D6AB9] text-white shadow-sm shadow-[#2D9BF0]/30 transition-all cursor-pointer"
+                className="gap-2 px-5 h-10 text-sm font-semibold bg-linear-to-r from-[#2D9BF0] to-[#1279CE] hover:from-[#1D8BE0] hover:to-[#0D6AB9] text-white shadow-sm shadow-[#2D9BF0]/30 transition-all cursor-pointer"
               >
                 <span>Go to Workspace</span>
                 <ArrowRight className="h-4 w-4" />

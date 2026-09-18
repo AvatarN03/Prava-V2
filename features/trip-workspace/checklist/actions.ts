@@ -22,8 +22,8 @@ export async function createChecklistItem(input: CreateChecklistItemInput) {
     }
 
     const { tripId, title, category, dueDate, order } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -56,8 +56,8 @@ export async function updateChecklistItem(input: UpdateChecklistItemInput) {
     }
 
     const { id, tripId, title, category, dueDate, isCompleted, order } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -90,8 +90,8 @@ export async function deleteChecklistItem(input: DeleteChecklistItemInput) {
     }
 
     const { id, tripId } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -114,8 +114,8 @@ export async function deleteChecklistItem(input: DeleteChecklistItemInput) {
  */
 export async function seedEssentialChecklist(tripId: string) {
   try {
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -159,8 +159,8 @@ export async function toggleChecklistItem(input: ToggleChecklistItemInput) {
     }
 
     const { id, tripId, isCompleted } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 

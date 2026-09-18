@@ -8,12 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { TemplateTripItem } from "./types";
 
-const OPENROUTER_FREE_MODELS = [
-  "inclusionai/ling-3.0-flash-sante:free",
-  "nex-agi/nex-n2.5-mini:free",
-  "liquid/lfm-2.5-2.6b:free",
-  "nvidia/nemotron-3.5-lightning:free",
-];
+import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
 
 /**
  * Fetch all authentic public trips and templates from PostgreSQL.
@@ -173,51 +168,34 @@ Keep the structure identical:
 ]
 Output strictly valid JSON only. No markdown formatting, no codeblocks.`;
 
-  for (const model of OPENROUTER_FREE_MODELS) {
+  const res = await callOpenRouterFree({
+    systemInstruction: systemMessage,
+    messages: [
+      {
+        role: "user",
+        content: JSON.stringify(
+          rawItinerary.map((i) => ({
+            dayNumber: i.dayNumber || 1,
+            title: i.title,
+            category: i.category,
+            description: i.description,
+          }))
+        ),
+      },
+    ],
+    temperature: 0.3,
+    maxTokens: 1500,
+  });
+
+  if (res?.success && res.text) {
     try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://prava.ai",
-          "X-Title": "Prava AI Templates",
-        },
-        body: JSON.stringify({
-          model,
-          temperature: 0.3,
-          max_tokens: 1500,
-          messages: [
-            { role: "system", content: systemMessage },
-            {
-              role: "user",
-              content: JSON.stringify(
-                rawItinerary.map((i) => ({
-                  dayNumber: i.dayNumber || 1,
-                  title: i.title,
-                  category: i.category,
-                  description: i.description,
-                }))
-              ),
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) continue;
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) continue;
-
-      const cleanJson = content.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+      const cleanJson = res.text.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
       const parsed = JSON.parse(cleanJson);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
     } catch {
-      // Failover to next free model
-      continue;
+      // Fallback to original activities on parse error
     }
   }
 

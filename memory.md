@@ -994,8 +994,79 @@
   - **Production Build Verification**:
     - Validated through `npm run build` with Turbopack — zero TypeScript or compilation errors across all static and dynamic routes.
 
+- **Task 91 (Gemini 3.x Cascade, History-Aware Follow-up Routing, Proposal Theme Harmony & Desktop Panel Expansion)**:
+  - **Gemini 3.x Multi-Tier Cascade**:
+    - Reconfigured `lib/ai/gemini-client.ts` to prioritize active Gemini 3.x models: `gemini-3.8-flash` -> `gemini-3.7-flash` -> `gemini-3.6-flash` -> `gemini-2.5-flash` for structured proposals, and `gemini-3.1-flash-lite` -> `gemini-3.6-flash` -> `gemini-3.7-flash` for conversational tasks.
+    - Enables automatic fallback if a model hits rate limits (20–500 RPD) or transient errors.
+  - **History-Aware Planning Intent Router**:
+    - Updated `isItineraryPlanningIntent(prompt, history)` in `services/ai/trip-agent-graph.ts` and `features/trip-workspace/ai/actions.ts`.
+    - Added detection for follow-ups and retry requests (`"try again"`, `"retry"`, `"redo"`, `"regenerate"`, `"do it"`, `"yes please"`).
+    - If the user sends a retry or follow-up and recent messages in `history` contained planning requests or proposals, it stays in **Path A (Planning Proposal)** instead of falling back to casual chat.
+  - **Conversational Re-greeting Elimination**:
+    - Updated `conversationalPrompt` in `services/ai/context-builder.ts` to forbid repeated introductions and greetings on subsequent conversation turns, enforcing continuous contextual flow.
+  - **Desktop Panel Width Expansion**:
+    - Expanded `WorkspaceAiPanel` desktop width from `380px/410px` to `440px/470px/500px` (`md:w-[440px] lg:w-[470px] xl:w-[500px]`), providing ample breathing room for cards, tables, and buttons.
+  - **Proposal Card Light & Dark Theme Alignment & Overflow-Proof Actions**:
+    - Refactored `AiProposalCard` to perfectly align with `WorkspaceAiPanel`'s theme (dark `#0E1729` in light app mode, clean white in dark app mode).
+    - Fixed proposal action buttons: added `CheckCheck` icon for "Accept All", compact `Apply (X)` label for partial selections, and responsive flex-wrap layout preventing button overflow across all screen sizes.
+  - **Production Build Verification**:
+    - Verified with `npm run build` using Turbopack — passed with exit code 0 and zero TypeScript or compilation errors across all static and dynamic routes.
+
+- **Task 92 (UI Tuning: Trip Card Public Badge Relocation & Countdown Theme Harmony)**:
+  - **Relocated Public Visibility Tag to Card Second Half**:
+    - Removed the Public badge overlay from the top floating image banner in `TripCard` ([`features/trips/components/trip-card.tsx`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/features/trips/components/trip-card.tsx)).
+    - Placed the `Public` badge in the card's second half (Card Header), positioned immediately to the left of the 3-dot dropdown action menu with vertical center alignment (`flex items-center gap-1.5 shrink-0`).
+    - Styled with Prava's `Success subtle` theme tokens (`border border-emerald-200/90 bg-emerald-50/80 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-emerald-300 text-[10px] font-medium gap-1 px-2 py-0.5 shadow-2xs`) alongside the `Globe` icon.
+  - **Elevated Countdown Badges with Prava Theme Palette**:
+    - Updated `getCountdownLabel()` in both `TripCard` and `WorkspaceHeader`:
+      - **"Happening now" / "Starts today"**: Emerald active theme (`bg-emerald-50/95 dark:bg-emerald-950/90 border-emerald-200/90 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300`) with live animated pinging pulse dot indicator.
+      - **"3 days left" / "Tomorrow" / "N days left"**: Project Sky Blue theme (`bg-sky-50/95 dark:bg-sky-950/90 border-sky-200/90 dark:border-sky-800/80 text-sky-700 dark:text-sky-300`) with `Clock` icon.
+      - **"> 30 days"**: Calm neutral slate theme (`bg-slate-100/95 dark:bg-slate-900/90 border-slate-200/90 dark:border-slate-800/80 text-slate-700 dark:text-slate-300`).
+    - Aligned dashboard upcoming trip countdown badge in `upcoming-trip-card.tsx` to match the Prava Sky Blue theme (`border-sky-200/90 bg-sky-50/90 text-sky-700 dark:border-sky-800/80 dark:bg-sky-950/70 dark:text-sky-300`).
+    - Added dark mode color token variants (`planning`, `active`, `completed`, `archived`) to `badgeVariants` in [`components/ui/badge.tsx`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/components/ui/badge.tsx).
+  - **Import Refactoring & Code Cleanliness**:
+    - Refactored `features/trips/components/trip-card.tsx` and `features/trip-workspace/common/workspace-header.tsx` into strict 6-tier import hierarchies (`format-imports-and-clean`).
+    - Stripped unused imports (`Sparkles`, `Check`) while properly scoping `Lock` and `Clock`.
+  - **Production Build Verification**:
+    - Successfully verified via `npm run build` with Turbopack — zero TypeScript or compilation errors across all 29 routes.
+
+- **Task 93 (Comprehensive Codebase Audit, Dead Code Elimination & Redundancy Deduplication)**:
+  - **Shared Utility Consolidation (`lib/utils.ts`)**:
+    - Centralized `formatDateRange` and `formatRelativeTime` into `lib/utils.ts`.
+    - Standardized `generateSlug` in `lib/utils.ts` and re-exported it in `features/blog/schema.ts`.
+    - Deduplicated inline date formatting and relative time implementations in `features/community/forum-actions.ts`, `features/dashboard/components/upcoming-trip-card.tsx`, `features/dashboard/components/recent-trips-list.tsx`, and `features/dashboard/components/active-trip-workspace-card.tsx`.
+  - **Delete Dialog Component Deduplication**:
+    - Replaced redundant dialog implementations across `TripCard`, `TripTableView`, and `WorkspaceHeader` with canonical `ConfirmDeleteDialog` from `@/components/app-shell/confirm-delete-dialog`.
+    - Safely stubbed `features/trips/components/delete-trip-dialog.tsx` to `export {};`.
+  - **Workspace Mutation Security & Ownership Hardening**:
+    - Identified that `verifyTripOwnership(tripId)` marks public trips with `{ authorized: true, isOwner: false }`.
+    - Hardened all 6 workspace mutation actions (`accommodations/actions.ts`, `itinerary/actions.ts`, `checklist/actions.ts`, `notes/actions.ts`, `links/actions.ts`, `expenses/actions.ts`) with `if (!authorized || !isOwner)` checks to guarantee unprivileged travelers cannot mutate public trips belonging to other users.
+  - **OpenRouter Multi-Tier AI Cascade Consolidation**:
+    - Enhanced `lib/ai/openrouter-client.ts` (`callOpenRouterFree`) to support custom model cascade overrides via `models?: readonly string[] | string[]`.
+    - Refactored `features/templates/actions.ts` (`customizeItineraryWithAi`), `features/travel-essentials/language/language-service.ts`, and `features/travel-essentials/country-guide/country-service.ts` to route through `callOpenRouterFree`, eliminating 160+ lines of duplicate raw fetch loops, HTTP header management, and error extraction logic.
+  - **Dead & Redundant File Pruning (Safe Stubs)**:
+    - Safely stubbed obsolete/unused files (`features/dashboard/components/trips-operations-table.tsx`, `features/community/components/forum-thread-dialog.tsx`, `features/community/components/community-creator-card.tsx`, `features/community/actions.ts`, `features/community/types.ts`) to `export {};`.
+    - Repointed template clone callers in `forum-thread-view.tsx` and `app/u/[username]/clone-trip-button.tsx` to `@/features/templates/actions`.
+  - **Landing Page Navigation Refactoring**:
+    - Relocated misfiled `components/app-shell/nav-Items.tsx` to `features/landing/components/animated-nav.tsx`.
+    - Updated navigation link from `/community` to `/forum` (avoiding redundant server redirects).
+    - Updated `landing-header.tsx` import and stubbed `nav-Items.tsx` to `export {};`.
+  - **Verified Dependencies & Asset Safeguards**:
+    - Confirmed `lucide` package usage in `top-bar.tsx` is strictly required by `morphicons` for `IconNode` SVG data. Formatted `top-bar.tsx` imports to strict 6-tier standard.
+    - Preserved 100% of assets in `public/` (`image.png`, `1.png`, `3.png`, avatars, logos) per project guidelines.
+
+- **Task 94 (Fix Browser Extension Hydration Mismatch & Dashboard Type Export Alignment)**:
+  - **Browser Extension Hydration Guard**:
+    - Identified the hydration warning in `RootLayout` caused by browser extensions (e.g. ColorZilla injecting `cz-shortcut-listen="true"` or Grammarly) modifying attributes on the `<body>` element before React hydrates.
+    - Added `suppressHydrationWarning` to the `<body>` element in [`app/layout.tsx`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/app/layout.tsx), which follows official React & Next.js guidance to silence client-only attribute modifications on the root body.
+  - **Dashboard Query Type Export Alignment**:
+    - Exported `export type TripSummaryItem = Trip;` in [`features/dashboard/queries.ts`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/features/dashboard/queries.ts) to satisfy imports in `features/dashboard/components/recent-trips-list.tsx`.
+    - Removed unused `Palmtree` import in `recent-trips-list.tsx`.
+  - **Production Build Verification**:
+    - Successfully verified via `npm run build` with Turbopack — passed with exit code 0 across all 29 routes.
+
 ## Next Steps
-- Continue testing UI and AI assistant interactions and iterate based on user feedback.
+- Continue iterative feature work and user testing on Prava AI V2.
 
 
 

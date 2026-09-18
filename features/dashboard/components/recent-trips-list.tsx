@@ -6,17 +6,18 @@ import {
   Calendar,
   Compass,
   MapPin,
-  Palmtree,
   Plane,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trip } from "@prisma/client";
+import { formatDateRange } from "@/lib/utils";
+
+import type { TripSummaryItem } from "../queries";
 
 interface RecentTripsListProps {
-  trips: Trip[];
+  trips: TripSummaryItem[];
 }
 
 export function RecentTripsList({ trips }: RecentTripsListProps) {
@@ -33,18 +34,6 @@ export function RecentTripsList({ trips }: RecentTripsListProps) {
       default:
         return { label: status.toLowerCase(), variant: "secondary" as const };
     }
-  };
-
-  const formatDateRange = (start?: Date | null, end?: Date | null) => {
-    if (!start && !end) return "Flexible dates";
-    const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-    if (start && end) {
-      const s = new Date(start).toLocaleDateString("en-US", options);
-      const e = new Date(end).toLocaleDateString("en-US", { ...options, year: "numeric" });
-      return `${s} — ${e}`;
-    }
-    if (start) return `Starts ${new Date(start).toLocaleDateString("en-US", options)}`;
-    return `Ends ${new Date(end!).toLocaleDateString("en-US", options)}`;
   };
 
   return (

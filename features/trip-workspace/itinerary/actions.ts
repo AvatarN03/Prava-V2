@@ -20,8 +20,8 @@ export async function createItineraryItem(input: CreateItineraryInput) {
     }
 
     const { tripId, dayNumber, date, time, title, description, location, category, cost, order } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -58,8 +58,8 @@ export async function updateItineraryItem(input: UpdateItineraryInput) {
     }
 
     const { id, tripId, dayNumber, date, time, title, description, location, category, cost, order } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -96,8 +96,8 @@ export async function deleteItineraryItem(input: DeleteItineraryInput) {
     }
 
     const { id, tripId } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 

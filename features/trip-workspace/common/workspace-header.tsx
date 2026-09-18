@@ -1,28 +1,27 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 
 import {
   ArrowLeft,
-  MapPin,
   Calendar,
+  Clock,
+  Copy,
+  Globe,
+  Loader2,
+  Lock,
+  MapPin,
   MoreHorizontal,
   Pencil,
-  Trash2,
-  Sparkles,
-  Globe,
-  Lock,
-  Loader2,
-  Copy,
   Share2,
-  Clock,
-  Check,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { CoverImage } from "@/components/storage/cover-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,16 +38,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CoverImage } from "@/components/storage/cover-image";
+import { ConfirmDeleteDialog } from "@/components/app-shell/confirm-delete-dialog";
+import { formatDateRange } from "@/lib/utils";
+import { EditTripDialog } from "@/features/trips/components/edit-trip-dialog";
 
 import { useWorkspaceAi } from "@/features/trip-workspace/context/workspace-ai-context";
 
-import { EditTripDialog } from "@/features/trips/components/edit-trip-dialog";
-import { DeleteTripDialog } from "@/features/trips/components/delete-trip-dialog";
-import { toggleTripPublishStatus } from "@/features/community/actions";
-import { duplicateTrip, updateTrip } from "@/features/trips/actions";
+import { deleteTrip, duplicateTrip, toggleTripPublicStatus, updateTrip } from "@/features/trips/actions";
 
-import { Trip, TripStatus } from "@/features/trips/types";
+import type { Trip, TripStatus } from "@/features/trips/types";
 
 interface WorkspaceHeaderProps {
   trip: Trip & { isPublic?: boolean };
@@ -67,11 +65,10 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
 
   const handleTogglePublish = () => {
     startPublishing(async () => {
-      const nextState = !isPublic;
-      const res = await toggleTripPublishStatus(trip.id, nextState);
-      if (res.success) {
-        setIsPublic(Boolean(res.isPublic));
-        if (res.isPublic) {
+      const res = await toggleTripPublicStatus(trip.id);
+      if (res.success && res.data) {
+        setIsPublic(Boolean(res.data.isPublic));
+        if (res.data.isPublic) {
           toast.success("Trip published to Community Hub!");
         } else {
           toast.info("Trip visibility changed to Private.");
@@ -128,17 +125,6 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
     });
   };
 
-  const formatDateRange = (start?: Date | string | null, end?: Date | string | null) => {
-    if (!start && !end) return "Dates unset";
-    const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
-    if (start && end) {
-      const s = new Date(start).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      const e = new Date(end).toLocaleDateString("en-US", options);
-      return `${s} – ${e}`;
-    }
-    if (start) return `Starts ${new Date(start).toLocaleDateString("en-US", options)}`;
-    return `Ends ${new Date(end!).toLocaleDateString("en-US", options)}`;
-  };
 
   const getCountdownLabel = (start?: Date | string | null, end?: Date | string | null) => {
     if (!start) return null;
@@ -153,18 +139,53 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
     if (endDate) {
       const endMidnight = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
       if (todayMidnight >= startMidnight && todayMidnight <= endMidnight) {
-        return <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-xs">Happening Now</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50/95 dark:bg-emerald-950/90 border border-emerald-200/90 dark:border-emerald-800/80 px-2 py-0.5 rounded-xs shadow-2xs">
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            </span>
+            Happening now
+          </span>
+        );
       }
     }
 
-    if (diffDays > 0) {
-      if (diffDays === 1) return <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-xs">Starts Tomorrow</span>;
-      if (diffDays <= 30) return <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-xs">In {diffDays} days</span>;
-      return <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-xs">In {Math.round(diffDays / 30)} months</span>;
+    if (diffDays === 0) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50/95 dark:bg-emerald-950/90 border border-emerald-200/90 dark:border-emerald-800/80 px-2 py-0.5 rounded-xs shadow-2xs">
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+          </span>
+          Starts today
+        </span>
+      );
     }
 
-    if (diffDays === 0) {
-      return <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-xs">Starts Today</span>;
+    if (diffDays > 0) {
+      if (diffDays === 1) {
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-700 dark:text-sky-300 bg-sky-50/95 dark:bg-sky-950/90 border border-sky-200/90 dark:border-sky-800/80 px-2 py-0.5 rounded-xs shadow-2xs">
+            <Clock className="h-3 w-3 text-primary shrink-0" />
+            Starts tomorrow
+          </span>
+        );
+      }
+      if (diffDays <= 30) {
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-700 dark:text-sky-300 bg-sky-50/95 dark:bg-sky-950/90 border border-sky-200/90 dark:border-sky-800/80 px-2 py-0.5 rounded-xs shadow-2xs">
+            <Clock className="h-3 w-3 text-primary shrink-0" />
+            {diffDays} days left
+          </span>
+        );
+      }
+      return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-700 dark:text-slate-300 bg-slate-100/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800/80 px-2 py-0.5 rounded-xs shadow-2xs">
+          <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+          In {Math.round(diffDays / 30)} months
+        </span>
+      );
     }
 
     return null;
@@ -317,7 +338,7 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center gap-2 flex-wrap">
             {isPublic && (
-              <Badge variant="secondary" className="gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+              <Badge variant="outline" className="gap-1 text-[10px] font-medium border-emerald-200/90 bg-emerald-50/80 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-emerald-300 shadow-2xs">
                 <Globe className="w-2.5 h-2.5" /> Public Community Trip
               </Badge>
             )}
@@ -346,10 +367,21 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
         onOpenChange={setIsEditOpen}
       />
 
-      <DeleteTripDialog
-        trip={trip}
+      <ConfirmDeleteDialog
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
+        title="Delete Trip"
+        description={`Are you sure you want to delete "${trip.title}"? This will permanently remove all associated itineraries, notes, and workspace data.`}
+        onConfirm={async () => {
+          const res = await deleteTrip({ id: trip.id });
+          if (res.success) {
+            toast.success(`Deleted "${trip.title}"`);
+            router.push("/trips");
+            router.refresh();
+          } else {
+            toast.error(res.error || "Failed to delete trip");
+          }
+        }}
       />
     </>
   );

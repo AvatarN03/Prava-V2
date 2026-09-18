@@ -13,15 +13,4 @@ export const blogPostSchema = z.object({
 
 export type BlogPostInput = z.infer<typeof blogPostSchema>;
 
-/**
- * Generate a URL-safe slug from a title string.
- */
-export function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .substring(0, 120);
-}
+export { generateSlug } from "@/lib/utils";

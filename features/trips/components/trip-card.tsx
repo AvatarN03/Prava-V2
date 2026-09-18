@@ -1,31 +1,32 @@
 "use client";
 
-import * as React from "react";
-import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useState, useTransition } from "react";
+
 import {
-  MapPin,
+  ArrowUpRight,
+  BookOpen,
+  Building2,
   Calendar,
+  CheckSquare,
+  Clock,
+  Compass,
+  Copy,
+  DollarSign,
+  Globe,
+  Loader2,
+  MapPin,
   MoreHorizontal,
   Pencil,
   Trash2,
-  Copy,
-  Globe,
-  Lock,
-  ArrowUpRight,
-  Building2,
-  CheckSquare,
-  DollarSign,
-  Compass,
-  BookOpen,
-  Loader2,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,10 +34,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Trip } from "../types";
+
+import { ConfirmDeleteDialog } from "@/components/app-shell/confirm-delete-dialog";
+import { formatDateRange } from "@/lib/utils";
+import { deleteTrip, duplicateTrip, toggleTripPublicStatus } from "../actions";
+
+import type { Trip } from "../types";
 import { EditTripDialog } from "./edit-trip-dialog";
-import { DeleteTripDialog } from "./delete-trip-dialog";
-import { duplicateTrip, toggleTripPublicStatus } from "../actions";
 
 interface TripCardProps {
   trip: Trip;
@@ -91,19 +95,6 @@ export function TripCard({ trip }: TripCardProps) {
     });
   };
 
-  const formatDateRange = (start?: Date | string | null, end?: Date | string | null) => {
-    if (!start && !end) return "Dates unset";
-    const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
-    if (start && end) {
-      const s = new Date(start).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      const e = new Date(end).toLocaleDateString("en-US", options);
-      return `${s} – ${e}`;
-    }
-    if (start) {
-      return `Starts ${new Date(start).toLocaleDateString("en-US", options)}`;
-    }
-    return `Ends ${new Date(end!).toLocaleDateString("en-US", options)}`;
-  };
 
   const getCountdownLabel = (start?: Date | string | null, end?: Date | string | null) => {
     if (!start) return null;
@@ -119,18 +110,53 @@ export function TripCard({ trip }: TripCardProps) {
     if (endDate) {
       const endMidnight = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
       if (todayMidnight >= startMidnight && todayMidnight <= endMidnight) {
-        return <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-xs">Happening Now</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50/95 dark:bg-emerald-950/90 border border-emerald-200/90 dark:border-emerald-800/80 px-2 py-0.5 rounded-xs shadow-2xs backdrop-blur-xs">
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            </span>
+            Happening now
+          </span>
+        );
       }
     }
 
-    if (diffDays > 0) {
-      if (diffDays === 1) return <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-xs">Tomorrow</span>;
-      if (diffDays <= 30) return <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-xs">In {diffDays} days</span>;
-      return <span className="text-[10px] text-muted-foreground">In {Math.round(diffDays / 30)} months</span>;
+    if (diffDays === 0) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50/95 dark:bg-emerald-950/90 border border-emerald-200/90 dark:border-emerald-800/80 px-2 py-0.5 rounded-xs shadow-2xs backdrop-blur-xs">
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+          </span>
+          Starts today
+        </span>
+      );
     }
 
-    if (diffDays === 0) {
-      return <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-xs">Starts Today</span>;
+    if (diffDays > 0) {
+      if (diffDays === 1) {
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-700 dark:text-sky-300 bg-sky-50/95 dark:bg-sky-950/90 border border-sky-200/90 dark:border-sky-800/80 px-2 py-0.5 rounded-xs shadow-2xs backdrop-blur-xs">
+            <Clock className="h-3 w-3 text-primary shrink-0" />
+            Tomorrow
+          </span>
+        );
+      }
+      if (diffDays <= 30) {
+        return (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-700 dark:text-sky-300 bg-sky-50/95 dark:bg-sky-950/90 border border-sky-200/90 dark:border-sky-800/80 px-2 py-0.5 rounded-xs shadow-2xs backdrop-blur-xs">
+            <Clock className="h-3 w-3 text-primary shrink-0" />
+            {diffDays} days left
+          </span>
+        );
+      }
+      return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-700 dark:text-slate-300 bg-slate-100/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800/80 px-2 py-0.5 rounded-xs shadow-2xs backdrop-blur-xs">
+          <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+          In {Math.round(diffDays / 30)} months
+        </span>
+      );
     }
 
     return null;
@@ -185,14 +211,9 @@ export function TripCard({ trip }: TripCardProps) {
           {/* Top Floating Badges */}
           <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none">
             <div className="flex items-center gap-1.5 pointer-events-auto">
-              <Badge variant={getStatusVariant(trip.status)} className="shadow-xs text-[10px] uppercase font-semibold">
+              <Badge variant={getStatusVariant(trip.status)} className="shadow-xs text-[10px] uppercase font-semibold backdrop-blur-xs">
                 {trip.status.toLowerCase()}
               </Badge>
-              {trip.isPublic && (
-                <Badge variant="secondary" className="bg-emerald-500/90 text-white text-[10px] font-medium shadow-xs gap-1 border-0">
-                  <Globe className="h-2.5 w-2.5" /> Public
-                </Badge>
-              )}
             </div>
 
             <div className="pointer-events-auto">
@@ -223,51 +244,63 @@ export function TripCard({ trip }: TripCardProps) {
                   </CardTitle>
                 </div>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={isPendingAction}
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {trip.isPublic && (
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-200/90 bg-emerald-50/80 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-emerald-300 text-[10px] font-medium gap-1 px-2 py-0.5 shadow-2xs"
                     >
-                      {isPendingAction ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <MoreHorizontal className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href={`/trips/${trip.id}`}>
-                        <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
-                        Open Workspace
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsEditOpen(true)} className="cursor-pointer">
-                      <Pencil className="h-3.5 w-3.5 mr-2" />
-                      Edit Details & Cover
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDuplicate} className="cursor-pointer">
-                      <Copy className="h-3.5 w-3.5 mr-2" />
-                      Duplicate Trip
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleToggleShare} className="cursor-pointer">
-                      <Globe className="h-3.5 w-3.5 mr-2" />
-                      {trip.isPublic ? "Make Private" : "Share to Community"}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setIsDeleteOpen(true)}
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-2" />
-                      Delete Trip
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <Globe className="h-2.5 w-2.5" />
+                      Public
+                    </Badge>
+                  )}
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={isPendingAction}
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                      >
+                        {isPendingAction ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <MoreHorizontal className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href={`/trips/${trip.id}`}>
+                          <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
+                          Open Workspace
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setIsEditOpen(true)} className="cursor-pointer">
+                        <Pencil className="h-3.5 w-3.5 mr-2" />
+                        Edit Details & Cover
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDuplicate} className="cursor-pointer">
+                        <Copy className="h-3.5 w-3.5 mr-2" />
+                        Duplicate Trip
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleToggleShare} className="cursor-pointer">
+                        <Globe className="h-3.5 w-3.5 mr-2" />
+                        {trip.isPublic ? "Make Private" : "Share to Community"}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setIsDeleteOpen(true)}
+                        className="text-destructive focus:text-destructive cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-2" />
+                        Delete Trip
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </CardHeader>
 
@@ -342,10 +375,20 @@ export function TripCard({ trip }: TripCardProps) {
         onOpenChange={setIsEditOpen}
       />
 
-      <DeleteTripDialog
-        trip={trip}
+      <ConfirmDeleteDialog
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
+        title="Delete Trip"
+        description={`Are you sure you want to delete "${trip.title}"? This will permanently remove all associated itineraries, notes, and workspace data.`}
+        onConfirm={async () => {
+          const res = await deleteTrip({ id: trip.id });
+          if (res.success) {
+            toast.success(`Deleted "${trip.title}"`);
+            router.refresh();
+          } else {
+            toast.error(res.error || "Failed to delete trip");
+          }
+        }}
       />
     </>
   );

@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { cloneTripTemplate } from "@/features/community/actions";
+import { cloneTripTemplate } from "@/features/templates/actions";
 import { Button } from "@/components/ui/button";
 import { Copy, Loader2 } from "lucide-react";
 

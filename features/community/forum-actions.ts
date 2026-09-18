@@ -6,6 +6,7 @@ import { Pool } from "pg";
 
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+import { formatRelativeTime, generateSlug } from "@/lib/utils";
 
 import {
   CreateDiscussionInput,
@@ -21,19 +22,6 @@ import {
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || process.env.DIRECT_URL,
 });
-
-/**
- * Helper to generate URL-safe slugs
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
 
 /**
  * Format category identifier to human-readable label
@@ -56,20 +44,6 @@ function getCategoryLabel(category: string): string {
   }
 }
 
-/**
- * Format relative time string
- */
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 /**
  * Fetch forum discussions with author profiles, attached trips, and reply counts
@@ -203,7 +177,7 @@ export async function getForumDiscussions(
         authorAvatarUrl: row.author_avatar_url,
         isCreatorPublic: Boolean(row.is_creator_public),
         authorBio: row.author_bio,
-        createdAt: formatTimeAgo(row.created_at),
+        createdAt: formatRelativeTime(row.created_at),
         upvotes: Number(row.upvotes) || 0,
         views: Number(row.views) || 0,
         repliesCount: Number(row.replies_count) || 0,
@@ -337,7 +311,7 @@ export async function getForumPostBySlug(slugOrId: string): Promise<ForumPost | 
       authorAvatarUrl: r.author_avatar_url,
       isCreatorPublic: Boolean(r.is_creator_public),
       content: r.content,
-      createdAt: formatTimeAgo(r.created_at),
+      createdAt: formatRelativeTime(r.created_at),
       upvotes: Number(r.upvotes) || 0,
       isEdited: Boolean(r.is_edited),
       isAuthor: Boolean(r.is_author),
@@ -386,7 +360,7 @@ export async function getForumPostBySlug(slugOrId: string): Promise<ForumPost | 
       authorAvatarUrl: row.author_avatar_url,
       isCreatorPublic: Boolean(row.is_creator_public),
       authorBio: row.author_bio,
-      createdAt: formatTimeAgo(row.created_at),
+      createdAt: formatRelativeTime(row.created_at),
       upvotes: Number(row.upvotes) || 0,
       views: Number(row.views) || 0,
       repliesCount: replies.length,
@@ -434,7 +408,7 @@ export async function createForumDiscussion(input: CreateDiscussionInput) {
 
     // Generate unique slug
     const shortId = Math.random().toString(36).substring(2, 8);
-    const baseSlug = slugify(input.title).replace(/-+$/, "");
+    const baseSlug = generateSlug(input.title).replace(/-+$/, "");
     const slug = `${baseSlug || "discussion"}-${shortId}`;
 
     const sql = `

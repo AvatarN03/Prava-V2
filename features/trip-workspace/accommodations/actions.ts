@@ -20,8 +20,8 @@ export async function createAccommodation(input: CreateAccommodationInput) {
     }
 
     const { tripId, name, type, address, checkIn, checkOut, confirmationCode, contactPhone, cost, currency, notes } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -59,8 +59,8 @@ export async function updateAccommodation(input: UpdateAccommodationInput) {
     }
 
     const { id, tripId, name, type, address, checkIn, checkOut, confirmationCode, contactPhone, cost, currency, notes } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -98,8 +98,8 @@ export async function deleteAccommodation(input: DeleteAccommodationInput) {
     }
 
     const { id, tripId } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 

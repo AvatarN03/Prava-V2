@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 
-import { cloneTripTemplate } from "@/features/community/actions";
+import { cloneTripTemplate } from "@/features/templates/actions";
 import { EditDiscussionDialog } from "@/features/community/components/edit-discussion-dialog";
 import { SaveTipDialog } from "@/features/community/components/save-tip-dialog";
 import {

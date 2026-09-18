@@ -12,6 +12,8 @@ import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
+export type TripSummaryItem = Trip;
+
 export interface CategoryExpenseBreakdown {
   category: string;
   amount: number;

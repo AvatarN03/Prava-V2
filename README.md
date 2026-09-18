@@ -3,80 +3,116 @@
 # Prava AI V2
 ### The AI-Augmented Travel Workspace
 
-**Workspace First, AI Second.** A persistent, structured productivity workspace for modern travelers — combining Notion-grade trip organization with contextual Gemini intelligence.
+**Workspace First, AI Second.** A persistent, structured productivity workspace for modern travelers — combining Linear & Notion-grade trip organization with contextual Gemini 3.x intelligence.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3.3-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.8-blue?style=flat&logo=react)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-7.x-2D3748?style=flat&logo=prisma)](https://www.prisma.io/)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth_%26_PostgreSQL-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
-[![Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?style=flat&logo=google)](https://deepmind.google/technologies/gemini/)
+[![Gemini](https://img.shields.io/badge/Google_Gemini-3.8_%2F_3.7_%2F_3.6_Flash-4285F4?style=flat&logo=google)](https://deepmind.google/technologies/gemini/)
 
 </div>
 
 ---
 
-## 🌟 Overview
+## 🌟 Overview & Product Philosophy
 
-Travel planning is notoriously fragmented across disconnected spreadsheets, note apps, booking emails, weather forecasts, and chat threads. General-purpose AI chatbots can suggest an itinerary, but they cannot maintain persistent state, reconcile budgets, or provide an ongoing source of truth before, during, and after travel.
+Travel planning is notoriously fragmented across disconnected spreadsheets, note apps, booking confirmations, weather forecasts, and chat threads. General-purpose chatbots can spit out generic bullet points, but they cannot maintain persistent state, reconcile budgets, or act as an ongoing source of truth before, during, and after travel.
 
-**Prava AI** solves this by unifying trip planning, logistics, financial tracking, travel reference utilities, and community discovery into a single durable workspace. Every workflow is 100% usable manually without AI, while Google Gemini 2.5 Flash acts as a powerful accelerant layered on top of your persisted trip data.
+**Prava AI V2** rejects both conversational "AI slop" and monolithic 15-field creation forms. Instead, it provides a high-density, high-efficiency travel workspace modeled after **Linear, Notion, GitHub, and Stripe Dashboard**.
+
+- **Workspace First**: Structured, durable, user-owned data is the core foundation. Every single workflow can be completed 100% manually with zero AI dependency.
+- **AI Second**: The AI assistant (**Ichinose**) is an assistive accelerant layered on top of your persisted workspace data. It suggests, drafts, summarizes, and generates reviewable structured action proposals.
+- **"The Application Remembers, The LLM Does Not"**: The LLM is stateless. Continuity, context assembly, and conversation histories are persisted in PostgreSQL via Prisma.
 
 ---
 
-## ✨ Core Features
+## ✨ Key Features & Architecture
 
-### 🧳 1. Trip Workspace (7 Integrated Modules)
-Each trip operates in its own dedicated, high-performance workspace driven by accessible `shadcn/ui` tabs:
-- **Overview**: High-level trip summary, countdown, key statistics, quick-action cards, and Unsplash destination cover photography.
-- **Itinerary**: Day-by-day activity timelines, scheduled hours, locations, cost tracking, and drag-ready ordering.
-- **Accommodations**: Stay bookings, check-in/check-out dates, addresses, confirmation codes, and provider contacts.
-- **Expense Tracker**: Real-time spending tracker with category breakdown analytics (Lodging, Food, Transport, Activities, Shopping, Other) and currency formatting.
-- **Notes**: Rich Markdown travel notes with pinning, categories, and fast full-text searching.
-- **Checklist**: Packing lists and pre-departure tasks with interactive completion toggles, due dates, categories, and edit dialogs.
-- **Links**: Reference bookmarks, reservation links, and travel inspiration with instant external redirection.
+### 🧳 1. Trip Workspace (7 Integrated Sub-Modules)
+Every trip operates in its own dedicated workspace powered by router-driven, accessible `shadcn/ui` tabs:
 
-### 🤖 2. Context-Aware AI Assistant & Structured Action Proposals
-- **"The Application Remembers, The LLM Does Not"**: The server dynamically assembles active trip context (itinerary items, stays, expenses, and notes) and feeds it to Gemini 2.5 Flash.
-- **Multi-Session History**: Create multiple chat threads per trip, revisit historical discussions, or initiate fresh conversations anytime.
-- **Interactive Proposal Cards (`AiProposal`)**: When asked to suggest additions or schedule changes, Gemini outputs structured JSON proposals. You review visual diffs in `AiProposalCard`, select individual items, and accept changes. Prava then executes an atomic Prisma `$transaction` that modifies real database records.
+1. **Overview**: High-level trip metrics, countdown timer, quick actions, and Unsplash tour-vibe destination cover photography.
+2. **Itinerary & AI Kickstart**:
+   - **Empty-State AI Kickstart**: When an itinerary has 0 activities, travelers can one-click kickstart a tailored multi-day draft. Ichinose calculates the trip duration from start/end dates and creates a structured proposal.
+   - **Zero-AI Manual Entry**: "Plan Manually" modal trigger is always accessible for manual timeline scheduling.
+   - Day-by-day tab filters, activity times, locations, and daily cost totals.
+3. **Accommodations**: Stay bookings, check-in/out dates, addresses, confirmation codes, and provider contacts.
+4. **Expense Tracker**: Real-time spending logs with category breakdown metrics (Lodging, Food, Transport, Activities, Shopping, Other) and preferred currency formatting.
+5. **Notes**: Rich Markdown documentation with note pinning, category filtering, and instant search.
+6. **Checklist**: Packing lists and pre-departure tasks with interactive completion toggles, due dates, categories, and inline editing.
+7. **Links**: Reference bookmarks, reservation links, and travel inspiration with fast external routing.
 
-### 🌍 3. Travel Essentials (Real-Time Live Data)
-- **Weather Forecast**: Powered by OpenWeather API with 5-day / 3-hour granular timelines, atmospheric matrix (humidity, wind, precipitation probability, pressure, UV index), and debounced city auto-suggestions.
-- **Currency Exchange & Trends**: Real-time European Central Bank rates via the Frankfurter API, interactive multi-timeframe SVG performance line charts (7D, 1M, 3M, 1Y), and personal exchange rate watchlists.
-- **Country Guide**: Live profiles for 250+ nations via REST Countries v3.1 (capitals, languages, currencies, flags, and timezones).
-- **Interactive Maps**: OpenStreetMap & Leaflet mapping with Nominatim geocoding.
-- **Emergency & Language**: Verified international emergency service numbers and essential local travel vocabulary phrases.
+---
 
-### 👥 4. Community Discovery & Creator Hub
-- **Curated Itineraries**: Discover itineraries crafted for world-class destinations (Japan, Amalfi Coast, Swiss Alps, Paris, Bali) with **1-Click Cloning** into your private workspace.
-- **Travel Stories & Guides**: Long-form Markdown travel blog posts written by the community with linked trips and reading time estimates.
-- **Community Forum**: Interactive discussion feed with route advice, gear recommendations, local tips, and community upvoting.
-- **Public Creator Profiles (`/u/[username]`)**: Showcasing verified creators, bios, published itineraries, and travel stories under an immutable `@username` handle.
+### 🤖 2. Ichinose AI Assistant & Transactional Proposals
 
-### ⚙️ 5. Account, Settings & Quota Management
-- **GitHub-Style Settings Hub (`/profile`)**: Modular vertical navigation covering Profile Overview, General Preferences, AI Usage, and Security.
-- **Instant Auto-Save**: Currency preferences, date format styling, AI auto-proposal switches, and notification toggles persist instantly with real-time toast feedback.
-- **Subscription & Quota Tracking (`/pricing`)**: Visual meters tracking workspace trip limits and monthly AI credit quotas (Free Explorer: 10 trips / 30 credits; Pro Wanderer: 25 trips / 150 credits) with historical monthly logs.
-- **Offline Sync**: Client-side IndexedDB caching via `idb` with automatic background synchronization when internet connectivity resumes.
+- **Gemini 3.x Multi-Tier Cascade**:
+  - **Planning & Workspace Mutations**: Automatically cascades across `gemini-3.8-flash` → `gemini-3.7-flash` → `gemini-3.6-flash` → `gemini-2.5-flash` to gracefully withstand free-tier daily rate limits (20–500 RPD) or transient quota limits.
+  - **Conversational Chat & Travel Essentials**: High-speed cascade via `gemini-3.1-flash-lite` and OpenRouter Free (Nemotron 3.5).
+- **History-Aware Context Continuity**:
+  - Intelligent intent classifier understands follow-ups (e.g., *"Try again"*, *"Retry"*, *"Redo"*, *"Add them"*), preserving context from previous planning turns without resetting to conversational greetings.
+- **Transactional Proposal Engine (`AiProposal`)**:
+  - Gemini outputs structured JSON payloads conforming to `aiProposalPayloadSchema`.
+  - The traveler visually reviews proposed changes in `AiProposalCard` with field diffs, checkboxes, and overflow-proof actions (`Accept All`, `Apply Selected`, `Reject`).
+  - On acceptance, an atomic Prisma `$transaction` commits validated records into PostgreSQL.
+- **Expanded Productivity Drawer**:
+  - Multi-session thread history (up to 15 messages per thread) with thread creation, inline renaming, and deletion.
+  - Generous desktop drawer width (`440px` to `500px`) with theme synchronization across Light and Dark modes.
+  - Dynamic user profile avatars in conversation bubbles.
+
+---
+
+### 🌍 3. Live Travel Essentials
+
+- **Live Weather Forecast**: Powered by OpenWeather API with 5-day / 3-hour granular timelines, atmospheric matrix (humidity, wind speed, precipitation probability, pressure, UV index), and debounced city auto-suggestions.
+- **Currency Exchange & Trend Analytics**: Live European Central Bank rates via the Frankfurter API, interactive multi-timeframe SVG performance line charts (7D, 1M, 3M, 1Y), and personal watchlists.
+- **Country Guide**: Live country profiles for 250+ nations via REST Countries v3.1 (capitals, languages, currencies, flags, and timezones).
+- **Interactive Maps**: OpenStreetMap & Leaflet integration with Nominatim geocoding.
+- **Emergency & Language Essentials**: Verified international emergency telephone numbers and essential local vocabulary phrasebooks.
+
+---
+
+### 👥 4. Community Hub, Travel Stories & Creator Profiles
+
+- **Curated Itineraries**: Handcrafted itineraries for world-class destinations (Japan, Amalfi Coast, Swiss Alps, Paris, Bali) with **1-Click Workspace Cloning**.
+- **Travel Stories & Guides**: Long-form Markdown travel blog posts with linked trips and reading time estimates.
+- **Discussion Forum**: Community discussion feed with route advice, gear recommendations, local tips, and voting.
+- **Public Creator Profiles (`/u/[username]`)**: Showcases verified creators, bios, published itineraries, and travel stories under an immutable `@username` handle.
+
+---
+
+### ⚙️ 5. Account, Settings & Quota Governance
+
+- **Consolidated Account Hub (`/profile`)**: All-in-one settings covering Profile Identity, General Preferences, AI Usage meters, and Security.
+- **Tier Quota Governance (`/pricing`)**:
+  - **Free Explorer**: Up to 10 trips, 30 AI planning credits/month.
+  - **Pro Wanderer**: Up to 25 trips, 150 AI planning credits/month.
+  - Real-time usage tracking meters and 6-month historical logs.
+- **Safe Profile Sync (`syncUserProfile`)**:
+  - Robust Supabase profile sync prevents `profiles_email_key` collisions when users switch auth providers or re-register.
+- **Smart Username Generator**: Normalizes names, checks database uniqueness, and validates against reserved routes.
+- **Client-Side Image Optimization**: HTML5 Canvas auto-downscales profile avatars to 512x512 WebP/JPEG before upload to minimize storage and bandwidth.
+- **Offline Cache**: Client-side IndexedDB caching via `idb` with automatic background synchronization when online connectivity resumes.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Domain | Technology | Description |
+| Domain | Technology | Key Details |
 |---|---|---|
 | **Framework** | [Next.js 16.3.3](https://nextjs.org/) | App Router, React Server Components, Server Actions, `proxy.ts` |
-| **Frontend UI** | [React 19.2.8](https://react.dev/) | Concurrent rendering, modern hooks, Transitions |
-| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | CSS-first configuration, Prava Cerulean `#2D9BF0` design tokens |
-| **UI Primitives** | [shadcn/ui](https://ui.shadcn.com/) / Radix | Accessible Dialog, Tabs, Select, Popover, Calendar, Switch, Accordion |
-| **Database** | [PostgreSQL (Supabase)](https://supabase.com/) | Relational database with connection pooling |
-| **ORM** | [Prisma ORM 7.x](https://www.prisma.io/) | Type-safe queries with `@prisma/adapter-pg` driver |
+| **Runtime & UI** | [React 19.2.8](https://react.dev/) | Concurrent rendering, modern hooks, Suspense transitions |
+| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | CSS-first configuration via `@tailwindcss/postcss`, Cerulean `#2D9BF0` |
+| **UI Primitives** | [shadcn/ui](https://ui.shadcn.com/) & Radix | Dialog, Tabs, Select, Popover, Calendar, Switch, Accordion, Avatar |
+| **Database** | [PostgreSQL (Supabase)](https://supabase.com/) | Relational database with PgBouncer connection pooling |
+| **ORM** | [Prisma ORM 7.x](https://www.prisma.io/) | Type-safe queries using `@prisma/adapter-pg` driver |
 | **Authentication** | [Supabase Auth](https://supabase.com/docs/guides/auth) | SSR authentication, server-side PKCE code exchange, Google OAuth |
-| **Storage** | [Supabase Storage](https://supabase.com/docs/guides/storage) | Media bucket with client-side HTML5 Canvas auto-downscaling |
-| **AI Integration** | [Google Gemini 2.5 Flash](https://deepmind.google/technologies/gemini/) | `@google/genai` SDK with structured proposal schemas |
-| **Icons** | [Lucide React](https://lucide.dev/) | Clean, consistent vector icons |
-| **Validation** | [Zod](https://zod.dev/) | Server-side validation for all Server Actions and AI responses |
+| **Storage** | [Supabase Storage](https://supabase.com/docs/guides/storage) | User-scoped media bucket with client-side Canvas auto-downscaling |
+| **AI Provider** | [Google Gemini 3.x](https://deepmind.google/technologies/gemini/) | `@google/genai` SDK (`gemini-3.8-flash`, `3.7`, `3.6`, `3.1-flash-lite`) |
+| **Offline Sync** | [IndexedDB via `idb`](https://github.com/jakearchibald/idb) | Client-side offline cache and synchronization engine |
+| **External APIs** | Unsplash, OpenWeather, Frankfurter FX, REST Countries | Live data integrations with graceful fallbacks |
 
 ---
 
@@ -84,7 +120,7 @@ Each trip operates in its own dedicated, high-performance workspace driven by ac
 
 ### Prerequisites
 - **Node.js**: `v20.x` or `v22.x` (LTS recommended)
-- **Package Manager**: **`npm`** (do not use `pnpm` or `yarn`)
+- **Package Manager**: **`npm`** (always use `npm` to preserve `package-lock.json`)
 - A [Supabase](https://supabase.com/) project (PostgreSQL database & Auth)
 - A [Google AI Studio](https://aistudio.google.com/) API Key for Gemini
 
@@ -100,41 +136,45 @@ npm install
 ```
 
 ### 3. Configure Environment Variables
-Copy the `.env.example` template to `.env.local`:
+Copy `.env.example` to `.env.local`:
 ```bash
 cp .env.example .env.local
 ```
 
-Fill in the required configuration keys:
+Fill in your configuration keys:
 ```env
-# Supabase Configuration
+# 1. Supabase Auth & Project Keys
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-anon-key
 SUPABASE_SECRET_KEY=your-supabase-secret-service-role-key
 
-# Database Connections (Postgres via Supabase)
+# 2. Database Connections (PostgreSQL via Supabase)
 DATABASE_URL=postgresql://postgres.your-ref:your-password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true
 DIRECT_URL=postgresql://postgres.your-ref:your-password@aws-0-region.pooler.supabase.com:5432/postgres
 
-# AI Provider (Google Gemini)
+# 3. AI Provider (Google Gemini)
 GEMINI_API_KEY=your-google-gemini-api-key
 
-# External APIs
+# Optional Model Overrides
+# GEMINI_TRIPS_MODEL=gemini-3.8-flash
+# GEMINI_CONVERSATIONAL_MODEL=gemini-3.1-flash-lite
+
+# 4. External Live APIs
 UNSPLASH_ACCESS_KEY=your-unsplash-access-key
 OPENWEATHER_API_KEY=your-openweather-api-key
 
-# Application Base URL
+# 5. Application URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ### 4. Push Database Schema
-Apply the Prisma schema directly to your Supabase PostgreSQL instance:
+Sync the Prisma schema to your PostgreSQL database:
 ```bash
 npx prisma db push
 npx prisma generate
 ```
 
-### 5. Launch Development Server
+### 5. Start Development Server
 ```bash
 npm run dev
 ```
@@ -143,26 +183,27 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📁 Project Structure
+## 📁 Codebase Organization
 
 ```
 prava_v2/
 ├── app/                              # Next.js App Router (pages, layouts, route handlers)
 │   ├── (app)/                        # Protected workspace layout group
-│   │   ├── dashboard/                # Main user dashboard
-│   │   ├── trips/                    # Trips list & [tripId] workspace tabs
+│   │   ├── dashboard/                # Cross-trip overview & metrics
+│   │   ├── trips/                    # Trips list & [tripId] 7-tab workspace
 │   │   ├── travel-essentials/        # Weather, FX, Maps, Guides, Emergency, Language
-│   │   ├── community/                # Community hub & forum
-│   │   ├── stories/                  # Travel stories & creator guides
-│   │   ├── profile/                  # Account settings hub
+│   │   ├── community/                # Community hub & 1-click cloner
+│   │   ├── forum/                    # Community discussion forum
+│   │   ├── stories/                  # Travel stories & markdown creator
+│   │   ├── profile/                  # Account & Settings hub
 │   │   └── pricing/                  # Usage quotas & tier billing
 │   ├── auth/                         # Sign In / Sign Up & PKCE callback handler
 │   ├── stories/[slug]/               # Public story reader
-│   ├── u/[username]/                 # Public creator profile
-│   └── page.tsx                      # Public landing page
+│   ├── u/[username]/                 # Public creator showcase
+│   └── page.tsx                      # Dynamic landing page
 ├── components/                       # Shared UI components
 │   ├── app-shell/                    # Fixed Sidebar, TopBar, ConfirmDeleteDialog
-│   ├── storage/                      # ImageUpload, CoverImage, AvatarUpload
+│   ├── storage/                      # AvatarUpload, CoverImage, ImageUpload
 │   └── ui/                           # shadcn/ui primitives (button, card, dialog, etc.)
 ├── features/                         # Feature-first domain modules
 │   ├── blog/                         # Story editor, markdown renderer, actions
@@ -175,55 +216,43 @@ prava_v2/
 │   ├── trip-workspace/               # 7 workspace tab views + AI proposal engine
 │   └── trips/                        # Trips CRUD, Unsplash picker, DatePickers
 ├── lib/                              # Core singletons and utilities
-│   ├── ai/                           # Gemini client initialization
-│   ├── auth/                         # Safe profile sync helper (profiles_email_key fix)
+│   ├── ai/                           # Gemini client initialization & model cascade
+│   ├── auth/                         # Safe profile sync helper (syncUserProfile)
 │   ├── db.ts                         # Prisma client with pg adapter
 │   ├── offline/                      # IndexedDB offline store & synchronization
 │   ├── storage/                      # Supabase Storage client
-│   ├── supabase/                     # Supabase SSR client & middleware
+│   ├── supabase/                     # Supabase SSR client & proxy middleware
 │   └── utils/                        # Canvas image resizer & string helpers
 ├── prisma/                           # schema.prisma & PostgreSQL migrations
-├── services/                         # External integrations (context-builder.ts, unsplash.ts)
-├── docs/                             # Architecture, design system & product vision
-├── memory.md                         # Detailed project memory & completed task log
-└── AGENTS.md                         # Comprehensive AI / LLM development guide
+├── services/                         # External integrations (trip-agent-graph, unsplash)
+├── memory.md                         # Continuous task memory & completed phases log
+└── AGENTS.md                         # Architecture rules & agent pair programming guidelines
 ```
 
 ---
 
-## 📜 Key Scripts
+## 📜 Key Commands
 
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Starts local Next.js dev server on `http://localhost:3000` with Turbopack |
 | `npm run build` | Compiles production bundle with strict TypeScript verification |
-| `npm run start` | Runs the compiled production server |
-| `npm run lint` | Checks codebase with ESLint 9 |
-| `npx prisma db push` | Syncs schema changes directly to Supabase PostgreSQL |
-| `npx prisma generate` | Regenerates the Prisma TypeScript client |
-| `npx prisma studio` | Opens interactive web GUI to view and edit database rows |
+| `npm run start` | Runs the compiled production build |
+| `npm run lint` | Runs ESLint 9 checks |
+| `npx prisma db push` | Pushes schema changes directly to Supabase PostgreSQL |
+| `npx prisma generate` | Regenerates Prisma TypeScript client |
+| `npx prisma studio` | Opens interactive database browser |
 
 ---
 
-## 🎨 Design Philosophy
+## 🎨 Design System & UI Standards
 
-Prava AI adheres to strict visual and functional guidelines:
-- **Calm & Minimal**: Prioritizes white space, clean lines, and neutral typography (Inter / Geist) over visual noise.
-- **Productivity-First**: Modeled after Notion, Linear, GitHub, and Stripe Dashboard.
-- **No AI Slop**: Explicitly forbids bubble chat interfaces, glassmorphism, heavy gradients, or glowing neon animations.
-- **Vibrant Accent**: Powered by Prava Cerulean `#2D9BF0` with gentle `#F0F8FF` active highlights.
-- **Accessible & Responsive**: Fully responsive layout with a fixed desktop sidebar, mobile drawer, and strict `cursor: pointer` interactive affordances.
-
----
-
-## 📚 Documentation & References
-
-- [Product Vision](docs/01-product-vision.md) — Product philosophy, problem statement, and user personas.
-- [Design System](docs/02-design-system.md) — Visual language, color tokens, typography, and component behavior.
-- [System Architecture](docs/03-system-architecture.md) — Request flow, modular design, and storage strategy.
-- [Implementation Roadmap](docs/implementation-roadmap.md) — Step-by-step rollout plan and decision log.
-- [Development Memory](memory.md) — Continuous log of all completed phases, architectural changes, and bug fixes.
-- [Agent Guide](AGENTS.md) — Architectural rules and guidelines for AI coding assistants.
+Prava AI adheres to strict productivity design guidelines:
+- **Calm & Minimal**: Focuses on whitespace, clear typography hierarchy, and content density over visual clutter.
+- **Productivity First**: Modeled after tools like Notion, Linear, GitHub, and Stripe Dashboard.
+- **No AI Slop**: Explicitly avoids chat-first chrome, floating bubbles, neumorphism, heavy gradients, or glowing neon animations.
+- **Brand Palette**: Prava Cerulean Blue (`#2D9BF0` primary, `#F0F8FF` active accents, `#1E293B` slate text, `#F8FAFC` slate background).
+- **Interactive Affordances**: All interactive surfaces, buttons, and links strictly render `cursor: pointer`.
 
 ---
 

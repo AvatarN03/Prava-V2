@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { formatDateRange } from "@/lib/utils";
 
 import type { UpcomingTripDetails } from "../queries";
 
@@ -26,24 +27,6 @@ interface UpcomingTripCardProps {
 }
 
 export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
-  const formatDateRange = (start?: Date | null, end?: Date | null) => {
-    if (!start && !end) return "Flexible dates";
-    const options: Intl.DateTimeFormatOptions = {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    };
-    if (start && end) {
-      const s = new Date(start).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-      const e = new Date(end).toLocaleDateString("en-US", options);
-      return `${s} — ${e}`;
-    }
-    if (start) return `Starts ${new Date(start).toLocaleDateString("en-US", options)}`;
-    return `Ends ${new Date(end!).toLocaleDateString("en-US", options)}`;
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -97,12 +80,12 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
 
                   {trip.countdownDays !== null && (
                     <Badge
-                      variant="secondary"
-                      className="text-xs font-medium gap-1 px-2.5 py-0.5"
+                      variant="outline"
+                      className="text-xs font-medium gap-1.5 px-2.5 py-0.5 border-sky-200/90 bg-sky-50/90 text-sky-700 dark:border-sky-800/80 dark:bg-sky-950/70 dark:text-sky-300 shadow-2xs"
                     >
-                      <Clock className="w-3 h-3 text-muted-foreground" />
+                      <Clock className="w-3 h-3 text-primary shrink-0" />
                       {trip.countdownDays > 0
-                        ? `${trip.countdownDays} days to go`
+                        ? `${trip.countdownDays} ${trip.countdownDays === 1 ? "day left" : "days left"}`
                         : trip.countdownDays === 0
                         ? "Departing today"
                         : `${Math.abs(trip.countdownDays)} days elapsed`}

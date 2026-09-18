@@ -25,8 +25,8 @@ export async function createExpense(input: CreateExpenseInput) {
     }
 
     const { tripId, title, amount, currency, category, date, paidBy, notes } = validated.data;
-    const { authorized, user } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, user, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -62,8 +62,8 @@ export async function updateExpense(input: UpdateExpenseInput) {
     }
 
     const { id, tripId, title, amount, currency, category, date, paidBy, notes } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -98,8 +98,8 @@ export async function deleteExpense(input: DeleteExpenseInput) {
     }
 
     const { id, tripId } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 

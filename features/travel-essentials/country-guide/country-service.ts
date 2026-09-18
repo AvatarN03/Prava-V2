@@ -1,5 +1,7 @@
 "use server";
 
+import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
+
 import { EMERGENCY_DIRECTORY } from "../emergency/emergency-data";
 import type { CountryInfo, EmergencyContacts } from "../types";
 import { QUICK_PICK_COUNTRIES } from "./country-constants";
@@ -564,7 +566,7 @@ Only output valid JSON.`;
     generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
   };
 
-  if (!openRouterKey) {
+  if (!process.env.OPENROUTER_API_KEY) {
     return {
       ...curatedFallback,
       hasError: true,
@@ -572,69 +574,28 @@ Only output valid JSON.`;
     };
   }
 
-  let lastErrorReason = "";
+  const aiResult = await callOpenRouterFree({
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.2,
+    models: VERIFIED_FREE_MODELS,
+  });
 
-  // Iterate through verified free models on OpenRouter
-  for (const modelId of VERIFIED_FREE_MODELS) {
-    try {
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openRouterKey}`,
-          "HTTP-Referer": "https://prava.travel",
-          "X-Title": "Prava Travel Intelligence",
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.2,
-        }),
-        signal: AbortSignal.timeout(10000),
-      });
-
-      if (!res.ok) {
-        let errBody = "";
-        try {
-          const errJson = await res.json();
-          errBody = errJson.error?.message || JSON.stringify(errJson);
-        } catch {
-          errBody = await res.text().catch(() => "");
-        }
-        lastErrorReason = `OpenRouter HTTP ${res.status} (${res.statusText}): ${errBody || "Upstream provider rejected query"}`;
-        console.warn(`[Country Guide AI] Model ${modelId} failed:`, lastErrorReason);
-        continue; // Try next model
-      }
-
-      const json = await res.json();
-      const rawContent = json.choices?.[0]?.message?.content;
-      const activeModel = json.model || modelId;
-
-      if (rawContent) {
-        const parsed = extractJsonPayload(rawContent);
-        if (parsed && parsed.vibe) {
-          const result: CountryAiSummary = {
-            vibe: parsed.vibe,
-            advisoryStatus: parsed.advisoryStatus || "safe",
-            advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
-            newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
-            insiderTip: parsed.insiderTip || "",
-            provider: `OpenRouter (${activeModel.replace(/:free$/, "")})`,
-            isAiGenerated: true,
-            generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            hasError: false,
-          };
-          aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
-          return result;
-        } else {
-          lastErrorReason = `Model returned unexpected non-JSON output format: "${rawContent.slice(0, 100)}"`;
-        }
-      }
-    } catch (err: any) {
-      lastErrorReason = err.name === "TimeoutError"
-        ? `OpenRouter model ${modelId} timed out after 10s.`
-        : `Network error connecting to OpenRouter: ${err.message || "Unknown error"}`;
-      console.warn(`[Country Guide AI] Error on model ${modelId}:`, lastErrorReason);
+  if (aiResult?.success && aiResult.text) {
+    const parsed = extractJsonPayload(aiResult.text);
+    if (parsed && parsed.vibe) {
+      const result: CountryAiSummary = {
+        vibe: parsed.vibe,
+        advisoryStatus: parsed.advisoryStatus || "safe",
+        advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
+        newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
+        insiderTip: parsed.insiderTip || "",
+        provider: `OpenRouter (${aiResult.modelUsed.replace(/:free$/, "")})`,
+        isAiGenerated: true,
+        generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        hasError: false,
+      };
+      aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
     }
   }
 
@@ -642,7 +603,7 @@ Only output valid JSON.`;
   return {
     ...curatedFallback,
     hasError: true,
-    errorMessage: lastErrorReason || "OpenRouter free models are currently unavailable or busy.",
+    errorMessage: aiResult?.error || "OpenRouter free models are currently unavailable or busy.",
     provider: "OpenRouter (Error — Showing Curated Fallback)",
   };
 }

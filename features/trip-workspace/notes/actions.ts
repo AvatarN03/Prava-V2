@@ -22,8 +22,8 @@ export async function createNote(input: CreateNoteInput) {
     }
 
     const { tripId, title, content, category, isPinned } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -55,8 +55,8 @@ export async function updateNote(input: UpdateNoteInput) {
     }
 
     const { id, tripId, title, content, category, isPinned } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -88,8 +88,8 @@ export async function deleteNote(input: DeleteNoteInput) {
     }
 
     const { id, tripId } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -115,8 +115,8 @@ export async function togglePinNote(input: TogglePinNoteInput) {
     }
 
     const { id, tripId, isPinned } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 

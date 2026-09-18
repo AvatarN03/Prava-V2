@@ -21,6 +21,7 @@ export interface OpenRouterOptions {
   temperature?: number;
   maxTokens?: number;
   responseFormat?: { type: "json_object" };
+  models?: readonly string[] | string[];
 }
 
 export interface OpenRouterResult {
@@ -58,9 +59,10 @@ export async function callOpenRouterFree(
   payloadMessages.push(...options.messages);
 
   let lastError = "";
+  const modelsToTry = options.models && options.models.length > 0 ? options.models : OPENROUTER_FREE_MODELS;
 
   // Iterate sequentially through the free models cascade
-  for (const model of OPENROUTER_FREE_MODELS) {
+  for (const model of modelsToTry) {
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",

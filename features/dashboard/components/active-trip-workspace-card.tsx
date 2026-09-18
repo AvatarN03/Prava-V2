@@ -11,6 +11,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatRelativeTime } from "@/lib/utils";
 
 import type { UpcomingTripDetails } from "../queries";
 
@@ -23,15 +24,6 @@ export function ActiveTripWorkspaceCard({ trip }: ActiveTripWorkspaceCardProps) 
   const displayedTasks = pendingTasks.slice(0, 3);
   const displayedNotes = trip.notes.slice(0, 2);
   const displayedLinks = trip.links.slice(0, 4);
-
-  const formatRelativeTime = (date: Date) => {
-    const diffHours = Math.round((new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60));
-    if (diffHours < 1) return "Just now";
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    const diffDays = Math.round(diffHours / 24);
-    if (diffDays === 1) return "Yesterday";
-    return `${diffDays} days ago`;
-  };
 
   return (
     <Card className="border-border bg-card shadow-xs">

@@ -27,10 +27,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDeleteDialog } from "@/components/app-shell/confirm-delete-dialog";
+import { formatDateRange } from "@/lib/utils";
+import { deleteTrip, duplicateTrip, toggleTripPublicStatus } from "../actions";
 import { Trip } from "../types";
 import { EditTripDialog } from "./edit-trip-dialog";
-import { DeleteTripDialog } from "./delete-trip-dialog";
-import { duplicateTrip, toggleTripPublicStatus } from "../actions";
 
 interface TripTableViewProps {
   trips: Trip[];
@@ -85,17 +86,6 @@ export function TripTableView({ trips }: TripTableViewProps) {
     });
   };
 
-  const formatDateRange = (start?: Date | string | null, end?: Date | string | null) => {
-    if (!start && !end) return "Dates unset";
-    const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
-    if (start && end) {
-      const s = new Date(start).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      const e = new Date(end).toLocaleDateString("en-US", options);
-      return `${s} – ${e}`;
-    }
-    if (start) return `From ${new Date(start).toLocaleDateString("en-US", options)}`;
-    return `Until ${new Date(end!).toLocaleDateString("en-US", options)}`;
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -321,10 +311,20 @@ export function TripTableView({ trips }: TripTableViewProps) {
       )}
 
       {deletingTrip && (
-        <DeleteTripDialog
-          trip={deletingTrip}
+        <ConfirmDeleteDialog
           open={!!deletingTrip}
           onOpenChange={(open) => !open && setDeletingTrip(null)}
+          title="Delete Trip"
+          description={`Are you sure you want to delete "${deletingTrip.title}"? This will permanently remove all associated itineraries, notes, and workspace data.`}
+          onConfirm={async () => {
+            const res = await deleteTrip({ id: deletingTrip.id });
+            if (res.success) {
+              toast.success(`Deleted "${deletingTrip.title}"`);
+              router.refresh();
+            } else {
+              toast.error(res.error || "Failed to delete trip");
+            }
+          }}
         />
       )}
     </>

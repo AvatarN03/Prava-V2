@@ -20,8 +20,8 @@ export async function createLink(input: CreateLinkInput) {
     }
 
     const { tripId, title, url, category, description } = validated.data;
-    const { authorized, user } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, user, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -54,8 +54,8 @@ export async function updateLink(input: UpdateLinkInput) {
     }
 
     const { id, tripId, title, url, category, description } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -87,8 +87,8 @@ export async function deleteLink(input: DeleteLinkInput) {
     }
 
     const { id, tripId } = validated.data;
-    const { authorized } = await verifyTripOwnership(tripId);
-    if (!authorized) {
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
       return { success: false, error: "Unauthorized" };
     }
 

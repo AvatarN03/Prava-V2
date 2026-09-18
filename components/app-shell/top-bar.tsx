@@ -2,11 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 import { Bell, Menu, User } from "lucide-react";
 import { Moon, Sun } from "lucide";
 import { MorphIcon } from "morphicons/react";
-import { useTheme } from "next-themes";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-import { getTopBarUserInfo, TopBarUserInfo } from "@/features/profile/actions";
+import { getTopBarUserInfo, type TopBarUserInfo } from "@/features/profile/actions";
 
 interface TopBarProps {
   onMobileMenuOpen: () => void;

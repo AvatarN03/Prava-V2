@@ -1,5 +1,7 @@
 "use server";
 
+import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
+
 import type { AiTranslatedPhrase, LanguagePhrase } from "../types";
 
 /**
@@ -154,58 +156,35 @@ Respond strictly with valid JSON conforming to this schema:
   }
 
   // 2. Try OpenRouter (inclusionai/ling-3.0-flash-sante:free, nex-agi/nex-n2.5-mini:free, liquid/lfm-2.5-2.6b:free)
-  const openRouterKey = process.env.OPENROUTER_API_KEY;
-  if (openRouterKey) {
-    const openRouterModels = [
+  const openRouterRes = await callOpenRouterFree({
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.1,
+    models: [
       "inclusionai/ling-3.0-flash-sante:free",
       "nex-agi/nex-n2.5-mini:free",
       "liquid/lfm-2.5-2.6b:free",
-    ];
+    ],
+  });
 
-    for (const model of openRouterModels) {
-      try {
-        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openRouterKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.1,
-          }),
-          signal: AbortSignal.timeout(7000),
-        });
+  if (openRouterRes?.success && openRouterRes.text) {
+    const parsed = extractJsonFromLlm(openRouterRes.text);
+    if (parsed && (parsed.translated || parsed.translatedText)) {
+      const translated = parsed.translated || parsed.translatedText;
+      const isToEnglish = parsed.direction === "to-english" || mode === "to-english";
+      const effectiveTarget = isToEnglish ? "English" : targetLanguage;
+      const effectiveLocale = isToEnglish ? "en-US" : (fallbackLocale || LANGUAGE_LOCALE_MAP[targetLanguage] || "en-US");
 
-        if (res.ok) {
-          const json = await res.json();
-          const rawContent = json.choices?.[0]?.message?.content;
-          if (rawContent) {
-            const parsed = extractJsonFromLlm(rawContent);
-            if (parsed && (parsed.translated || parsed.translatedText)) {
-              const translated = parsed.translated || parsed.translatedText;
-              const isToEnglish = parsed.direction === "to-english" || mode === "to-english";
-              const effectiveTarget = isToEnglish ? "English" : targetLanguage;
-              const effectiveLocale = isToEnglish ? "en-US" : (fallbackLocale || LANGUAGE_LOCALE_MAP[targetLanguage] || "en-US");
-
-              return {
-                original: cleanInput,
-                translated,
-                pronunciation: parsed.pronunciation || parsed.phoneticPronunciation || cleanInput,
-                targetLanguage: effectiveTarget,
-                localeCode: effectiveLocale,
-                culturalNote: parsed.culturalNote || parsed.culturalContext || `Translated from ${parsed.detectedLanguage || "native language"}.`,
-                detectedLanguage: parsed.detectedLanguage || "Auto-detected",
-                direction: isToEnglish ? "to-english" : "to-foreign",
-                provider: `OpenRouter (${model.split("/").pop()})`,
-              };
-            }
-          }
-        }
-      } catch {
-        // failover
-      }
+      return {
+        original: cleanInput,
+        translated,
+        pronunciation: parsed.pronunciation || parsed.phoneticPronunciation || cleanInput,
+        targetLanguage: effectiveTarget,
+        localeCode: effectiveLocale,
+        culturalNote: parsed.culturalNote || parsed.culturalContext || `Translated from ${parsed.detectedLanguage || "native language"}.`,
+        detectedLanguage: parsed.detectedLanguage || "Auto-detected",
+        direction: isToEnglish ? "to-english" : "to-foreign",
+        provider: `OpenRouter (${openRouterRes.modelUsed.split("/").pop()})`,
+      };
     }
   }
 
