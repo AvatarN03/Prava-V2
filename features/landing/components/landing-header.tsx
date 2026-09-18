@@ -29,14 +29,14 @@ export function LandingHeader({ user }: LandingHeaderProps) {
         >
           <Image
             src="/logo.png"
-            alt="Prava AI Logo"
+            alt="Prava Logo"
             width={36}
             height={36}
             className="w-8 h-8 object-contain filter drop-shadow-xs transition-transform group-hover:scale-105"
             priority
           />
           <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-            Prava AI
+            Prava
           </span>
         </Link>
 

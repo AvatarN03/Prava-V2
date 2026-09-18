@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 import {
+  Bell,
   BookOpen,
   Compass,
   CreditCard,
@@ -13,6 +14,7 @@ import {
   Menu,
   MessageSquare,
   ShieldAlert,
+  Sparkles,
   User,
 } from "lucide-react";
 import { Moon, Sun } from "lucide";
@@ -131,6 +133,9 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
     }
     if (pathname.startsWith("/profile")) {
       return { title: "Account & Settings", icon: User };
+    }
+    if (pathname.startsWith("/usage")) {
+      return { title: "Usage & Quotas", icon: Sparkles };
     }
     if (pathname.startsWith("/pricing")) {
       return { title: "Subscription & Usage", icon: CreditCard };

@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import {
   AlertCircle,
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   FileText,
   Globe,
@@ -118,6 +119,14 @@ export function BlogEditor({ mode, postId, initialData, userTrips = [] }: BlogEd
       {/* Top Header Banner */}
       <div className="border-b border-border pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-primary">
+              <BookOpen className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              Travel Stories & Guides
+            </span>
+          </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {mode === "create" ? "Write a Travel Story" : "Edit Story"}
           </h1>

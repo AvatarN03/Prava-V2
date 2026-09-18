@@ -184,6 +184,14 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-primary">
+              <User className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              Account & Profile
+            </span>
+          </div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Profile & Settings
           </h1>

@@ -10,14 +10,14 @@ export function LandingFooter() {
           <div className="relative flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] p-0.5 shadow-2xs">
             <Image
               src="/logo.png"
-              alt="Prava AI Logo"
+              alt="Prava Logo"
               width={22}
               height={22}
               className="h-full w-full object-contain"
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900 dark:text-white">Prava AI</span>
+            <span className="font-bold text-slate-900 dark:text-white">Prava</span>
             <span className="text-slate-400 dark:text-slate-500">•</span>
             <span>Workspace First, AI Second.</span>
           </div>
@@ -68,7 +68,7 @@ export function LandingFooter() {
             Sign In
           </Link>
           <span className="text-slate-400 dark:text-slate-600">
-            © {new Date().getFullYear()} Prava AI
+            © {new Date().getFullYear()} Prava
           </span>
         </div>
       </div>

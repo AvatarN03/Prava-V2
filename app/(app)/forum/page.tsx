@@ -5,7 +5,7 @@ import {
 } from "@/features/community/forum-actions";
 
 export const metadata = {
-  title: "Traveler Forum | Prava AI",
+  title: "Traveler Forum",
   description:
     "Ask for route pacing advice, share secret viewpoints and culinary gems, discuss packing strategies, and inspect fellow travelers' itineraries on the Prava Forum.",
 };

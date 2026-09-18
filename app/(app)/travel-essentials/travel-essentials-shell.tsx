@@ -12,6 +12,7 @@ import {
   Languages,
   Loader2,
   Map,
+  ShieldAlert,
 } from "lucide-react";
 import type { Link as PrismaLink } from "@prisma/client";
 
@@ -156,10 +157,10 @@ export function TravelEssentialsShell({
       <div className="flex flex-col gap-1.5 pb-2 border-b border-border/80">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Compass className="h-4 w-4" />
+            <ShieldAlert className="h-4 w-4" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Travel Essentials
+            Prava Travel Essentials
           </h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">

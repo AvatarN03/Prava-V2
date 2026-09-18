@@ -245,13 +245,13 @@ function AuthForm() {
                 <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] p-1 shadow-md shadow-[#2D9BF0]/25 transition-transform duration-300 group-hover:scale-105">
                   <Image
                     src="/logo.png"
-                    alt="Prava AI Logo"
+                    alt="Prava Logo"
                     width={32}
                     height={32}
                     className="h-full w-full object-contain filter drop-shadow-xs"
                   />
                 </div>
-                <span className="text-xl font-extrabold tracking-tight text-slate-900">Prava AI</span>
+                <span className="text-xl font-extrabold tracking-tight text-slate-900">Prava</span>
               </Link>
               <h1 className="text-2xl font-bold tracking-tight">
                 {isSignUp ? "Create your workspace account" : "Welcome back"}

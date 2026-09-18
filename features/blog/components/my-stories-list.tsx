@@ -130,6 +130,14 @@ export function MyStoriesList({ posts: initialPosts }: MyStoriesListProps) {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-primary">
+              <BookOpen className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              Story Studio
+            </span>
+          </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             My Stories ({posts.length})
           </h1>

@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-const SCHEMA_VERSION = "2.4.0"; // Bump to force dev server singleton recreation after schema updates
+const SCHEMA_VERSION = "2.5.0"; // Bump to force dev server singleton recreation after schema updates
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

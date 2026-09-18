@@ -243,7 +243,7 @@ export default async function StoryDetailPage({ params }: StoryPageProps) {
             )}
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Traveler and creator on Prava AI. Exploring destinations and creating actionable itinerary plans.
+            Traveler and creator on Prava. Exploring destinations and creating actionable itinerary plans.
           </p>
           {authorUsername && isCreatorPublic && (
             <div className="pt-1">

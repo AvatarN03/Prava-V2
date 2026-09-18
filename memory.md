@@ -1121,10 +1121,49 @@
     - Enhanced `updateTripBudget` in `features/trip-workspace/expenses/actions.ts` to accept number or string, gracefully strip formatting symbols, and return specific error details.
     - Wrapped the budget goal input in `features/trip-workspace/expenses/components/expense-tracker.tsx` with a `<form>` supporting `Enter` and `Escape` keyboard shortcuts, `autoFocus`, `inputMode="decimal"`, and sanitization (`replace(/[^0-9.]/g, "")`).
   - **Production Build Verification**:
-    - Verified via `npm run build` with Turbopack — passed with exit code 0 and zero TypeScript errors across all routes.
+- **Task 98 (Brand Transition to Prava & Branded Header Icons Across All Pages)**:
+  - **Brand Transition from "Prava AI" to "Prava"**:
+    - Rebranded metadata, page titles, and public-facing labels across the application to "Prava" reflecting the core vision of "Workspace First, AI Second" (a focused travel operating system, not an AI chat tool).
+    - Updated root metadata title template in `app/layout.tsx`: `{ default: "Prava — Workspace-First Travel OS", template: "%s | Prava" }`.
+    - Cleaned redundant "Prava AI" suffixes from all page route metadata (`/trips`, `/dashboard`, `/travel-essentials`, `/forum`, `/forum/[slug]`, `/stories`, `/stories/new`, `/stories/manage`, `/profile`, `/pricing`, `/usage`, `/templates`).
+    - Updated brand headers, footers, and logos in `app/auth/page.tsx`, `app/u/[username]/page.tsx`, `components/app-shell/sidebar.tsx`, and `features/landing/components/`.
+  - **App Shell Header Icon Badges (`components/app-shell/top-bar.tsx`)**:
+    - Added dedicated icon badges rendered inside crisp cerulean badges (`bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs`) beside the brand titles:
+      - `/trips` → **Prava Trips** (`Compass`)
+      - `/dashboard` → **Prava Dashboards** (`LayoutDashboard`)
+      - `/travel-essentials` → **Prava Travel Essentials** (`ShieldAlert`)
+      - `/forum` & `/community` → **Forum** (`MessageSquare`)
+      - `/stories` → **Travel Stories** (`BookOpen`)
+      - `/templates` → **Templates** (`LayoutTemplate`)
+      - `/profile` → **Account & Settings** (`User`)
+      - `/usage` → **Usage & Quotas** (`Sparkles`)
+      - `/pricing` → **Subscription & Usage** (`CreditCard`)
+      - Fallback → **Prava Workspace** (`Compass`)
+  - **In-Page Header Icons & Eyebrow Badges**:
+    - Added styled brand eyebrow headers with dedicated icons to in-page headers:
+      - `app/(app)/trips/page.tsx`: Added `Compass` icon badge and "Prava Trips" eyebrow above Trips Workspace.
+      - `app/(app)/dashboard/page.tsx`: Added `LayoutDashboard` icon badge and "Prava Dashboards" eyebrow above the traveler greeting.
+      - `app/(app)/travel-essentials/travel-essentials-shell.tsx`: Updated header icon to `ShieldAlert` with "Prava Travel Essentials" title.
+      - `features/profile/components/profile-editor.tsx`: Added `User` icon badge and "Account & Profile" eyebrow.
+      - `features/blog/components/my-stories-list.tsx`: Added `BookOpen` icon badge and "Story Studio" eyebrow.
+      - `features/blog/components/blog-editor.tsx`: Added `BookOpen` icon badge and "Travel Stories & Guides" eyebrow.
+      - `features/trip-workspace/common/workspace-header.tsx`: Added `Compass` icon badge inside a cerulean container next to the workspace trip title.
+  - **Production Build Verification**:
+    - Verified via `npm run build` with Turbopack — passed with exit code 0 and zero TypeScript errors across all 28+ routes.
+
+- **Task 99 (Prisma Client Generation & Trip Budget Persistence Fix)**:
+  - **Diagnosed Root Cause for `Invalid prisma.trip.update()`**:
+    - The Prisma error occurred because `@prisma/client` in `node_modules` was generated prior to adding `budget Float?` to the `Trip` model in `prisma/schema.prisma`.
+    - Prisma's runtime validation rejected `budget` on `trip.update({ data: { budget: ... } })` as an unknown field.
+  - **Resolution & Synchronization**:
+    - Executed `npx prisma generate` to rebuild `@prisma/client` with the `budget` field on `Trip`.
+    - Confirmed with `npx prisma db push` that Supabase PostgreSQL already has the `budget` column synchronized.
+    - Bumped `SCHEMA_VERSION` to `"2.5.0"` in `lib/db.ts` to invalidate any cached Prisma client singletons in Next.js development mode.
+    - Successfully tested live database update and reversion on a real trip record with `budget: 50000`, confirming zero validation or database errors.
+  - **Verification**: Verified via `npm run build` (Turbopack, exit code 0) and live database update test script.
 
 ## Next Steps
-- Continue iterative feature work and user testing on Prava AI V2.
+- Continue iterative feature work and user testing on Prava V2.
 
 
 

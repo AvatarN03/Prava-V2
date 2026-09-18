@@ -1,5 +1,6 @@
 import {
   Compass,
+  LayoutDashboard,
   Plus,
   Sparkles,
 } from "lucide-react";
@@ -57,6 +58,14 @@ export default async function DashboardPage() {
       {/* Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-primary">
+              <LayoutDashboard className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              Prava Dashboards
+            </span>
+          </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {greeting}, {firstName}
           </h1>

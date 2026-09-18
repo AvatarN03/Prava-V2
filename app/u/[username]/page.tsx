@@ -39,7 +39,7 @@ export default async function PublicCreatorProfilePage({ params }: PublicProfile
               <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary text-primary-foreground">
                 <Compass className="h-4 w-4" />
               </div>
-              <span>Prava AI</span>
+              <span>Prava</span>
             </Link>
             <Link href="/community">
               <Button variant="ghost" size="sm">Explore Community</Button>
@@ -66,7 +66,7 @@ export default async function PublicCreatorProfilePage({ params }: PublicProfile
         </div>
 
         <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-          Prava AI — Workspace First, AI Second.
+          Prava — Workspace First, AI Second.
         </footer>
       </div>
     );
@@ -102,7 +102,7 @@ export default async function PublicCreatorProfilePage({ params }: PublicProfile
             <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-xs">
               <Compass className="h-4 w-4" />
             </div>
-            <span>Prava AI</span>
+            <span>Prava</span>
           </Link>
 
           <div className="flex items-center gap-3">
@@ -314,7 +314,7 @@ export default async function PublicCreatorProfilePage({ params }: PublicProfile
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Compass className="h-3.5 w-3.5 text-primary" />
-            <span className="font-semibold text-foreground">Prava AI</span>
+            <span className="font-semibold text-foreground">Prava</span>
             <span>— Workspace First, AI Second.</span>
           </div>
           <div>

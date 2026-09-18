@@ -17,12 +17,12 @@ export async function generateMetadata({ params }: ForumThreadPageProps) {
 
   if (!post) {
     return {
-      title: "Discussion Not Found | Prava AI Forum",
+      title: "Discussion Not Found | Prava Forum",
     };
   }
 
   return {
-    title: `${post.title} | Prava AI Forum`,
+    title: `${post.title} | Prava Forum`,
     description: post.content.slice(0, 160),
   };
 }
