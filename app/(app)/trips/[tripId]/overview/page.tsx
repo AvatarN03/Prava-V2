@@ -10,7 +10,7 @@ interface OverviewPageProps {
 }
 
 export const metadata = {
-  title: "Trip Overview | Prava AI",
+  title: "Trip Overview",
   description: "High-level summary of trip itinerary, budget, stays, and preparation checklist.",
 };
 

@@ -111,7 +111,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-md font-light text-white dark:text-slate-900">
-                Prava AI
+                Prava
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-[#2D9BF0] animate-pulse shadow-xs" />
 

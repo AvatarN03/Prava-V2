@@ -63,6 +63,7 @@ model Trip {
   isPublic      Boolean    @default(false) @map("is_public")
   isTemplate    Boolean    @default(false) @map("is_template")
   coverImageUrl String?    @map("cover_image_url")
+  budget        Float?
 
   profile         Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
   itinerary       ItineraryItem[]

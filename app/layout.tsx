@@ -13,9 +13,12 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Prava AI — Workspace-First Travel OS",
+  title: {
+    default: "Prava — Workspace-First Travel OS",
+    template: "%s | Prava",
+  },
   description:
-    "Intelligent trip planning without the chaos. Organize multi-day itineraries, stays, expenses, and travel essentials with governed AI proposals.",
+    "Intelligent trip planning without the chaos. Organize multi-day itineraries, stays, expenses, and travel essentials in a structured workspace.",
   icons: {
     icon: "/logo.png",
   },

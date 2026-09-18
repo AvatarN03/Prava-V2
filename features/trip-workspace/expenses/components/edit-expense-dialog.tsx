@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,8 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateExpense } from "../actions";
 import { Expense } from "@prisma/client";
+import { updateExpense } from "../actions";
 import { ExpenseCategory } from "../schema";
 
 interface EditExpenseDialogProps {
@@ -213,12 +214,21 @@ export function EditExpenseDialog({
 
               <div className="space-y-1.5">
                 <Label htmlFor="edit-exp-date">Date</Label>
-                <Input
-                  id="edit-exp-date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                <DatePicker
+                  date={formData.date ? new Date(formData.date + "T00:00:00") : null}
+                  onDateChange={(selectedDate) => {
+                    if (!selectedDate) {
+                      setFormData({ ...formData, date: "" });
+                    } else {
+                      const yyyy = selectedDate.getFullYear();
+                      const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
+                      const dd = String(selectedDate.getDate()).padStart(2, "0");
+                      setFormData({ ...formData, date: `${yyyy}-${mm}-${dd}` });
+                    }
+                  }}
                   disabled={isPending}
+                  placeholder="Select expense date"
+                  className="h-9 text-xs rounded-sm"
                 />
               </div>
             </div>

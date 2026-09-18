@@ -4,7 +4,7 @@ import { UsageView } from "@/features/pricing/components/usage-view";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "AI Usage & Quotas — Prava AI",
+  title: "Usage & Quotas",
   description:
     "Track your monthly AI assistant credits, workspace trip capacity, stories, and monthly logs.",
 };

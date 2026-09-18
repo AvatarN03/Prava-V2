@@ -59,12 +59,12 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full h-10 justify-start text-left font-normal border-input bg-background hover:bg-slate-50 hover:text-foreground text-sm cursor-pointer",
+            "w-full h-9 justify-start text-left font-normal border-input bg-background hover:bg-muted/60 hover:text-foreground text-xs rounded-sm cursor-pointer",
             !date && "text-muted-foreground",
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 text-slate-400 shrink-0" />
+          <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground shrink-0" />
           <span className="truncate flex-1">
             {date ? formatDate(new Date(date)) : placeholder}
           </span>
@@ -73,7 +73,7 @@ export function DatePicker({
               role="button"
               tabIndex={0}
               onClick={handleClear}
-              className="ml-1 p-0.5 rounded-full hover:bg-slate-200 text-muted-foreground hover:text-foreground"
+              className="ml-1 p-0.5 rounded-xs hover:bg-muted text-muted-foreground hover:text-foreground"
               title="Clear date"
             >
               <X className="h-3 w-3" />
@@ -81,7 +81,7 @@ export function DatePicker({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 z-50 bg-white" align="start">
+      <PopoverContent className="w-auto p-0 z-50 bg-popover text-popover-foreground border border-border rounded-sm shadow-md" align="start">
         <Calendar
           selected={date}
           onSelect={handleSelect}

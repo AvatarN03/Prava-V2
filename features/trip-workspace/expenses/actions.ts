@@ -242,3 +242,47 @@ export async function deleteGeneralTravelExpense(id: string) {
   }
 }
 
+/**
+ * Update target budget for a trip
+ */
+export async function updateTripBudget(tripId: string, budget: number | string | null) {
+  try {
+    if (!tripId) {
+      return { success: false, error: "Trip ID is required" };
+    }
+
+    const { authorized, isOwner } = await verifyTripOwnership(tripId);
+    if (!authorized || !isOwner) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    let parsedBudget: number | null = null;
+    if (budget !== null && budget !== undefined) {
+      const num = typeof budget === "string" ? parseFloat(budget.replace(/[^0-9.]/g, "")) : Number(budget);
+      if (!isNaN(num) && num > 0) {
+        parsedBudget = num;
+      }
+    }
+
+    const updated = await db.trip.update({
+      where: { id: tripId },
+      data: {
+        budget: parsedBudget,
+      },
+      select: { id: true, budget: true },
+    });
+
+    revalidatePath(`/trips/${tripId}/expenses`);
+    revalidatePath(`/trips/${tripId}/overview`);
+    revalidatePath("/dashboard");
+
+    return { success: true, data: updated };
+  } catch (error) {
+    console.error("Error updating trip budget:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update budget",
+    };
+  }
+}
+

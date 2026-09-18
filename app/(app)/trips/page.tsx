@@ -6,7 +6,7 @@ import { getTrips, getTripUsageQuota } from "@/features/trips/actions";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Trips | Prava AI",
+  title: "Prava Trips",
   description: "Manage your personal travel itineraries, accommodations, expenses, and checklists.",
 };
 

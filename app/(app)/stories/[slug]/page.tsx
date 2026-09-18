@@ -29,13 +29,13 @@ export async function generateMetadata({ params }: StoryPageProps): Promise<Meta
 
   if (!res.success || !res.story) {
     return {
-      title: "Story Not Found | Prava AI",
+      title: "Story Not Found | Prava",
     };
   }
 
   const story = res.story;
   return {
-    title: `${story.title} | Prava AI Stories`,
+    title: `${story.title} | Prava Stories`,
     description: story.excerpt || `Read this travel story by ${story.profile?.fullName || "a Prava traveler"}.`,
     openGraph: {
       title: story.title,

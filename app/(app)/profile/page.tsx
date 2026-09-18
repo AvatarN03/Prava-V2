@@ -6,9 +6,9 @@ import { AlertCircle } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Profile — Prava AI",
+  title: "Account & Profile",
   description:
-    "Manage your personal identity, locked username, regional travel preferences, and workspace settings on Prava AI.",
+    "Manage your personal identity, locked username, regional travel preferences, and workspace settings on Prava.",
 };
 
 export default async function ProfilePage() {

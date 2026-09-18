@@ -19,7 +19,7 @@ import { getDashboardSummary } from "@/features/dashboard/queries";
 import { CreateTripDialog } from "@/features/trips/components/create-trip-dialog";
 
 export const metadata = {
-  title: "Dashboard | Prava AI",
+  title: "Prava Dashboards",
   description: "Cross-trip overview, upcoming schedules, and departure readiness.",
 };
 

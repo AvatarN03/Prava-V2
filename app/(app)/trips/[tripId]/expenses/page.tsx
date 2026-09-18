@@ -49,6 +49,7 @@ export default async function ExpensesPage({ params }: ExpensesPageProps) {
         userCurrency={userCurrency}
         fxRates={fxRatesData?.rates || {}}
         tripTitle={trip.title}
+        initialBudget={trip.budget ?? null}
       />
     </div>
   );

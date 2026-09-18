@@ -4,7 +4,7 @@ import { MyStoriesList } from "@/features/blog/components/my-stories-list";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "My Travel Stories | Prava AI",
+  title: "My Travel Stories",
   description: "Manage your drafts and published travel stories.",
 };
 

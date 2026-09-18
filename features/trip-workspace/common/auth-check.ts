@@ -65,16 +65,27 @@ export async function verifyTripOwnership(tripId: string) {
     },
   };
 
-  // First check if user is owner
-  const ownedTrip = await db.trip.findFirst({
+  // First check if user is owner by user.id or matching profile email
+  let ownedTrip = await db.trip.findFirst({
     where: {
       id: tripId,
-      profileId: user.id,
+      OR: [
+        { profileId: user.id },
+        ...(user.email ? [{ profile: { email: user.email } }] : []),
+      ],
     },
     include: includeConfig,
   });
 
   if (ownedTrip) {
+    if (ownedTrip.profileId !== user.id) {
+      await db.trip
+        .update({
+          where: { id: tripId },
+          data: { profileId: user.id },
+        })
+        .catch((e) => console.warn("Reconciled trip profileId:", e));
+    }
     return { authorized: true as const, user, trip: ownedTrip, isOwner: true };
   }
 

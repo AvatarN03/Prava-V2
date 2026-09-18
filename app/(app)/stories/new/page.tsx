@@ -4,8 +4,8 @@ import { getTrips } from "@/features/trips/actions";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Write a Travel Story | Prava AI",
-  description: "Compose and publish a travel story or itinerary guide on Prava AI.",
+  title: "Write a Travel Story",
+  description: "Compose and publish a travel story or itinerary guide on Prava.",
 };
 
 export default async function NewStoryPage() {

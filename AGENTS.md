@@ -149,7 +149,7 @@ All database operations run through **Prisma 7** against Supabase PostgreSQL:
    - Exchanges auth codes (`exchangeCodeForSession`) and OTP hashes (`verifyOtp`) for session cookies directly on the server, preventing client-side auth race conditions.
 4. **Ownership Scoping (CRITICAL)**:
    - **Never trust client-supplied user IDs.** Always extract the active user via `getAuthenticatedUser()` or `supabase.auth.getUser()`.
-   - Before any Trip Workspace read or mutation, call `verifyTripOwnership(tripId)` (`features/trip-workspace/common/auth-check.ts`).
+   - Before any Trip Workspace read or mutation, call `verifyTripOwnership(tripId)` (`features/trip-workspace/common/auth-check.ts`). For all mutations, explicitly check `if (!authorized || !isOwner)` since public trips return `{ authorized: true, isOwner: false }` for read-only access.
    - Public entities (`isPublic: true`) are read-only for non-owners.
 
 ---
@@ -217,3 +217,11 @@ AI in Prava AI operates under strict structured contracts:
    Ensure zero TypeScript errors and zero unhandled lint regressions.
 7. **Clean Imports & Formatting (`format-imports-and-clean`)**:
    Always organize imports into the strict 6-tier hierarchy (`inbuilt` → `installed packages` → `components` → `contexts & providers` → `services, lib & utils` → `constants, types & styles`) separated by single blank lines, strip unused import components, and maintain readable indentation as detailed in `.agents/skills/format-imports-and-clean/SKILL.md`.
+8. **Protect Public Assets (`public/`)**:
+   Never delete, overwrite, or prune assets located in `public/` during audits, refactorings, or dead-code elimination tasks. Staged images, sample mockups, avatars, and logos remain reserved for active and upcoming development.
+9. **Browser Extension Hydration Guard**:
+   Preserve `suppressHydrationWarning` on `<body>` in `app/layout.tsx` to prevent hydration mismatches caused by external browser extension DOM modifications (e.g., ColorZilla, Grammarly, 1Password).
+10. **MorphIcon vs. Lucide-React**:
+    `morphicons` consumes `IconNode` SVG data from the vanilla `lucide` package (`import { Moon, Sun } from "lucide"`). Do NOT replace `lucide` imports used with `MorphIcon` with `lucide-react` React components.
+11. **Dead Code Stubs in Sandboxed Environments**:
+    If filesystem file unlinking is restricted by environment permissions, safely replace obsolete files with a 1-line `export {};` stub to neutralize dead code without breaking bundler module graphs.

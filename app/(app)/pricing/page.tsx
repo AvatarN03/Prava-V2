@@ -4,7 +4,7 @@ import { AccountUsageView } from "@/features/pricing/components/account-usage-vi
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Subscription & Plans — Prava AI",
+  title: "Subscription & Plans",
   description:
     "Manage your workspace membership tier, compare plan privileges, and explore Pro upgrades.",
 };

@@ -8,7 +8,7 @@ import { getVaultLinks } from "@/features/travel-essentials/vault/actions";
 import { fetchCitySuggestions, fetchWeather } from "@/features/travel-essentials/weather/weather-service";
 
 export const metadata = {
-  title: "Travel Essentials | Prava",
+  title: "Prava Travel Essentials",
   description:
     "Real-time travel companion utilities: live weather forecasts, currency conversions, interactive maps, country guides, emergency contacts, local phrasebooks, and your global resource vault.",
 };

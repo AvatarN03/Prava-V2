@@ -4,7 +4,17 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
-import { Bell, Menu, User } from "lucide-react";
+import {
+  BookOpen,
+  Compass,
+  CreditCard,
+  LayoutDashboard,
+  LayoutTemplate,
+  Menu,
+  MessageSquare,
+  ShieldAlert,
+  User,
+} from "lucide-react";
 import { Moon, Sun } from "lucide";
 import { MorphIcon } from "morphicons/react";
 
@@ -100,18 +110,36 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
     };
   }, [supabase, pathname]);
 
-  const getPageTitle = () => {
-    if (pathname.startsWith("/dashboard")) return "Dashboard";
-    if (pathname.startsWith("/trips")) return "Trips";
-    if (pathname.startsWith("/travel-essentials")) return "Travel Essentials";
-    if (pathname.startsWith("/forum")) return "Forum";
-    if (pathname.startsWith("/community")) return "Forum";
-    if (pathname.startsWith("/stories")) return "Travel Stories";
-    if (pathname.startsWith("/templates")) return "Templates";
-    if (pathname.startsWith("/profile")) return "Account & Settings";
-    if (pathname.startsWith("/pricing")) return "Subscription & Usage";
-    return "Workspace";
+  const getPageInfo = () => {
+    if (pathname.startsWith("/dashboard")) {
+      return { title: "Prava Dashboards", icon: LayoutDashboard };
+    }
+    if (pathname.startsWith("/trips")) {
+      return { title: "Prava Trips", icon: Compass };
+    }
+    if (pathname.startsWith("/travel-essentials")) {
+      return { title: "Prava Travel Essentials", icon: ShieldAlert };
+    }
+    if (pathname.startsWith("/forum") || pathname.startsWith("/community")) {
+      return { title: "Forum", icon: MessageSquare };
+    }
+    if (pathname.startsWith("/stories")) {
+      return { title: "Travel Stories", icon: BookOpen };
+    }
+    if (pathname.startsWith("/templates")) {
+      return { title: "Templates", icon: LayoutTemplate };
+    }
+    if (pathname.startsWith("/profile")) {
+      return { title: "Account & Settings", icon: User };
+    }
+    if (pathname.startsWith("/pricing")) {
+      return { title: "Subscription & Usage", icon: CreditCard };
+    }
+    return { title: "Prava Workspace", icon: Compass };
   };
+
+  const pageInfo = getPageInfo();
+  const PageIcon = pageInfo.icon;
 
   const isCurrentDark = mounted && (resolvedTheme === "dark" || theme === "dark");
   const [displayDark, setDisplayDark] = useState<boolean | null>(null);
@@ -159,9 +187,14 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
             <span className="sr-only">Open sidebar</span>
           </Button>
 
-          <h1 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-            {getPageTitle()}
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs shrink-0">
+              <PageIcon className="h-4 w-4" />
+            </div>
+            <h1 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+              {pageInfo.title}
+            </h1>
+          </div>
         </div>
 
         {/* Right: Theme Toggle, Notifications & User Profile */}

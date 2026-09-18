@@ -1062,11 +1062,70 @@
   - **Dashboard Query Type Export Alignment**:
     - Exported `export type TripSummaryItem = Trip;` in [`features/dashboard/queries.ts`](file:///e:/Projects/Web-Dev/NextJS/prava_v2/features/dashboard/queries.ts) to satisfy imports in `features/dashboard/components/recent-trips-list.tsx`.
     - Removed unused `Palmtree` import in `recent-trips-list.tsx`.
+- **Task 95 (Trip Workspace Expenses Tab Overhaul: Layout Reorder, Budget DB Persistence, High-Contrast Table & Visual Chart)**:
+  - **Database Schema & Budget Goal Persistence**:
+    - Added `budget Float?` column to `Trip` model in `prisma/schema.prisma`.
+    - Executed `prisma db push` and regenerated Prisma client.
+    - Implemented `updateTripBudget(tripId: string, budget: number | null)` Server Action in `features/trip-workspace/expenses/actions.ts` with ownership checks and path revalidation for `/trips/[tripId]/expenses`, `/trips/[tripId]/overview`, and `/dashboard`.
+    - Updated `app/(app)/trips/[tripId]/expenses/page.tsx` to pass `initialBudget={trip.budget ?? null}` to `<ExpenseTracker />`.
+    - Wired interactive "Save" and "Clear" goal actions in `ExpenseTracker` with pending feedback, state persistence, and toast feedback.
+  - **Dynamic User Currency Formatting & Symbol Mapping**:
+    - Built `getCurrencySymbol(code)` mapping `userCurrency` (e.g. `INR` -> `₹`, `EUR` -> `€`, `GBP` -> `£`, `USD` -> `$`) via `SUPPORTED_CURRENCIES`.
+    - Eliminated hardcoded `$` symbols in Total Spent, Top Category, Target Budget Goal, converted table amounts, and category breakdown charts.
+  - **Toolbar Reordering & Dropdown Filter Element**:
+    - Replaced the horizontal category pill buttons strip with a clean Radix `<Select>` dropdown filter (`All Categories`, `Food & Dining`, `Transport`, etc., with live expense counts) to the left of the action buttons.
+    - Reordered controls to the requested sequence: `[Search Input]` (left) → `[Category Filter Select]` → `[+ Log Expense]` → `[Export CSV]` (far right / last).
+  - **Table Layout Elevation & High-Contrast Visibility**:
+    - Shifted the Expenses Table **above** the category card.
+    - Set comfortable bounded height on table container (`max-h-[460px] overflow-y-auto thin-scrollbar`) with sticky `<thead>` (`sticky top-0 z-10 bg-muted/95 backdrop-blur-xs border-b border-border shadow-2xs`).
+    - Boosted contrast and visibility across all table columns:
+      - Dates: `text-xs font-semibold text-foreground font-mono` (clearly visible and styled).
+      - Title & Notes: `text-sm font-semibold text-foreground` + legible notes.
+      - Native Amount: `text-sm font-bold font-mono text-foreground`.
+      - Converted Amount: `text-sm font-bold font-mono text-foreground` with `≈ {currencySymbol}{convertedAmount.toFixed(2)}`.
+      - Paid By: `text-xs font-medium text-foreground`.
+  - **Bottom Category Spend Analysis & Visual Donut Chart**:
+    - Shifted the big Category Distribution card to the **bottom** of the page.
+    - Replaced the single linear progress bar with a rich visual chart layout:
+      - Clean, modern SVG Donut/Ring chart on the left with exact mathematical segment geometry, smooth hover/transition strokes, and center metric display (total spend + currency symbol + "Total Spent" label).
+      - Category breakdown cards on the right sorted by highest expenditure, with category-colored icon badges, expense count, exact amounts in user currency, percentage labels, and progress bars.
+  - **Refined Corner Radii**:
+    - Reduced excessive border rounding across all expense metric cards, table containers, search inputs, dropdowns, and buttons to `rounded-sm` / `rounded-xs` in line with Linear/Notion aesthetics.
+- **Task 96 (Expenses Polish: Interactive Chart Tooltip, Sleek Horizontal Table Breakdown & shadcn DatePicker)**:
+  - **shadcn DatePicker Integration**:
+    - Replaced native HTML `<Input type="date" />` in both `EditExpenseDialog` (`features/trip-workspace/expenses/components/edit-expense-dialog.tsx`) and `AddExpenseDialog` (`features/trip-workspace/expenses/components/add-expense-dialog.tsx`) with the official shadcn `<DatePicker>` component (`components/ui/date-picker.tsx`).
+    - Handled timezone-safe local date string parsing and formatting (`toISOString().split("T")[0]`).
+    - Updated `DatePicker` popover and trigger styling (`bg-popover text-popover-foreground border-border rounded-sm shadow-md`) to ensure dark mode and theme consistency.
+  - **Interactive Chart Hover Tooltip & Dynamic Center Metric**:
+    - Added `activeCategory` state and `activeSegment` geometry lookup in `features/trip-workspace/expenses/components/expense-tracker.tsx`.
+    - Added floating tooltip pill positioned directly above hovered segments displaying category color dot, label, formatted amount in user currency (`currencySymbol`), and percentage share.
+    - Added SVG `<title>` tags to each segment `<circle>` for native tooltips.
+    - Added dynamic center text transition: shows hovered category label, amount, and `% of total` on hover; smoothly restores overall Total Spent when unhovered.
+    - Added tactile segment scaling (`strokeWidth: 22` on hover vs `16` default) and unhovered segment dimming (`opacity: 0.35`).
+  - **Horizontal Data-Dense Breakdown Layout (Eliminated AI Slop Rounded Corners)**:
+    - Replaced the 2-column grid of rounded cards with a clean, horizontal linear tabular layout enclosed in a single crisp container (`border border-border/80 bg-background/40 divide-y divide-border/60 rounded-xs overflow-hidden`).
+    - Each row displays category icon swatch, label, receipt count, a full-width horizontal bar (`h-1.5 bg-muted rounded-none`), formatted amount in user currency, and percentage share.
+    - Implemented bidirectional synchronized hover highlighting between the Donut chart segments and the horizontal category rows.
+- **Task 97 (Calendar Month/Year Jump Selectors, 1-Click Today Action & Resilient Budget Creation)**:
+  - **Calendar Month & Year Quick Selectors (`components/ui/calendar.tsx`)**:
+    - Replaced static month/year text with quick interactive `<select>` dropdowns for both Month (January - December) and Year (dynamic 25-year range from `currentYear - 15` to `currentYear + 10`).
+    - Travelers can jump directly to any month and year without sequentially clicking 12-24 chevron arrows.
+    - Preserved previous and next month chevron buttons for fine sequential stepping.
+    - Added reactive `useEffect` to ensure calendar automatically focuses on the existing `selected` date's month/year upon opening.
+  - **1-Click "Today" Quick Action**:
+    - Added an action footer bar to `Calendar` featuring an instant 1-click **"Today"** button that selects today's date and navigates directly to the current month/year.
+    - Included a quick **"Clear"** action to unset the date when needed.
+  - **Budget Creation & Ownership Reconciler (`auth-check.ts` & `actions.ts`)**:
+    - Hardened `verifyTripOwnership` in `features/trip-workspace/common/auth-check.ts` to match by `user.id` OR by user profile email (`{ profile: { email: user.email } }`), resolving the authorization error when trips were created under earlier Supabase auth session UUIDs for the same user email.
+    - Added automatic background reconciliation (`db.trip.update({ data: { profileId: user.id } })`) to ensure foreign keys stay permanently aligned.
+    - Enhanced `updateTripBudget` in `features/trip-workspace/expenses/actions.ts` to accept number or string, gracefully strip formatting symbols, and return specific error details.
+    - Wrapped the budget goal input in `features/trip-workspace/expenses/components/expense-tracker.tsx` with a `<form>` supporting `Enter` and `Escape` keyboard shortcuts, `autoFocus`, `inputMode="decimal"`, and sanitization (`replace(/[^0-9.]/g, "")`).
   - **Production Build Verification**:
-    - Successfully verified via `npm run build` with Turbopack — passed with exit code 0 across all 29 routes.
+    - Verified via `npm run build` with Turbopack — passed with exit code 0 and zero TypeScript errors across all routes.
 
 ## Next Steps
 - Continue iterative feature work and user testing on Prava AI V2.
+
 
 
 

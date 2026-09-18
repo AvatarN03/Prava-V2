@@ -5,7 +5,7 @@ import { getAllPublishedStories } from "@/features/blog/actions";
 import { StoryCard } from "@/features/blog/components/story-card";
 
 export const metadata = {
-  title: "Travel Stories & Guides | Prava AI",
+  title: "Travel Stories & Guides",
   description: "Discover curated travel stories, destination deep dives, and expert itineraries written by the Prava creator community.",
 };
 
