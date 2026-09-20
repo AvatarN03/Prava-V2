@@ -137,12 +137,32 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
   const [error, setError] = useState<string | null>(null);
   const [unit, setUnit] = useState<"C" | "F">("C");
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Suggestions state & selection flag
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const isSelectingRef = useRef(false);
+
+  // Format updatedAt according to user's system clock/timezone (avoids Vercel UTC mismatch)
+  const formattedUpdatedAt = useMemo(() => {
+    if (!data?.updatedAt) return "";
+    if (!isMounted) return "";
+    try {
+      const d = new Date(data.updatedAt);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      }
+      return data.updatedAt;
+    } catch {
+      return data.updatedAt;
+    }
+  }, [data?.updatedAt, isMounted]);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Debounced fetch for suggestions (aborted when a suggestion is selected)
@@ -571,9 +591,9 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                     <span className="font-semibold text-sm text-foreground">
                       {data.city}{data.country ? `, ${data.country}` : ""}
                     </span>
-                    {data.updatedAt && (
+                    {formattedUpdatedAt && (
                       <span className="text-[10px] text-muted-foreground ml-auto sm:ml-2">
-                        Updated {data.updatedAt}
+                        Updated {formattedUpdatedAt}
                       </span>
                     )}
                   </div>

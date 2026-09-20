@@ -1,6 +1,8 @@
 "use server";
 
 import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
+import { callOpenCodeZenFree, hasOpenCodeKey } from "@/lib/ai/opencode-client";
+import { callGroqChat, hasGroqKey } from "@/lib/ai/groq-client";
 
 import { EMERGENCY_DIRECTORY } from "../emergency/emergency-data";
 import type { CountryInfo, EmergencyContacts } from "../types";
@@ -504,7 +506,6 @@ function extractJsonPayload(raw: string): any {
 const VERIFIED_FREE_MODELS = [
   "inclusionai/ling-3.0-flash-sante:free",
   "nex-agi/nex-n2.5-mini:free",
-  "liquid/lfm-2.5-2.6b:free",
   "nvidia/nemotron-3.5-lightning:free",
 ];
 
@@ -566,44 +567,100 @@ Only output valid JSON.`;
     generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
   };
 
-  if (!process.env.OPENROUTER_API_KEY) {
-    return {
-      ...curatedFallback,
-      hasError: true,
-      errorMessage: "OPENROUTER_API_KEY is not configured in the environment.",
-    };
-  }
+  let lastError = "";
 
-  const aiResult = await callOpenRouterFree({
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.2,
-    models: VERIFIED_FREE_MODELS,
-  });
+  // 1. Attempt OpenRouter Free Models Cascade (if key configured)
+  if (openRouterKey) {
+    const aiResult = await callOpenRouterFree({
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      models: VERIFIED_FREE_MODELS,
+    });
 
-  if (aiResult?.success && aiResult.text) {
-    const parsed = extractJsonPayload(aiResult.text);
-    if (parsed && parsed.vibe) {
-      const result: CountryAiSummary = {
-        vibe: parsed.vibe,
-        advisoryStatus: parsed.advisoryStatus || "safe",
-        advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
-        newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
-        insiderTip: parsed.insiderTip || "",
-        provider: `OpenRouter (${aiResult.modelUsed.replace(/:free$/, "")})`,
-        isAiGenerated: true,
-        generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        hasError: false,
-      };
-      aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
-      return result;
+    if (aiResult?.success && aiResult.text) {
+      const parsed = extractJsonPayload(aiResult.text);
+      if (parsed && parsed.vibe) {
+        const result: CountryAiSummary = {
+          vibe: parsed.vibe,
+          advisoryStatus: parsed.advisoryStatus || "safe",
+          advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
+          newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
+          insiderTip: parsed.insiderTip || "",
+          provider: `OpenRouter (${aiResult.modelUsed.replace(/:free$/, "")})`,
+          isAiGenerated: true,
+          generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          hasError: false,
+        };
+        aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
+      }
     }
+    lastError = aiResult?.error || "OpenRouter free models unavailable or quota depleted.";
   }
 
-  // All candidate models were attempted and failed
+  // 2. Cascade to OpenCode Zen Free Models (if OPENCODE_API_KEY configured)
+  if (hasOpenCodeKey()) {
+    const opencodeResult = await callOpenCodeZenFree({
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+    });
+
+    if (opencodeResult?.success && opencodeResult.text) {
+      const parsed = extractJsonPayload(opencodeResult.text);
+      if (parsed && parsed.vibe) {
+        const result: CountryAiSummary = {
+          vibe: parsed.vibe,
+          advisoryStatus: parsed.advisoryStatus || "safe",
+          advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
+          newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
+          insiderTip: parsed.insiderTip || "",
+          provider: `OpenCode Zen (${opencodeResult.modelUsed.replace(/-free$/, "")})`,
+          isAiGenerated: true,
+          generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          hasError: false,
+        };
+        aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
+      }
+    }
+    lastError = opencodeResult?.error || lastError || "OpenCode Zen models busy or unavailable.";
+  }
+
+  // 3. Cascade to Groq (if GROQ_API_KEY configured)
+  if (hasGroqKey()) {
+    const groqResult = await callGroqChat({
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      responseFormat: { type: "json_object" },
+    });
+
+    if (groqResult?.success && groqResult.text) {
+      const parsed = extractJsonPayload(groqResult.text);
+      if (parsed && parsed.vibe) {
+        const result: CountryAiSummary = {
+          vibe: parsed.vibe,
+          advisoryStatus: parsed.advisoryStatus || "safe",
+          advisoryReason: parsed.advisoryReason || "Standard travel precautions apply.",
+          newsDigest: Array.isArray(parsed.newsDigest) ? parsed.newsDigest : [],
+          insiderTip: parsed.insiderTip || "",
+          provider: `Groq (${groqResult.modelUsed.split("/")[1] || groqResult.modelUsed})`,
+          isAiGenerated: true,
+          generatedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          hasError: false,
+        };
+        aiSummaryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+        return result;
+      }
+    }
+    lastError = groqResult?.error || lastError || "Groq models busy or unavailable.";
+  }
+
+  // 4. Graceful Curated Fallback (if all API attempts fail or keys missing)
   return {
     ...curatedFallback,
     hasError: true,
-    errorMessage: aiResult?.error || "OpenRouter free models are currently unavailable or busy.",
-    provider: "OpenRouter (Error — Showing Curated Fallback)",
+    errorMessage:
+      lastError || "AI free tier providers currently unavailable. Displaying curated baseline intelligence.",
+    provider: "Prava Curated Travel Intelligence",
   };
 }

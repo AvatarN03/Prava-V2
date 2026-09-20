@@ -47,6 +47,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import {
   getCachedAiSummary,
@@ -66,6 +72,8 @@ import {
 import { EMERGENCY_DIRECTORY } from "../emergency/emergency-data";
 import type { CountryInfo, EmergencyContacts } from "../types";
 import {
+  ALLIANCE_FULL_NAMES,
+  BORDER_COUNTRY_NAMES,
   getIndianPassportVisaGuidance,
   QUICK_PICK_COUNTRIES,
   type QuickPickCountry,
@@ -534,25 +542,25 @@ export function CountryGuideView() {
               </div>
 
               {/* Fast Facts Strip */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap pt-0.5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-1.5 text-xs text-muted-foreground sm:flex-wrap pt-0.5">
                 <span>
                   Capital: <strong className="text-foreground font-semibold">{country.capital}</strong>
                 </span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>
                   Currency: <strong className="text-foreground font-semibold">{country.currency}</strong>
                 </span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>
                   Languages: <strong className="text-foreground font-semibold">{country.languages.join(", ")}</strong>
                 </span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>
                   Driving: <strong className="text-foreground font-semibold">{country.drivingSide}-hand</strong>
                 </span>
                 {country.population && (
                   <>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
                     <span>
                       Population: <strong className="text-foreground font-semibold">{(country.population / 1_000_000).toFixed(1)}M</strong>
                     </span>
@@ -560,7 +568,7 @@ export function CountryGuideView() {
                 )}
                 {country.areaKm && (
                   <>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
                     <span>
                       Area: <strong className="text-foreground font-semibold">{country.areaKm.toLocaleString()} km²</strong>
                     </span>
@@ -577,18 +585,20 @@ export function CountryGuideView() {
             </div>
 
             {/* Links and Action Buttons */}
-            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-2 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-border/60">
-              <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 flex items-start gap-1.5 flex-row-reverse">
-                <Calendar className="w-3.5 h-3.5" />
-                <span className="max-w-xs  text-justify">{country.bestSeasons}</span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-col items-start sm:items-end gap-2 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-border/60 w-full sm:w-auto">
+              {country.bestSeasons && (
+                <div className="flex items-start gap-1.5 text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1.5 rounded-lg w-full sm:max-w-xs">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                  <span className="leading-snug text-left">{country.bestSeasons}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 flex-wrap pt-1 sm:pt-0">
                 {country.googleMapsUrl && (
                   <a
                     href={country.googleMapsUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium bg-muted/40 px-2 py-1 rounded-md border border-border/50"
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium bg-muted/40 px-2.5 py-1 rounded-md border border-border/50"
                   >
                     <MapPin className="h-3 w-3 text-primary" /> Maps <ExternalLink className="h-2.5 w-2.5" />
                   </a>
@@ -598,7 +608,7 @@ export function CountryGuideView() {
                     href={country.wikipediaUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium bg-muted/40 px-2 py-1 rounded-md border border-border/50"
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium bg-muted/40 px-2.5 py-1 rounded-md border border-border/50"
                   >
                     <Globe className="h-3 w-3 text-sky-500" /> Wikipedia <ExternalLink className="h-2.5 w-2.5" />
                   </a>
@@ -608,7 +618,7 @@ export function CountryGuideView() {
                     href={country.officialUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium bg-muted/40 px-2 py-1 rounded-md border border-border/50"
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium bg-muted/40 px-2.5 py-1 rounded-md border border-border/50"
                   >
                     <Landmark className="h-3 w-3 text-emerald-500" /> Portal <ExternalLink className="h-2.5 w-2.5" />
                   </a>
@@ -778,7 +788,7 @@ export function CountryGuideView() {
                 ) : aiSummary?.hasError ? (
                   <Badge variant="outline" className="text-[10px] font-mono border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 flex items-center gap-1 px-2 py-0.5">
                     <AlertTriangle className="w-3 h-3 text-amber-500" />
-                    <span>OpenRouter Notice</span>
+                    <span>AI Service Notice</span>
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground bg-muted/40 flex items-center gap-1 px-2 py-0.5">
@@ -801,7 +811,7 @@ export function CountryGuideView() {
                   onClick={handleRegenerateAi}
                   disabled={isLoadingAi}
                   className="h-6 text-[11px] px-2 gap-1 cursor-pointer hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-400 shrink-0"
-                  title="Generate live travel summary via OpenRouter"
+                  title="Generate live travel summary via AI"
                 >
                   <Sparkles className={`w-3 h-3 ${isLoadingAi ? "animate-spin text-purple-500" : "text-purple-500"}`} />
                   <span>{isLoadingAi ? "Connecting..." : aiSummary?.hasError ? "Retry AI" : "Regenerate"}</span>
@@ -814,21 +824,21 @@ export function CountryGuideView() {
             {isLoadingAi ? (
               <div className="py-8 flex flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span>Synthesizing travel conditions and safety advisory via OpenRouter...</span>
+                <span>Synthesizing travel conditions and safety advisory...</span>
               </div>
             ) : aiSummary ? (
               <div className="space-y-3">
-                {/* OpenRouter Error Notice with Inline Retry & Fallback Details */}
+                {/* AI Service Error Notice with Inline Retry & Fallback Details */}
                 {aiSummary.hasError && (
                   <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-start gap-2.5 min-w-0">
                       <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                       <div className="space-y-0.5 min-w-0">
                         <span className="font-semibold text-foreground text-xs block">
-                          OpenRouter AI Service Notice
+                          AI Service Notice
                         </span>
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          {aiSummary.errorMessage || "OpenRouter free models were busy. Showing authentic verified data below."}
+                          {aiSummary.errorMessage || "AI providers were busy. Showing authentic verified data below."}
                         </p>
                       </div>
                     </div>
@@ -1104,9 +1114,9 @@ export function CountryGuideView() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-4 space-y-2 text-xs">
+          <CardContent className="p-4 space-y-3 text-xs">
             {indianVisa?.duration && (
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-[11px] pb-2 border-b border-border/40">
                 <span className="text-muted-foreground font-medium">Permitted Stay:</span>
                 <strong className="font-semibold text-foreground font-mono">{indianVisa.duration}</strong>
               </div>
@@ -1114,7 +1124,7 @@ export function CountryGuideView() {
             <p className="text-[11px] text-foreground leading-relaxed">
               {indianVisa?.note || country.visaInfo}
             </p>
-            <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-1.5">
+            <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-2.5 leading-normal">
               Indian passports must have at least <strong>6 months</strong> remaining validity from departure date.
             </p>
           </CardContent>
@@ -1122,7 +1132,7 @@ export function CountryGuideView() {
 
         {/* 5. Payment & Cash Culture */}
         <Card className="border-border/80 bg-card shadow-xs">
-          <CardHeader className="p-4 pb-2 border-b border-border/50">
+          <CardHeader className="p-4 pb-2.5 border-b border-border/50">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600">
                 <CreditCard className="w-4 h-4" />
@@ -1132,12 +1142,12 @@ export function CountryGuideView() {
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="p-4 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-foreground">Currency:</span>
-              <strong className="font-mono text-xs">{country.currency}</strong>
+          <CardContent className="p-4 space-y-3 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-border/40">
+              <span className="font-medium text-muted-foreground text-[11px]">Official Currency:</span>
+              <strong className="font-mono text-xs font-semibold text-foreground">{country.currency}</strong>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-[11px] text-muted-foreground leading-relaxed pt-0.5">
               Cards and digital pay are widely accepted in major cities. Keep small local currency notes for traditional kiosks and markets.
             </p>
           </CardContent>
@@ -1145,7 +1155,7 @@ export function CountryGuideView() {
 
         {/* 6. Geography & Borders */}
         <Card className="border-border/80 bg-card shadow-xs">
-          <CardHeader className="p-4 pb-2 border-b border-border/50">
+          <CardHeader className="p-4 pb-2.5 border-b border-border/50">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
                 <Compass className="w-4 h-4" />
@@ -1155,32 +1165,68 @@ export function CountryGuideView() {
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="p-4 space-y-2 text-xs">
+          <CardContent className="p-4 space-y-3 text-xs">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">Landlocked:</span>
-              <strong className="text-foreground">{country.landlocked ? "Yes" : "Coastal / Island"}</strong>
+              <span className="text-muted-foreground font-medium">Landlocked Status:</span>
+              <strong className="text-foreground font-semibold">{country.landlocked ? "Landlocked Nation" : "Coastal / Island Nation"}</strong>
             </div>
+
             {country.borders && country.borders.length > 0 && (
-              <div className="space-y-1 pt-0.5">
-                <span className="text-[10px] text-muted-foreground uppercase font-semibold">Bordering Nations:</span>
-                <div className="flex flex-wrap gap-1">
-                  {country.borders.map((b) => (
-                    <Badge key={b} variant="outline" className="font-mono text-[10px] px-1.5 py-0">
-                      {b}
-                    </Badge>
-                  ))}
+              <div className="space-y-1.5 pt-2 border-t border-border/40">
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
+                  Bordering Nations:
+                </span>
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {country.borders.map((b) => {
+                    const countryName = BORDER_COUNTRY_NAMES[b.toUpperCase()] || b;
+                    return (
+                      <TooltipProvider key={b} delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-[10px] px-2 py-0.5 cursor-help hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                            >
+                              {b}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs font-sans font-medium">
+                            {countryName}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
                 </div>
               </div>
             )}
+
             {country.memberships && country.memberships.length > 0 && (
-              <div className="space-y-1 pt-1 border-t border-border/50">
-                <span className="text-[10px] text-muted-foreground uppercase font-semibold">Alliances & Treaties:</span>
-                <div className="flex flex-wrap gap-1">
-                  {country.memberships.slice(0, 5).map((m) => (
-                    <Badge key={m} variant="secondary" className="text-[9px] px-1.5 py-0 font-semibold">
-                      {m}
-                    </Badge>
-                  ))}
+              <div className="space-y-1.5 pt-2 border-t border-border/40">
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
+                  Alliances & Treaties:
+                </span>
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {country.memberships.map((m) => {
+                    const fullName = ALLIANCE_FULL_NAMES[m.toUpperCase()] || m;
+                    return (
+                      <TooltipProvider key={m} delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-2 py-0.5 font-semibold cursor-help hover:bg-primary/15 hover:text-primary transition-colors"
+                            >
+                              {m}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs font-sans font-medium max-w-xs text-center">
+                            {fullName}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
                 </div>
               </div>
             )}

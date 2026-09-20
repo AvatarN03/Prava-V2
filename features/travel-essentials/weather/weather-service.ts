@@ -234,8 +234,7 @@ async function fetchFromOpenWeather(query: string, apiKey: string): Promise<Weat
       pressure: current.main.pressure,
       visibility: current.visibility ? Math.round(current.visibility / 1000) : undefined, // meters to km
       sunrise: sunriseStr,
-      sunset: sunsetStr,
-      updatedAt: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      updatedAt: current.dt ? new Date(current.dt * 1000).toISOString() : new Date().toISOString(),
       forecastDays,
       daily: {
         time: forecastDays.map((d) => d.date),
@@ -361,8 +360,7 @@ async function fetchFromOpenMeteo(query: string): Promise<WeatherData | null> {
       pressure: data.current.surface_pressure ? Math.round(data.current.surface_pressure) : undefined,
       uvIndex: forecastDays[0]?.uvIndex,
       sunrise: forecastDays[0]?.sunrise,
-      sunset: forecastDays[0]?.sunset,
-      updatedAt: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      updatedAt: new Date().toISOString(),
       forecastDays,
       daily: {
         time: data.daily.time,
@@ -519,8 +517,7 @@ export async function fetchWeatherByCoords(
       pressure: data.current.surface_pressure ? Math.round(data.current.surface_pressure) : undefined,
       uvIndex: forecastDays[0]?.uvIndex,
       sunrise: forecastDays[0]?.sunrise,
-      sunset: forecastDays[0]?.sunset,
-      updatedAt: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      updatedAt: new Date().toISOString(),
       forecastDays,
       daily: {
         time: data.daily.time,

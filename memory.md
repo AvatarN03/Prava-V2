@@ -1593,3 +1593,60 @@
     - Added `self-end sm:self-auto ml-auto sm:ml-0` to the base currency selector and refresh button container so it aligns to the far right on mobile viewports.
     - Merged the rate and inverse columns in `thead` into `1 {baseCurrency} Buys / Inverse`.
     - Rendered the merged cell content as `<span className="font-bold text-foreground">{rate}</span> <span className="text-muted-foreground/60 mx-1.5">/</span> <span className="text-muted-foreground font-medium">{inverse}</span>` without redundant symbol clutter.
+
+- **Task 126 (Country Guide — Mobile Fast Facts Vertical Stacking & Weather Season Layout Fix)**:
+  - **Issues Identified**:
+    - On mobile viewports, the Country Overview fast facts (Capital, Currency, Languages, Driving, etc.) wrapped unpredictably with floating bullet separators.
+    - The `bestSeasons` weather season text had `flex-row-reverse` with `text-justify` and cramped sizing, creating an awkward stretched text UI glitch on mobile devices next to the portal links.
+  - **Fixes Applied in `features/travel-essentials/country-guide/country-guide-view.tsx`**:
+    - **Vertical Stacking on Mobile**: Updated fast facts container to `flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-1.5 sm:flex-wrap`. Each country detail (Capital, Currency, Languages, Driving, Population, Area) renders cleanly one after another on mobile. Bullet separators are hidden on mobile with `hidden sm:inline`.
+    - **Clean Weather Season Badge**: Replaced `flex-row-reverse` and `text-justify` with a structured `bg-indigo-500/10 border border-indigo-500/20` pill badge with the calendar icon positioned cleanly on the left (`mt-0.5 shrink-0`) and left-aligned text (`leading-snug text-left`).
+
+- **Task 127 (AI Travel Intelligence — OpenRouter 3-Model Reduction & OpenCode Zen Free Fallback Cascade)**:
+  - **User Context & Requirements**:
+    - OpenRouter free tier has a daily request limit (20 req/day).
+    - Reduce the OpenRouter verified free model cascade from 4 to 3 models to avoid slow timeouts on exhausted free tiers.
+    - Implement OpenCode Zen free models (`https://opencode.ai/zen/v1/chat/completions`) using the newly added `OPENCODE_API_KEY` in `.env` as a resilient secondary fallback provider.
+    - Clarify fallback flow: If both OpenRouter and OpenCode Zen free quotas are exhausted, ensure the app gracefully returns high-fidelity curated static travel intelligence (`curatedFallback`) with zero downtime.
+  - **Implementation Details**:
+    - **Created `lib/ai/opencode-client.ts`**:
+      - Built OpenAI-compatible HTTP client calling `https://opencode.ai/zen/v1/chat/completions` with `OPENCODE_API_KEY`.
+      - Configured priority free models: `nemotron-3.5-lightning-free`, `minimax-m2.5-free`, `deepseek-v4-flash-free`.
+      - Built `hasOpenCodeKey()`, automatic sequential fallback across active free models, and reused `stripReasoning()` to strip raw `<think>` tokens.
+    - **Updated `features/travel-essentials/country-guide/country-service.ts`**:
+      - Reduced `VERIFIED_FREE_MODELS` to 3 active models: `inclusionai/ling-3.0-flash-sante:free`, `nex-agi/nex-n2.5-mini:free`, and `nvidia/nemotron-3.5-lightning:free`.
+      - Chained `generateCountryAiSummary` into a 3-tier cascade:
+        1. OpenRouter (3 free models)
+        2. OpenCode Zen (`callOpenCodeZenFree` with 3 free models if key configured or OpenRouter fails)
+        3. Curated dynamic baseline (`curatedFallback` labeled `"Prava Curated Travel Intelligence"`).
+    - **Documented in `.env.example`**:
+      - Added section 9 for `OPENCODE_API_KEY`.
+
+- **Task 128 (Weather Updated Timing Timezone Fix & Country Guide Card Spacing / Full-Form Tooltips)**:
+  - **Weather Timing Root Cause & Fix**:
+    - **Why it occurred**: In `weather-service.ts`, `updatedAt` was computed on the server via `new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })`. On localhost dev, Node.js ran in the user's local timezone (IST). On Vercel cloud serverless lambdas, `process.env.TZ` is UTC, which hard-baked a static UTC string (e.g. `2:38 PM` instead of `8:08 PM`) into the JSON payload sent to the client.
+    - **Solution**:
+      - In `features/travel-essentials/weather/weather-service.ts`, switched `updatedAt` to standard ISO 8601 strings (`current.dt ? new Date(current.dt * 1000).toISOString() : new Date().toISOString()`).
+      - In `features/travel-essentials/weather/weather-view.tsx`, added client-side `useMemo` formatting (`date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })`) gated by `isMounted` state to guarantee format renders in the user's mobile/system clock with zero hydration mismatch.
+- **Task 129 (AI Country Summary — DeepSeek/OpenCode Root Cause Analysis & Ultra-Fast Groq Cascade)**:
+  - **Investigation & Root Cause**:
+    - When user clicked "Generate Summary" / "Regenerate", OpenRouter daily free tier (20 requests/day) was already exhausted, returning HTTP `429 Rate limit exceeded: free-models-per-day`.
+    - The cascade cleanly fell through to OpenCode Zen (`https://opencode.ai/zen/v1/chat/completions`).
+    - In OpenCode Zen, `deepseek-v4-flash-free` was returning HTTP 500 (`Upstream request failed: Model is unavailable`), and the other free models returned HTTP 403 `FreeTierError: OpenCode's free tier can only be used from within OpenCode` (restricted by OpenCode to their official desktop client). Non-free models required a payment method (`CreditsError`).
+    - Because `deepseek-v4-flash-free` was the final model attempted in OpenCode, its error `Model deepseek-v4-flash-free error (500)` was returned as `errorMessage`.
+    - Simultaneously, the UI card in `country-guide-view.tsx` had a hardcoded title `OpenRouter AI Service Notice`, which misled the user into thinking OpenRouter was still being called rather than OpenCode Zen.
+  - **Comprehensive Fixes Applied**:
+    - **Created `lib/ai/groq-client.ts`**:
+      - Leveraged `GROQ_API_KEY` already configured in `.env`.
+      - Built fast client querying `https://api.groq.com/openai/v1/chat/completions` using `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, and `openai/gpt-oss-20b` with sub-second latency and zero rate-limiting on typical quotas.
+    - **Updated `lib/ai/opencode-client.ts`**:
+      - Added full registered free models list from `/models`.
+      - Provided clear error mapping for `FreeTierError` so logs and UI indicate official client restrictions.
+    - **Updated `features/travel-essentials/country-guide/country-service.ts`**:
+      - Chained `generateCountryAiSummary` into a 4-tier resilient cascade:
+        1. OpenRouter (3 free models)
+        2. OpenCode Zen (priority models if active/credited)
+        3. Groq (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`)
+        4. Curated dynamic baseline (`curatedFallback`).
+    - **Updated `features/travel-essentials/country-guide/country-guide-view.tsx`**:
+      - Replaced hardcoded "OpenRouter AI Service Notice" and "OpenRouter Notice" with provider-neutral "AI Service Notice" and neutral loading indicators.
