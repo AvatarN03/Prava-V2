@@ -12,7 +12,6 @@ import {
   Languages,
   Loader2,
   Map,
-  ShieldAlert,
 } from "lucide-react";
 import type { Link as PrismaLink } from "@prisma/client";
 
@@ -194,14 +193,9 @@ export function TravelEssentialsShell({
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col gap-1.5 pb-2 border-b border-border/80">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <ShieldAlert className="h-4 w-4" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Prava Travel Essentials
-          </h1>
-        </div>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+          Prava Travel Essentials
+        </h1>
         <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
           A dedicated toolkit for smooth journeys. Check live forecasts, convert currencies, explore maps, and access emergency contacts and phrasebooks.
         </p>

@@ -188,15 +188,7 @@ export function CommunityForumView({
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-primary">
-              <MessageSquare className="h-3.5 w-3.5" />
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Traveler Discussions
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             Traveler Forum
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">

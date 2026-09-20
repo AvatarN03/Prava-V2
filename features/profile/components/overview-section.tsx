@@ -52,7 +52,7 @@ export function OverviewSection({
     isPublic !== profile.isPublic;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 w-full">
       {/* 1. Profile Picture & Summary Card */}
       <Card className="border-border bg-card">
         <CardHeader className="pb-3">
@@ -62,7 +62,7 @@ export function OverviewSection({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <AvatarUpload
                 currentAvatarUrl={profile.avatarUrl}
@@ -101,14 +101,46 @@ export function OverviewSection({
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="rounded-sm border border-border bg-muted/40 px-3 py-1.5 text-center min-w-[75px]">
-                <div className="text-sm font-bold text-foreground">{profile.totalTrips}</div>
-                <div className="text-[10px] text-muted-foreground">Total Trips</div>
+            {/* Live Platform Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto">
+              <div
+                className="rounded-sm border border-border bg-muted/30 px-3 py-1.5 text-center min-w-[80px]"
+                title="Total created personal and collaborative trips"
+              >
+                <div className="text-sm font-bold text-foreground">
+                  {profile.totalTrips ?? 0}
+                </div>
+                <div className="text-[10px] font-medium text-muted-foreground">Total Trips</div>
               </div>
-              <div className="rounded-sm border border-border bg-muted/40 px-3 py-1.5 text-center min-w-[75px]">
-                <div className="text-sm font-bold text-primary">{profile.publishedTrips}</div>
-                <div className="text-[10px] text-muted-foreground">Published</div>
+
+              <div
+                className="rounded-sm border border-border bg-muted/30 px-3 py-1.5 text-center min-w-[80px]"
+                title="Trips published to Community Templates"
+              >
+                <div className="text-sm font-bold text-primary">
+                  {profile.publishedTemplates ?? 0}
+                </div>
+                <div className="text-[10px] font-medium text-muted-foreground">Trip Templates</div>
+              </div>
+
+              <div
+                className="rounded-sm border border-border bg-muted/30 px-3 py-1.5 text-center min-w-[80px]"
+                title="Travel stories and guides written"
+              >
+                <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  {profile.publishedStories ?? 0}
+                </div>
+                <div className="text-[10px] font-medium text-muted-foreground">Stories</div>
+              </div>
+
+              <div
+                className="rounded-sm border border-border bg-muted/30 px-3 py-1.5 text-center min-w-[80px]"
+                title="Discussion threads started in Traveler Forum"
+              >
+                <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                  {profile.forumDiscussions ?? 0}
+                </div>
+                <div className="text-[10px] font-medium text-muted-foreground">Discussions</div>
               </div>
             </div>
           </div>
@@ -258,18 +290,26 @@ export function OverviewSection({
 
         <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 pb-4 px-6 border-t border-border/60">
           <div>
-            {hasUnsavedChanges && (
+            {hasUnsavedChanges ? (
               <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
                 You have unsaved changes. Click Save Configurations to update.
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                All personal details are up to date.
               </p>
             )}
           </div>
           <Button
             type="button"
             onClick={onSave}
-            disabled={isSaving}
+            disabled={isSaving || !hasUnsavedChanges}
             size="sm"
-            className="cursor-pointer gap-1.5 w-full sm:w-auto"
+            className={`gap-1.5 w-full sm:w-auto ${
+              isSaving || !hasUnsavedChanges
+                ? "cursor-not-allowed opacity-60"
+                : "cursor-pointer"
+            }`}
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />

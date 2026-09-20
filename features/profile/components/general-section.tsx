@@ -38,38 +38,51 @@ import { ProfileWithStats } from "../actions";
 interface GeneralSectionProps {
   profile: ProfileWithStats;
   defaultCurrency: string;
+  onUpdateCurrency: (currency: string) => void;
+  isUpdatingCurrency: boolean;
   aiAutoPropose: boolean;
-  emailNotifications: boolean;
+  setAiAutoPropose: (val: boolean) => void;
   offlineMode: boolean;
+  setOfflineMode: (val: boolean) => void;
   travelPreferences: string;
   setTravelPreferences: (val: string) => void;
-  onUpdatePreference: (
-    partial: Partial<{
-      defaultCurrency: string;
-      aiAutoPropose: boolean;
-      emailNotifications: boolean;
-      offlineMode: boolean;
-      travelPreferences: string;
-    }>,
-    successMessage?: string
-  ) => void;
-  isSavingPreferences: boolean;
+  onSaveAiPreferences: (data: {
+    aiAutoPropose: boolean;
+    offlineMode: boolean;
+    travelPreferences: string;
+  }) => void;
+  isSavingAiPreferences: boolean;
+  emailNotifications: boolean;
+  onUpdateNotification: (checked: boolean) => void;
+  isUpdatingNotification: boolean;
 }
 
 export function GeneralSection({
+  profile,
   defaultCurrency,
+  onUpdateCurrency,
+  isUpdatingCurrency,
   aiAutoPropose,
-  emailNotifications,
+  setAiAutoPropose,
   offlineMode,
+  setOfflineMode,
   travelPreferences,
   setTravelPreferences,
-  onUpdatePreference,
-  isSavingPreferences,
+  onSaveAiPreferences,
+  isSavingAiPreferences,
+  emailNotifications,
+  onUpdateNotification,
+  isUpdatingNotification,
 }: GeneralSectionProps) {
   const { isSyncing, lastSyncLabel, triggerSync, isOnline } = useOfflineSyncContext();
 
+  const hasPersonaChanges =
+    aiAutoPropose !== (profile.aiAutoPropose ?? true) ||
+    offlineMode !== (profile.offlineMode ?? false) ||
+    travelPreferences.trim() !== (profile.travelPreferences || "").trim();
+
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 w-full">
       {/* 1. Regional & Currency Defaults */}
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">
@@ -95,12 +108,8 @@ export function GeneralSection({
             <div className="w-full sm:w-64">
               <Select
                 value={defaultCurrency}
-                onValueChange={(val) =>
-                  onUpdatePreference(
-                    { defaultCurrency: val },
-                    `Default currency updated to ${val} in database.`
-                  )
-                }
+                onValueChange={onUpdateCurrency}
+                disabled={isUpdatingCurrency}
               >
                 <SelectTrigger className="h-8 rounded-sm cursor-pointer text-xs">
                   <SelectValue placeholder="Select currency" />
@@ -163,15 +172,9 @@ export function GeneralSection({
             </div>
             <Switch
               checked={aiAutoPropose}
-              onCheckedChange={(checked) =>
-                onUpdatePreference(
-                  { aiAutoPropose: checked },
-                  checked
-                    ? "Structured AI proposals enabled in database."
-                    : "Structured AI proposals disabled in database."
-                )
-              }
+              onCheckedChange={setAiAutoPropose}
               className="cursor-pointer"
+              disabled={isSavingAiPreferences}
             />
           </div>
 
@@ -187,19 +190,9 @@ export function GeneralSection({
               </div>
               <Switch
                 checked={offlineMode}
-                onCheckedChange={(checked) => {
-                  onUpdatePreference(
-                    { offlineMode: checked },
-                    checked
-                      ? "Offline travel cache enabled in database."
-                      : "Offline travel cache disabled in database."
-                  );
-                  if (checked) {
-                    // Trigger sync immediately on user toggle
-                    setTimeout(() => triggerSync(), 200);
-                  }
-                }}
+                onCheckedChange={setOfflineMode}
                 className="cursor-pointer"
+                disabled={isSavingAiPreferences}
               />
             </div>
 
@@ -253,27 +246,48 @@ export function GeneralSection({
               placeholder="e.g. Vegetarian, love historic architecture and coffee shops, prefer moderate pace with max 3-4 activities per day."
               className="h-20 text-xs rounded-sm resize-none"
               maxLength={1000}
+              disabled={isSavingAiPreferences}
             />
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-3 border-t border-border/60 flex justify-end">
+        <CardFooter className="p-4 pt-3 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            {hasPersonaChanges ? (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                You have unsaved changes. Click Save AI Travel Preferences to update.
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                AI persona & offline settings are up to date.
+              </p>
+            )}
+          </div>
           <Button
             type="button"
             size="sm"
-            onClick={() =>
-              onUpdatePreference(
-                { travelPreferences },
-                "Travel style & AI guidance saved to database."
-              )
-            }
-            disabled={isSavingPreferences}
-            className="h-8 rounded-sm text-xs gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => {
+              if (!hasPersonaChanges) return;
+              onSaveAiPreferences({
+                aiAutoPropose,
+                offlineMode,
+                travelPreferences: travelPreferences.trim() || "",
+              });
+              if (offlineMode && !profile.offlineMode) {
+                setTimeout(() => triggerSync(), 250);
+              }
+            }}
+            disabled={isSavingAiPreferences || !hasPersonaChanges}
+            className={`h-8 rounded-sm text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 ${
+              isSavingAiPreferences || !hasPersonaChanges
+                ? "cursor-not-allowed opacity-60"
+                : "cursor-pointer"
+            }`}
           >
-            {isSavingPreferences ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {isSavingAiPreferences ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
             ) : (
-              <Save className="h-3.5 w-3.5" />
+              <Save className="h-3.5 w-3.5 mr-1.5" />
             )}
             Save AI Travel Preferences
           </Button>
@@ -306,15 +320,9 @@ export function GeneralSection({
             </div>
             <Switch
               checked={emailNotifications}
-              onCheckedChange={(checked) =>
-                onUpdatePreference(
-                  { emailNotifications: checked },
-                  checked
-                    ? "Trip departure reminders enabled in database."
-                    : "Trip departure reminders disabled in database."
-                )
-              }
+              onCheckedChange={onUpdateNotification}
               className="cursor-pointer"
+              disabled={isUpdatingNotification}
             />
           </div>
         </CardContent>

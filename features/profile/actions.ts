@@ -28,6 +28,8 @@ export interface ProfileWithStats {
   createdAt: string;
   totalTrips: number;
   publishedTrips: number;
+  publishedStories: number;
+  forumDiscussions: number;
   tier: "free" | "pro";
   tripsQuota: number;
   tripsRemaining: number;
@@ -129,13 +131,21 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    const rawAiCredits = await db.aiMessage.count({
-      where: {
-        role: "user",
-        conversation: { profileId: user.id },
-        createdAt: { gte: startOfMonth, lte: endOfMonth },
-      },
-    });
+    const [rawAiCredits, publishedStoriesCount, communityDiscussionsCount] = await Promise.all([
+      db.aiMessage.count({
+        where: {
+          role: "user",
+          conversation: { profileId: user.id },
+          createdAt: { gte: startOfMonth, lte: endOfMonth },
+        },
+      }),
+      db.blogPost.count({
+        where: { profileId: user.id, status: "PUBLISHED" },
+      }),
+      db.communityPost.count({
+        where: { profileId: user.id },
+      }),
+    ]);
 
     const aiCreditsUsed = Math.min(aiCreditsQuota, rawAiCredits);
     const tripsRemaining = Math.max(0, tripsQuota - profile._count.trips);
@@ -159,6 +169,8 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
         createdAt: profile.createdAt.toISOString(),
         totalTrips: profile._count.trips,
         publishedTrips: profile.trips.length,
+        publishedStories: publishedStoriesCount,
+        forumDiscussions: communityDiscussionsCount,
         tier,
         tripsQuota,
         tripsRemaining,

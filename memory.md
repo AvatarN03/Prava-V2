@@ -1702,7 +1702,115 @@
         - `OpenRouter Loading...` (Sky blue badge with spinner during network stream).
     - **Header Live Status Indicator**:
       - Added a sticky live status badge next to the Language select dropdown in the header that activates whenever speech is playing, indicating `Native Device Voice` or `OpenRouter Fish Audio` across the page.
+- **Task 134 (Travel Maps — Locate Me Placement & Minimal Quick Pin Cities)**:
+  - **Context & User Request**:
+    1. Reorder the "Locate Me" option button so it sits immediately after the "Search" button on mobile and desktop viewports, rather than floating awkwardly in the top header row.
+    2. Reduce the quick pin destination cities to a clean minimum to eliminate mobile clutter and horizontal sprawl.
+  - **Solutions Implemented (`features/travel-essentials/maps/map-view.tsx`)**:
+    - **Button Repositioning**:
+      - Moved the `Locate Me` button directly inside the search bar form, placed immediately after the `Search` button (`[Input] [Search] [Locate Me]`).
+      - Cleaned up the top header row so it contains only the title and description.
+    - **Minimal Quick Pins**:
+      - Pruned `POPULAR_DESTINATIONS` from 8 down to 4 core hubs (`Mumbai`, `New Delhi`, `Bengaluru`, `Goa`), fitting comfortably on mobile screens without extensive scrolling.
+- **Task 135 (UI Cleanup — Removed Redundant Blue Eyebrow Badges)**:
+  - **Context & User Request**:
+    - Across the Dashboard, Trips, and Profile pages, there was a redundant blue icon box and uppercase text badge (e.g. `[User] ACCOUNT & PROFILE`, `[LayoutDashboard] PRAVA DASHBOARD`, `[Compass] PRAVA TRIPS`). Because the persistent TopBar already displays the page title and icon, user requested removing these eyebrow elements so they match the clean header style of Travel Essentials.
+  - **Solutions Implemented**:
+    - **Profile Page (`features/profile/components/profile-editor.tsx`)**: Removed the `[User] Account & Profile` eyebrow badge.
+    - **Dashboard Page (`app/(app)/dashboard/page.tsx`)**: Removed the `[LayoutDashboard] Prava Dashboard` eyebrow badge and pruned unused `LayoutDashboard` import.
+    - **Trips Page (`app/(app)/trips/page.tsx`)**: Removed the `[Compass] Prava Trips` eyebrow badge and pruned unused `Compass` import.
+- **Task 136 (Travel Essentials & Trips — Header Icon Removal & Title Typographical Harmonization)**:
+  - **Context & User Request**:
+    1. Remove the leading icon box (`ShieldAlert`) at the start of the Travel Essentials page header.
+    2. Harmonize the topic names and font sizes across pages (specifically Travel Essentials and Trips, e.g. "Prava Travel Essentials" and "Prava Trips") so font sizes and visual weights match consistently.
+  - **Solutions Implemented**:
+    - **Travel Essentials Header (`app/(app)/travel-essentials/travel-essentials-shell.tsx`)**:
+      - Removed the leading `<ShieldAlert className="h-4 w-4" />` icon container.
+      - Removed `ShieldAlert` from imports.
+      - Updated `<h1>` font size from `text-xl` to `text-xl sm:text-2xl font-bold tracking-tight text-foreground`, matching Prava Trips.
+    - **Trips Page Header (`app/(app)/trips/page.tsx`)**:
+      - Renamed the header topic title from "Trips Workspace" to "Prava Trips" to mirror "Prava Travel Essentials".
+      - Verified typography matches `text-xl sm:text-2xl font-bold tracking-tight text-foreground`.
+    - **Profile Editor (`features/profile/components/profile-editor.tsx`)**:
+      - Updated header font size and weight from `text-xl font-semibold` to `text-xl sm:text-2xl font-bold tracking-tight text-foreground` for consistent cross-app hierarchy.
+- **Task 137 (Explore Section UI Cleanup & Profile Full-Width Harmonization)**:
+  - **Context & User Request**:
+    1. Remove the blue icon box and uppercase text badges ("blue art text") across all pages in the Explore section (Forum, Stories, Templates, My Stories, Story Editor) and ensure font hierarchy is consistent (`text-xl sm:text-2xl font-bold tracking-tight text-foreground`).
+    2. Fix the narrowed container width in the Profile page compared to all other pages (Trips, Dashboard, Travel Essentials), making it full width.
+  - **Solutions Implemented**:
+    - **Explore Section Pages UI Cleanup**:
+      - **Forum (`features/community/components/community-forum-view.tsx`)**: Removed the `[MessageSquare] Traveler Discussions` eyebrow badge and normalized heading styling.
+      - **Stories Feed (`app/(app)/stories/page.tsx`)**: Removed the `[BookOpen] Travel Stories & Guides` eyebrow badge, normalized heading to `text-xl sm:text-2xl font-bold tracking-tight text-foreground`, and pruned unused `BookOpen` import.
+      - **Templates (`features/templates/components/templates-view.tsx`)**: Removed the `[LayoutTemplate] Trip Templates & Blueprints` eyebrow badge and pruned unused `LayoutTemplate` import.
+      - **My Stories (`features/blog/components/my-stories-list.tsx`)**: Removed the `[BookOpen] Story Studio` eyebrow badge.
+      - **Story Editor (`features/blog/components/blog-editor.tsx`)**: Removed the `[BookOpen] Travel Stories & Guides` eyebrow badge and pruned unused `BookOpen` import.
+    - **Profile & Account Full-Width Alignment**:
+      - **Profile Editor (`features/profile/components/profile-editor.tsx`)**: Removed `max-w-5xl mx-auto` and replaced with `w-full`, allowing the page to span the full container canvas up to `max-w-7xl`.
+      - **Profile Subsections (`overview-section.tsx`, `general-section.tsx`, `ai-usage-section.tsx`, `settings-section.tsx`)**: Removed restrictive `max-w-3xl` limits and applied `w-full` so all setting cards and configuration panels fill the canvas seamlessly.
+      - **Account Usage & Subscription Views (`usage-view.tsx`, `account-usage-view.tsx`)**: Removed `max-w-5xl` constraint and leading icon boxes, standardizing on `w-full` and `text-xl sm:text-2xl font-bold tracking-tight text-foreground`.
+- **Task 138 (Profile Personal Details — Unsaved Changes Guard & Button State)**:
+  - **Context & User Request**:
+    - In the Profile page (Personal Details / Overview section), clicking "Save Configurations" when nothing had changed repeatedly called the database. The button should only be enabled when there is an actual change in `fullName`, `bio`, or `isPublic`.
+  - **Solutions Implemented**:
+    - **Overview Section (`features/profile/components/overview-section.tsx`)**:
+      - Tied button disabled state to `disabled={isSaving || !hasUnsavedChanges}` with visual cursor cues (`cursor-not-allowed opacity-60` when disabled, `cursor-pointer` when active).
+      - Updated the status message to dynamically state `"All personal details are up to date."` when clean, and `"You have unsaved changes. Click Save Configurations to update."` when dirty.
+    - **Profile Editor (`features/profile/components/profile-editor.tsx`)**:
+      - Added an early return guard in `handleSaveProfile` that checks `hasUnsavedChanges` and displays `toast.info("No personal details changes to save.")` to prevent redundant network and DB calls.
+    - **General Section (`features/profile/components/general-section.tsx`)**:
+      - Added `hasTravelPrefChanges` check so "Save AI Travel Preferences" is also disabled when the textarea content matches the saved database state.
+- **Task 139 (AI Assistant & Travel Persona — Batch Save & Remove Immediate Toggle DB Calls)**:
+  - **Context & User Request**:
+    - In the Profile page under General Preferences -> "AI Assistant Features & Travel Persona", toggles for "Structured AI Proposal Cards" and "Offline Travel Cache" immediately executed independent database calls on every flip.
+    - User requested eliminating the immediate individual database calls on toggle flip, and instead tying the "Save AI Travel Preferences" button's enabled state to changes in any of the 3 persona settings (Structured AI proposals, Offline travel cache, or Travel style guidance), saving them together in a single batch mutation.
+  - **Solutions Implemented**:
+    - **General Section (`features/profile/components/general-section.tsx`)**:
+      - Updated `Structured AI Proposal Cards` `<Switch>` to invoke `setAiAutoPropose` without triggering `onUpdatePreference`.
+      - Updated `Offline Travel Cache` `<Switch>` to invoke `setOfflineMode` without triggering `onUpdatePreference`.
+      - Defined comprehensive `hasPersonaChanges` comparison checking `aiAutoPropose !== (profile.aiAutoPropose ?? true) || offlineMode !== (profile.offlineMode ?? false) || travelPreferences.trim() !== (profile.travelPreferences || "").trim()`.
+      - Updated the "Save AI Travel Preferences" button to be disabled unless `hasPersonaChanges` is true (`disabled={isSavingPreferences || !hasPersonaChanges}`).
+      - On save click, batch-submits `{ aiAutoPropose, offlineMode, travelPreferences }` in a single unified database action, and triggers offline synchronization if newly enabled.
+    - **Profile Editor (`features/profile/components/profile-editor.tsx`)**:
+      - Passed `setAiAutoPropose` and `setOfflineMode` setters to both desktop and mobile `<GeneralSection />` components.
+- **Task 140 (Profile General Preferences — Separate Transitions & Isolate Notification Toggling)**:
+  - **Context & User Request**:
+    - When flipping the "Trip Departure & Milestone Reminders" switch in Notifications & Alerts, the "Save AI Travel Preferences" button in the AI Assistant & Travel Persona card unexpectedly showed a spinner and was disabled.
+    - Reason: Both actions previously shared a single `isSavingPreferences` transition state and generic `handleUpdatePreference` function.
+  - **Solutions Implemented**:
+    - **Separated State Transitions in Profile Editor (`features/profile/components/profile-editor.tsx`)**:
+      - Created independent `isSavingAiPreferences` transition for the AI Travel Preferences batch save button.
+      - Created independent `isUpdatingNotification` boolean state and `handleUpdateNotification` handler specifically for the Departure & Milestone Reminders toggle.
+      - Created independent `isUpdatingCurrency` boolean state and `handleUpdateCurrency` handler specifically for the Region & Currency Select dropdown.
+    - **General Section Isolation (`features/profile/components/general-section.tsx`)**:
+      - Updated `GeneralSectionProps` to accept separate handlers and loading states (`onSaveAiPreferences`, `isSavingAiPreferences`, `onUpdateNotification`, `isUpdatingNotification`, `onUpdateCurrency`, `isUpdatingCurrency`).
+      - Tied Departure & Milestone Reminders toggle strictly to `isUpdatingNotification`, completely decoupling it from the AI Travel Preferences button.
+      - "Save AI Travel Preferences" button now remains completely unaffected during notification toggles.
+- **Task 141 (Profile Overview — Avatar Upload Optional Tip & Disambiguated Multi-Domain Stats)**:
+  - **Context & User Request**:
+    1. In the Profile Picture & Identity card, add an Idea / Tip callout informing the user that uploading an avatar picture is optional (or they can click to upload a custom image).
+    2. Replace the ambiguous "Published" statistic card with clear, explicit stats distinguishing between public trip templates, published travel stories, and community forum discussions, covering all domains in the project.
+  - **Solutions Implemented**:
+    - **Data Actions (`features/profile/actions.ts`)**:
+      - Updated `ProfileWithStats` interface to include `publishedStories: number` and `forumDiscussions: number`.
+      - In `getCurrentProfile`, added concurrent counts via `Promise.all` for published blog posts (`db.blogPost.count({ where: { profileId, status: "PUBLISHED" } })`) and forum discussions (`db.communityPost.count({ where: { profileId } })`).
+    - **Overview Section UI (`features/profile/components/overview-section.tsx`)**:
+      - Added an "Avatar Tip" callout with `Lightbulb` icon clarifying that avatar picture upload is optional and custom images (WebP, PNG, JPG) can be uploaded anytime.
+      - Replaced the 2-card stats block with a 4-card responsive grid:
+        1. `Total Trips`: Total trips created in workspace.
+        2. `Trip Templates`: Public itineraries published to the community templates library.
+        3. `Stories`: Published travel guides and creator stories.
+        4. `Discussions`: Discussion threads started in the Traveler Forum.
 
-
-
-
+- **Task 142 (Profile Overview — Remove Avatar Tip Callout & Add Mobile-Only Camera Edit Badge)**:
+  - **Context & User Request**:
+    - Remove the "Avatar Tip" warning/callout box from the Profile Picture & Identity card.
+    - Add a visible icon on the avatar image specifically for mobile view (`sm:hidden`) so mobile users can immediately recognize that the avatar is clickable and can be changed without relying on desktop hover.
+  - **Solutions Implemented**:
+    - **Overview Section (`features/profile/components/overview-section.tsx`)**:
+      - Removed the "Avatar Tip" warning container and pruned unused `Lightbulb` icon from `lucide-react` imports.
+      - Refined the live stats card container structure so it renders cleanly and responsively alongside user identity.
+    - **Avatar Upload Component (`components/storage/avatar-upload.tsx`)**:
+      - Added a mobile-only circular camera badge (`sm:hidden absolute bottom-0 right-0 rounded-full bg-primary text-primary-foreground`) with a `Camera` icon (or `Loader2` during upload) and `border-2 border-background shadow-xs`.
+      - On touch devices and screens `< 640px`, this badge is prominently visible at the bottom-right corner of the avatar circle, signaling clickability.
+      - On desktop viewports (`sm:` and larger), the badge is hidden, preserving the clean, sleek full-circle hover overlay.
+      - Reorganized imports following the strict 6-tier import hierarchy.

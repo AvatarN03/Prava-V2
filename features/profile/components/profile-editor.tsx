@@ -63,7 +63,9 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
 
   const [activeTab, setActiveTab] = useState<TabKey>(validInitialTab);
   const [isSaving, startSaving] = useTransition();
-  const [isSavingPreferences, startSavingPreferences] = useTransition();
+  const [isSavingAiPreferences, startSavingAiPreferences] = useTransition();
+  const [isUpdatingNotification, setIsUpdatingNotification] = useState(false);
+  const [isUpdatingCurrency, setIsUpdatingCurrency] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
@@ -90,6 +92,16 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   };
 
   const handleSaveProfile = () => {
+    const hasUnsavedChanges =
+      fullName.trim() !== (profile.fullName || "").trim() ||
+      bio.trim() !== (profile.bio || "").trim() ||
+      isPublic !== profile.isPublic;
+
+    if (!hasUnsavedChanges) {
+      toast.info("No personal details changes to save.");
+      return;
+    }
+
     startSaving(async () => {
       const res = await updateProfile({
         fullName: fullName.trim() || null,
@@ -114,51 +126,94 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     });
   };
 
-  const handleUpdatePreference = (
-    partial: Partial<{
-      defaultCurrency: string;
-      aiAutoPropose: boolean;
-      emailNotifications: boolean;
-      offlineMode: boolean;
-      travelPreferences: string;
-    }>,
-    successMessage?: string
-  ) => {
-    const newCurrency = partial.defaultCurrency ?? defaultCurrency;
-    const newAiAutoPropose = partial.aiAutoPropose ?? aiAutoPropose;
-    const newEmailNotifications = partial.emailNotifications ?? emailNotifications;
-    const newOfflineMode = partial.offlineMode ?? offlineMode;
-    const newTravelPreferences = partial.travelPreferences ?? travelPreferences;
-
-    if (partial.defaultCurrency !== undefined) setDefaultCurrency(partial.defaultCurrency);
-    if (partial.aiAutoPropose !== undefined) setAiAutoPropose(partial.aiAutoPropose);
-    if (partial.emailNotifications !== undefined) setEmailNotifications(partial.emailNotifications);
-    if (partial.offlineMode !== undefined) setOfflineMode(partial.offlineMode);
-    if (partial.travelPreferences !== undefined) setTravelPreferences(partial.travelPreferences);
-
-    startSavingPreferences(async () => {
+  const handleUpdateCurrency = async (newCurrency: string) => {
+    setDefaultCurrency(newCurrency);
+    setIsUpdatingCurrency(true);
+    try {
       const res = await updateGeneralPreferences({
         defaultCurrency: newCurrency,
-        aiAutoPropose: newAiAutoPropose,
-        emailNotifications: newEmailNotifications,
-        offlineMode: newOfflineMode,
-        travelPreferences: newTravelPreferences.trim() || null,
+        aiAutoPropose,
+        offlineMode,
+        travelPreferences: travelPreferences.trim() || null,
+        emailNotifications,
       });
 
       if (res.success && res.profile) {
         setProfile((prev) => ({
           ...prev,
           defaultCurrency: (res.profile as unknown as { defaultCurrency?: string }).defaultCurrency || newCurrency,
-          aiAutoPropose: (res.profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? newAiAutoPropose,
-          emailNotifications: (res.profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? newEmailNotifications,
-          offlineMode: (res.profile as unknown as { offlineMode?: boolean }).offlineMode ?? newOfflineMode,
-          travelPreferences: (res.profile as unknown as { travelPreferences?: string | null }).travelPreferences || newTravelPreferences,
         }));
-        toast.success(successMessage || "Preference updated in database.");
+        toast.success(`Default currency updated to ${newCurrency}.`);
       } else {
-        toast.error(res.error || "Failed to save preference.");
+        toast.error(res.error || "Failed to update default currency.");
+      }
+    } catch {
+      toast.error("Failed to update default currency.");
+    } finally {
+      setIsUpdatingCurrency(false);
+    }
+  };
+
+  const handleSaveAiPreferences = (aiData: {
+    aiAutoPropose: boolean;
+    offlineMode: boolean;
+    travelPreferences: string;
+  }) => {
+    startSavingAiPreferences(async () => {
+      const res = await updateGeneralPreferences({
+        defaultCurrency,
+        emailNotifications,
+        aiAutoPropose: aiData.aiAutoPropose,
+        offlineMode: aiData.offlineMode,
+        travelPreferences: aiData.travelPreferences.trim() || null,
+      });
+
+      if (res.success && res.profile) {
+        setProfile((prev) => ({
+          ...prev,
+          aiAutoPropose: (res.profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? aiData.aiAutoPropose,
+          offlineMode: (res.profile as unknown as { offlineMode?: boolean }).offlineMode ?? aiData.offlineMode,
+          travelPreferences: (res.profile as unknown as { travelPreferences?: string | null }).travelPreferences || aiData.travelPreferences,
+        }));
+        toast.success("AI assistant preferences & offline settings saved to database.");
+      } else {
+        toast.error(res.error || "Failed to save AI preferences.");
       }
     });
+  };
+
+  const handleUpdateNotification = async (checked: boolean) => {
+    setEmailNotifications(checked);
+    setIsUpdatingNotification(true);
+    try {
+      const res = await updateGeneralPreferences({
+        defaultCurrency,
+        aiAutoPropose,
+        offlineMode,
+        travelPreferences: travelPreferences.trim() || null,
+        emailNotifications: checked,
+      });
+
+      if (res.success && res.profile) {
+        setProfile((prev) => ({
+          ...prev,
+          emailNotifications: (res.profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? checked,
+        }));
+        toast.success(
+          checked
+            ? "Trip departure reminders enabled in database."
+            : "Trip departure reminders disabled in database."
+        );
+      } else {
+        toast.error(res.error || "Failed to update reminder settings.");
+        setEmailNotifications(!checked);
+      }
+    } catch {
+      toast.error("Failed to update reminder settings.");
+      setEmailNotifications(!checked);
+    } finally {
+      setIsUpdatingNotification(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -179,20 +234,12 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   const publicProfileUrl = profile.username ? `/u/${profile.username}` : null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto w-full pb-16">
+    <div className="space-y-6 w-full pb-16">
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-primary">
-              <User className="h-3.5 w-3.5" />
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Account & Profile
-            </span>
-          </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Profile & Settings
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            Account & Settings
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Manage your personal traveler identity, regional defaults, travel preferences, and session security.
@@ -283,13 +330,19 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
             <GeneralSection
               profile={profile}
               defaultCurrency={defaultCurrency}
+              onUpdateCurrency={handleUpdateCurrency}
+              isUpdatingCurrency={isUpdatingCurrency}
               aiAutoPropose={aiAutoPropose}
-              emailNotifications={emailNotifications}
+              setAiAutoPropose={setAiAutoPropose}
               offlineMode={offlineMode}
+              setOfflineMode={setOfflineMode}
               travelPreferences={travelPreferences}
               setTravelPreferences={setTravelPreferences}
-              onUpdatePreference={handleUpdatePreference}
-              isSavingPreferences={isSavingPreferences}
+              onSaveAiPreferences={handleSaveAiPreferences}
+              isSavingAiPreferences={isSavingAiPreferences}
+              emailNotifications={emailNotifications}
+              onUpdateNotification={handleUpdateNotification}
+              isUpdatingNotification={isUpdatingNotification}
             />
           )}
 
@@ -344,13 +397,19 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           <GeneralSection
             profile={profile}
             defaultCurrency={defaultCurrency}
+            onUpdateCurrency={handleUpdateCurrency}
+            isUpdatingCurrency={isUpdatingCurrency}
             aiAutoPropose={aiAutoPropose}
-            emailNotifications={emailNotifications}
+            setAiAutoPropose={setAiAutoPropose}
             offlineMode={offlineMode}
+            setOfflineMode={setOfflineMode}
             travelPreferences={travelPreferences}
             setTravelPreferences={setTravelPreferences}
-            onUpdatePreference={handleUpdatePreference}
-            isSavingPreferences={isSavingPreferences}
+            onSaveAiPreferences={handleSaveAiPreferences}
+            isSavingAiPreferences={isSavingAiPreferences}
+            emailNotifications={emailNotifications}
+            onUpdateNotification={handleUpdateNotification}
+            isUpdatingNotification={isUpdatingNotification}
           />
         </div>
 

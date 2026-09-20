@@ -16,7 +16,7 @@ export function AiUsageSection({ profile }: AiUsageSectionProps) {
   const aiPct = Math.min(100, Math.round((profile.aiCreditsUsed / profile.aiCreditsQuota) * 100));
 
   return (
-    <div className="flex flex-col space-y-4 w-full max-w-3xl">
+    <div className="flex flex-col space-y-4 w-full">
       {/* 1. Subscription Tier Status Banner */}
       <Card className="rounded-sm border border-border bg-card p-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

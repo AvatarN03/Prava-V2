@@ -46,15 +46,12 @@ export function UsageView({ initialUsage }: UsageViewProps) {
   }, []);
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto w-full pb-16">
+    <div className="space-y-8 w-full pb-16">
       {/* ── Top Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-[#2D9BF0] dark:bg-sky-950 dark:text-sky-400">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               AI & Workspace Usage
             </h1>
             <Badge

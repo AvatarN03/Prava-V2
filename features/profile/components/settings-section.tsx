@@ -24,7 +24,7 @@ export function SettingsSection({
   isSigningOut,
 }: SettingsSectionProps) {
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 w-full">
       {/* 1. Account Security & Verification */}
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">

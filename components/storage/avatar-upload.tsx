@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { uploadImageAction, updateProfileAvatar } from "@/features/storage/actions";
-import { resizeImageToBlob } from "@/lib/utils/image-resize";
+
 import { Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+import { uploadImageAction, updateProfileAvatar } from "@/features/storage/actions";
+import { resizeImageToBlob } from "@/lib/utils/image-resize";
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -31,45 +33,57 @@ export function AvatarUpload({
         : "h-14 w-14 text-base";
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    const originalFile = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setIsUploading(true);
+    // Validate size (max 5MB raw)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be under 5MB");
+      return;
+    }
 
     try {
-      // Resize 4K or high-res images to moderate resolution (512x512 square crop)
-      const optimizedFile = await resizeImageToBlob(originalFile, {
+      setIsUploading(true);
+
+      // Client-side downscale avatar to 512x512 square crop WebP/JPEG
+      const resizedBlob = await resizeImageToBlob(file, {
         maxWidth: 512,
         maxHeight: 512,
-        quality: 0.82,
+        quality: 0.85,
         format: "image/webp",
-        squareCrop: true,
       });
 
       const formData = new FormData();
-      formData.append("file", optimizedFile);
+      formData.append("file", resizedBlob, "avatar.webp");
       formData.append("folder", "avatars");
 
-      const uploadRes = await uploadImageAction(formData);
+      const res = await uploadImageAction(formData);
 
-      if (uploadRes.success && uploadRes.url) {
-        setAvatarUrl(uploadRes.url);
-        await updateProfileAvatar(uploadRes.url);
+      if (res.success && res.url) {
+        setAvatarUrl(res.url);
         if (onAvatarUpdated) {
-          onAvatarUpdated(uploadRes.url);
+          onAvatarUpdated(res.url);
         }
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("prava-profile-updated"));
+
+        // Auto-save to profile
+        const updateRes = await updateProfileAvatar(res.url);
+        if (updateRes.success) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("prava-profile-updated"));
+          }
+          toast.success("Profile photo updated");
+        } else {
+          toast.error("Failed to sync photo with profile record");
         }
-        toast.success("Profile photo updated successfully!");
       } else {
-        toast.error(uploadRes.error || "Failed to upload avatar image.");
+        toast.error(res.error || "Failed to upload image");
       }
-    } catch (error) {
-      console.error("Avatar upload failed:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to process image.");
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error("Error processing image file");
     } finally {
       setIsUploading(false);
+      // Reset input value so same file can be picked again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -113,10 +127,11 @@ export function AvatarUpload({
           <span>{getInitials(name)}</span>
         )}
 
-        {/* Hover Camera Overlay / Uploading Spinner */}
+        {/* Hover Camera Overlay / Uploading Spinner (Desktop) */}
         <div
-          className={`absolute inset-0 bg-black/40 flex items-center justify-center text-white transition-opacity ${isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            }`}
+          className={`absolute inset-0 bg-black/40 flex items-center justify-center text-white transition-opacity ${
+            isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
         >
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -125,7 +140,26 @@ export function AvatarUpload({
           )}
         </div>
       </div>
+
+      {/* Mobile-only Camera Edit Badge: visible only on small screens without needing hover */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!isUploading) fileInputRef.current?.click();
+        }}
+        disabled={isUploading}
+        aria-label="Change profile photo"
+        className={`sm:hidden absolute bottom-0 right-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center border-2 border-background shadow-xs cursor-pointer active:scale-95 transition-transform ${
+          size === "sm" ? "h-4.5 w-4.5" : "h-6 w-6"
+        }`}
+      >
+        {isUploading ? (
+          <Loader2 className={size === "sm" ? "h-2 w-2 animate-spin" : "h-2.5 w-2.5 animate-spin"} />
+        ) : (
+          <Camera className={size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3"} />
+        )}
+      </button>
     </div>
   );
 }
-

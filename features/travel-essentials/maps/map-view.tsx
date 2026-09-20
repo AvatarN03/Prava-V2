@@ -62,16 +62,12 @@ const MapInner = dynamic(() => import("./map-inner"), {
   ),
 });
 
-// Top Indian travel destinations & metropolitan hubs
+// Top core travel destinations & metropolitan hubs (minimal quick pins)
 const POPULAR_DESTINATIONS = [
   { name: "Mumbai, Maharashtra", coords: [19.0760, 72.8777] as [number, number] },
   { name: "New Delhi, NCR", coords: [28.6139, 77.2090] as [number, number] },
   { name: "Bengaluru, Karnataka", coords: [12.9716, 77.5946] as [number, number] },
   { name: "Goa (Panaji)", coords: [15.4909, 73.8278] as [number, number] },
-  { name: "Jaipur, Rajasthan", coords: [26.9124, 75.7873] as [number, number] },
-  { name: "Kochi, Kerala", coords: [9.9312, 76.2673] as [number, number] },
-  { name: "Manali, HP", coords: [32.2432, 77.1892] as [number, number] },
-  { name: "Varanasi, UP", coords: [25.3176, 82.9739] as [number, number] },
 ];
 
 const CATEGORY_TABS: {
@@ -80,13 +76,13 @@ const CATEGORY_TABS: {
   icon: React.ElementType;
   color: string;
 }[] = [
-  { id: "all", label: "All Essentials", icon: Sparkles, color: "text-primary" },
-  { id: "hotel", label: "Hotels & Stays", icon: Hotel, color: "text-indigo-500" },
-  { id: "pharmacy", label: "Hospitals & Medical", icon: Pill, color: "text-rose-500" },
-  { id: "transit", label: "Transit & Metro", icon: Train, color: "text-sky-500" },
-  { id: "atm", label: "ATMs & Cash", icon: DollarSign, color: "text-amber-500" },
-  { id: "supermarket", label: "General Stores", icon: ShoppingCart, color: "text-emerald-500" },
-];
+    { id: "all", label: "All Essentials", icon: Sparkles, color: "text-primary" },
+    { id: "hotel", label: "Hotels & Stays", icon: Hotel, color: "text-indigo-500" },
+    { id: "pharmacy", label: "Hospitals & Medical", icon: Pill, color: "text-rose-500" },
+    { id: "transit", label: "Transit & Metro", icon: Train, color: "text-sky-500" },
+    { id: "atm", label: "ATMs & Cash", icon: DollarSign, color: "text-amber-500" },
+    { id: "supermarket", label: "General Stores", icon: ShoppingCart, color: "text-emerald-500" },
+  ];
 
 export function MapView() {
   // Oriented to India (Mumbai as default center)
@@ -332,50 +328,29 @@ export function MapView() {
     <div className="space-y-6">
       {/* Header & Controls Strip */}
       <div className="flex flex-col gap-3 pb-2 border-b border-border/80">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                <Map className="w-4 h-4 text-sky-500" />
-                Interactive Travel Maps & Local Essentials
-              </h2>
-              <Badge variant="secondary" className="text-[10px] font-mono px-2 py-0">
-                OpenStreetMap Feed
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Explore destinations, pinpoint device GPS, and locate verified hotels, hospitals, metro stations, and ATMs.
-            </p>
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <Map className="w-4 h-4 text-sky-500" />
+              Interactive Travel Maps & Local Essentials (Beta Mode)
+            </h2>
+            <Badge variant="secondary" className="text-[10px] font-mono px-2 py-0">
+              OpenStreetMap Feed
+            </Badge>
           </div>
-
-          {/* Device Geolocation Locate Button */}
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <Button
-              variant={isUserDeviceLocation ? "default" : "outline"}
-              size="sm"
-              className="h-8 text-xs font-semibold gap-1.5 cursor-pointer shadow-xs"
-              onClick={handleLocateMe}
-              disabled={isLocating}
-              title="Request device GPS location"
-            >
-              {isLocating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-              ) : (
-                <Crosshair className={`w-3.5 h-3.5 ${isUserDeviceLocation ? "text-primary-foreground" : "text-sky-500"}`} />
-              )}
-              <span>{isLocating ? "Detecting GPS..." : isUserDeviceLocation ? "My GPS Active" : "Locate Me"}</span>
-            </Button>
-          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Explore destinations, pinpoint device GPS, and locate verified hotels, hospitals, metro stations, and ATMs.
+          </p>
         </div>
 
-        {/* Search Bar with Autocomplete Suggestions */}
+        {/* Search Bar with Autocomplete Suggestions & Locate Me Button */}
         <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center">
-          <div ref={searchContainerRef} className="relative flex-1 max-w-md">
+          <div ref={searchContainerRef} className="relative flex-1 max-w-lg">
             <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search destination (e.g. Mumbai, Bandra, Goa, Jaipur)..."
+                  placeholder="Search destination (e.g. Mumbai, Goa)..."
                   className="pl-8 pr-8 h-9 text-xs bg-background"
                   value={searchQuery}
                   onChange={(e) => {
@@ -397,8 +372,25 @@ export function MapView() {
                   <Loader2 className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-primary animate-spin" />
                 )}
               </div>
-              <Button type="submit" size="sm" className="h-9 px-3.5 text-xs cursor-pointer" disabled={isSuggesting}>
+              <Button type="submit" size="sm" className="h-9 px-3 text-xs cursor-pointer shrink-0" disabled={isSuggesting}>
                 {isSuggesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search"}
+              </Button>
+              {/* Locate Me option button positioned after Search button */}
+              <Button
+                type="button"
+                variant={isUserDeviceLocation ? "default" : "outline"}
+                size="sm"
+                className="h-9 px-3 text-xs font-semibold gap-1.5 cursor-pointer shadow-xs shrink-0"
+                onClick={handleLocateMe}
+                disabled={isLocating}
+                title="Request device GPS location"
+              >
+                {isLocating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                ) : (
+                  <Crosshair className={`w-3.5 h-3.5 ${isUserDeviceLocation ? "text-primary-foreground" : "text-sky-500"}`} />
+                )}
+                <span>{isLocating ? "Locating..." : isUserDeviceLocation ? "GPS Active" : "Locate Me"}</span>
               </Button>
             </form>
 
@@ -451,11 +443,10 @@ export function MapView() {
                 key={dest.name}
                 type="button"
                 onClick={() => handleSelectLocation(dest.name, dest.coords)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all whitespace-nowrap cursor-pointer border ${
-                  locationName.toLowerCase().includes(dest.name.split(",")[0].toLowerCase())
+                className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all whitespace-nowrap cursor-pointer border ${locationName.toLowerCase().includes(dest.name.split(",")[0].toLowerCase())
                     ? "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400 font-semibold"
                     : "bg-muted/50 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
+                  }`}
               >
                 {dest.name.split(",")[0]}
               </button>
@@ -623,11 +614,10 @@ export function MapView() {
                       key={tab.id}
                       type="button"
                       onClick={() => handleCategorySelect(tab.id)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 border select-none ${
-                        isCurrent
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 border select-none ${isCurrent
                           ? "bg-primary text-primary-foreground border-primary font-semibold shadow-xs"
                           : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted"
-                      }`}
+                        }`}
                     >
                       <Icon className={`w-3 h-3 ${isCurrent ? "text-primary-foreground" : tab.color}`} />
                       <span>{tab.label.split(" ")[0]}</span>
@@ -663,11 +653,10 @@ export function MapView() {
                       <div
                         key={poi.id}
                         onClick={() => setSelectedPoi(poi)}
-                        className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${
-                          isSelected
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between space-y-1.5 ${isSelected
                             ? "border-sky-500 bg-sky-500/5 shadow-xs ring-1 ring-sky-500/30"
                             : "border-border/70 bg-card hover:bg-muted/40 hover:border-border"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">

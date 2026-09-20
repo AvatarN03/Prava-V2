@@ -4,7 +4,6 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  CreditCard,
   Sparkles,
   Zap,
   CheckCircle2,
@@ -164,18 +163,13 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
   const activeCurrencyCode = pricing ? pricing.currencyCode : "INR";
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto w-full pb-16">
+    <div className="space-y-8 w-full pb-16">
       {/* ── Top Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-sky-100 text-[#2D9BF0] dark:bg-sky-950 dark:text-sky-400">
-              <CreditCard className="h-4 w-4" />
-            </span>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              Subscription & Plans
-            </h1>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            Subscription & Plans
+          </h1>
           <p className="text-xs text-muted-foreground mt-1">
             Manage your workspace membership tier, compare plan privileges, and upgrade via Polar Checkout.
           </p>

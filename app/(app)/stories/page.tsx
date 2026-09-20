@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { BookOpen, Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAllPublishedStories } from "@/features/blog/actions";
-import { StoryCard } from "@/features/blog/components/story-card";
 
 export const metadata = {
   title: "Travel Stories & Guides",
@@ -20,19 +18,11 @@ export default async function StoriesPage() {
     <div className="space-y-8 pb-12">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary/10 text-primary">
-              <BookOpen className="h-3.5 w-3.5" />
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Travel Stories & Guides
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             Explore Creator Narratives
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-xl">
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mt-0.5">
             Real itineraries, cultural insights, hidden spots, and actionable travel stories from the Prava community.
           </p>
         </div>
