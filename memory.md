@@ -1324,6 +1324,19 @@
   - Permanently deleted `scratch_test.mjs` from the repository root.
   - Verified with recursive file scans that no unused test, scratch, or temporary files remain in the workspace.
 
+- **Task 109 (Trip Dialog Mobile Responsiveness & Visible Scrollbar Polish)**:
+  - **Mobile Margin & Screen Ticking Fix (`components/ui/dialog.tsx`)**:
+    - Replaced `w-full` with `w-[calc(100vw-2rem)] sm:w-full max-w-lg` and added `rounded-xl sm:rounded-md` on `DialogContent` so dialogs maintain clean 1rem (16px) margins on mobile instead of touching edge-to-edge.
+    - Added `z-20` to `DialogPrimitive.Close` to ensure close button stays above header backgrounds.
+  - **Viewport Height Capping & Pinned Header/Footer Layout (`features/trips/components/create-trip-dialog.tsx` & `edit-trip-dialog.tsx`)**:
+    - Constrained dialog height to `h-[75vh] max-h-[75vh] sm:h-auto sm:max-h-[80vh]` with `flex flex-col p-0 gap-0 overflow-hidden shadow-2xl`.
+    - Structured dialog into:
+      - Fixed `DialogHeader` with `pr-12` to prevent close icon collision.
+      - Scrollable body (`flex-1 min-h-0 overflow-y-auto comfortable-scrollbar`).
+      - Pinned `DialogFooter` with `Cancel` and `Create Trip`/`Save Changes` buttons always accessible.
+  - **Custom Visible Scrollbar (`app/globals.css`)**:
+    - Added `.comfortable-scrollbar` utility with `scrollbar-width: auto;`, 8px width, subtle rounded track (`rgba(148, 163, 184, 0.12)`), Prava Cerulean blue thumb (`rgba(45, 155, 240, 0.65)`), touch support, and `overscroll-behavior: contain`.
+
 ## Status: All user issues resolved & verified
 - UI test buttons removed from `/subscription`.
 - Pro Active & Manage Subscription preserved.
@@ -1331,4 +1344,6 @@
 - Database deduplication & clean slate executed.
 - Avatar 15-minute reversion bug fixed.
 - Workspace header username hidden on mobile viewports.
+- Create Trip & Edit Trip dialogs mobile-responsive, capped to 75vh, with comfortable visible scrollbar.
 - All temporary files cleaned up.
+

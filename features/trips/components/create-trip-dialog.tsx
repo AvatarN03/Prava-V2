@@ -35,7 +35,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
 
@@ -232,37 +231,38 @@ export function CreateTripDialog({
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto p-6 gap-5">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <DialogHeader className="space-y-1.5 text-left">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-[560px] h-[75vh] max-h-[75vh] sm:h-auto sm:max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-border/80">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <DialogHeader className="p-4 sm:p-6 pb-3 sm:pb-4 pr-12 border-b border-border/60 shrink-0 text-left bg-card">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-[#2D9BF0]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-[#2D9BF0] shrink-0">
                 <Compass className="h-4.5 w-4.5" />
               </div>
-              <DialogTitle className="text-xl font-bold tracking-tight">Create New Trip</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight">Create New Trip</DialogTitle>
             </div>
             <DialogDescription className="text-xs text-muted-foreground">
               Plan an itinerary, organize stays, and coordinate travel with AI-assisted proposals.
             </DialogDescription>
           </DialogHeader>
 
-          {error && (
-            <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs space-y-1.5">
-              <p className="text-destructive font-medium">{error}</p>
-              {error.includes("limit reached") && (
-                <div className="pt-0.5">
-                  <a
-                    href="/subscription"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#2D9BF0] hover:underline"
-                  >
-                    View Pro Wanderer Plans &rarr;
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4 comfortable-scrollbar">
+            {error && (
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs space-y-1.5">
+                <p className="text-destructive font-medium">{error}</p>
+                {error.includes("limit reached") && (
+                  <div className="pt-0.5">
+                    <a
+                      href="/subscription"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#2D9BF0] hover:underline"
+                    >
+                      View Pro Wanderer Plans &rarr;
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
 
-          <div className="space-y-4">
+            <div className="space-y-4">
             {/* Title */}
             <div className="space-y-1.5">
               <Label htmlFor="title" className="text-xs font-semibold text-slate-800">
@@ -502,30 +502,31 @@ export function CreateTripDialog({
               </div>
             )}
           </div>
+        </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsOpen(false)}
-              disabled={isPending}
-              className="cursor-pointer"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isPending}
-              className="bg-[#2D9BF0] hover:bg-[#1279CE] text-white shadow-xs cursor-pointer"
-            >
-              {isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-              Create Trip
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
+        <DialogFooter className="p-3 sm:p-4 sm:px-6 border-t border-border/60 shrink-0 bg-muted/15 sm:bg-card flex flex-row items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsOpen(false)}
+            disabled={isPending}
+            className="cursor-pointer"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending}
+            className="bg-[#2D9BF0] hover:bg-[#1279CE] text-white shadow-xs cursor-pointer"
+          >
+            {isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+            Create Trip
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
     </Dialog>
   );
 }

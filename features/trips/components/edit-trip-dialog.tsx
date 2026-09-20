@@ -180,22 +180,23 @@ export function EditTripDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto p-6 gap-5">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <DialogHeader className="text-left">
-            <DialogTitle className="text-lg font-bold tracking-tight">Edit Trip Details</DialogTitle>
+      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-[560px] h-[75vh] max-h-[75vh] sm:h-auto sm:max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-border/80">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <DialogHeader className="p-4 sm:p-6 pb-3 sm:pb-4 pr-12 border-b border-border/60 shrink-0 text-left bg-card">
+            <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight">Edit Trip Details</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               Update destination, scheduled dates, cover photo, and workspace settings.
             </DialogDescription>
           </DialogHeader>
 
-          {error && (
-            <div className="rounded-sm bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive">
-              {error}
-            </div>
-          )}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4 comfortable-scrollbar">
+            {error && (
+              <div className="rounded-sm bg-destructive/10 border border-destructive/20 p-2.5 text-xs text-destructive">
+                {error}
+              </div>
+            )}
 
-          <div className="space-y-3.5">
+            <div className="space-y-3.5">
             {/* Title */}
             <div className="space-y-1">
               <Label htmlFor="edit-title" className="text-xs font-medium">Trip Title *</Label>
@@ -432,24 +433,31 @@ export function EditTripDialog({
               />
             </div>
           </div>
+        </div>
 
-          <DialogFooter className="pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" disabled={isPending}>
-              {isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
+        <DialogFooter className="p-3 sm:p-4 sm:px-6 border-t border-border/60 shrink-0 bg-muted/15 sm:bg-card flex flex-row items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+            className="cursor-pointer"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending}
+            className="bg-[#2D9BF0] hover:bg-[#1279CE] text-white shadow-xs cursor-pointer"
+          >
+            {isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
     </Dialog>
   );
 }
