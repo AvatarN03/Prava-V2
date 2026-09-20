@@ -1307,19 +1307,28 @@
       - Implemented dual lookup: attempts session creation via `customerId`, falling back to `externalCustomerId` (`user.id`).
       - Implemented resilient fallback: if Polar API returns 403 `insufficient_scope` or session cannot be minted, seamlessly redirects the user to Polar's hosted Customer Portal (`https://sandbox.polar.sh/portal` or `https://polar.sh/portal`) where they can authenticate and manage their subscription with zero friction.
 
-## Next Steps
-- Advise user to grant `customer_sessions:write` scope to `POLAR_ACCESS_TOKEN` in Polar dashboard if 1-click customer session authentication is desired.
+- **Task 107 (Avatar Persistence Bugfix, Mobile TopBar Polish & Polar Portal 404 Resolution)**:
+  - **Avatar Persistence Bugfix (Resolved 10-15 Min Reversion)**:
+    - Root cause: Supabase JWT tokens refresh approximately every 15 minutes. On token refresh, `syncUserProfile(user)` ran and evaluated `avatarUrl = user.user_metadata?.avatar_url ?? ...`. Because line 34 used `avatarUrl: avatarUrl ?? existingById.avatarUrl`, the old Google profile photo / initial metadata overwrote the custom uploaded avatar in PostgreSQL.
+    - Fixed in `lib/auth/sync-profile.ts`: Set `avatarUrl: existingById.avatarUrl || avatarUrl` to ensure a user's uploaded avatar in the database is strictly preserved and never overwritten by auth provider metadata.
+    - Updated `updateProfileAvatar` (`features/storage/actions.ts`) and `updateProfile` (`features/profile/actions.ts`) to synchronously update `supabase.auth.updateUser({ data: { avatar_url, picture } })` so Supabase Auth session metadata remains in 1:1 parity with the database.
+    - In `syncUserProfile` orphaned email migration, added missing relinking for `Subscription`, `CommunityPost`, `CommunityReply`, `CommunityPostUpvote`, and `CommunitySavedPost`.
+  - **Mobile Header Responsiveness**:
+    - Updated `components/app-shell/top-bar.tsx` line 282: Added `hidden sm:inline` to the username/display name text next to the avatar. On mobile viewports, only the sleek circular avatar is rendered, freeing up valuable top bar real estate.
+  - **Polar Customer Portal 404 Resolution**:
+    - Identified that Polar does not serve a generic `/portal` route. The customer portal URL must either be an authenticated session URL (`customerPortalUrl` from `polar.customerSessions.create`), or scoped to the organization slug (`https://polar.sh/<org-slug>/portal`).
+    - In `createPolarCustomerPortalSession` (`features/pricing/actions.ts`), updated fallback logic to resolve `POLAR_ORGANIZATION_SLUG` (or query it via `polar.organizations.listOrganizations`). If the token lacks `customer_sessions:write` and no org slug is known, returns a clean informative error message instead of routing the user to a 404 page.
 
+- **Task 108 (Scratch Files & Dev Route Clean-up)**:
+  - Completely removed temporary endpoint `app/api/dev/reset-database` and the entire `app/api/dev` directory.
+  - Permanently deleted `scratch_test.mjs` from the repository root.
+  - Verified with recursive file scans that no unused test, scratch, or temporary files remain in the workspace.
 
-
-
-
-
-
-
-
-
-
-
-
-
+## Status: All user issues resolved & verified
+- UI test buttons removed from `/subscription`.
+- Pro Active & Manage Subscription preserved.
+- Polar customer portal 404 & 403 gracefully handled.
+- Database deduplication & clean slate executed.
+- Avatar 15-minute reversion bug fixed.
+- Workspace header username hidden on mobile viewports.
+- All temporary files cleaned up.

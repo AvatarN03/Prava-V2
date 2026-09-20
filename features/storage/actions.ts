@@ -131,6 +131,17 @@ export async function updateProfileAvatar(avatarUrl: string | null) {
       data: { avatarUrl },
     });
 
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          avatar_url: avatarUrl,
+          picture: avatarUrl,
+        },
+      });
+    } catch (authMetaErr) {
+      console.warn("Could not sync auth metadata for avatar:", authMetaErr);
+    }
+
     revalidatePath(`/profile`);
     revalidatePath(`/dashboard`);
     revalidatePath(`/community`);

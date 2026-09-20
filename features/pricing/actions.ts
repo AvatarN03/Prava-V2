@@ -562,21 +562,57 @@ export async function createPolarCustomerPortalSession(): Promise<{
       };
     }
 
-    // Graceful Fallback: Hosted Polar Customer Portal
-    // Allows user to log in via email without blocking on token scope permissions
-    console.info(
-      `[Polar Customer Portal] Redirecting user ${user.email} to hosted Polar portal (${fallbackHostedPortalUrl}).`
-    );
+    // Try resolving organization slug for hosted portal fallback
+    let orgSlug =
+      process.env.POLAR_ORGANIZATION_SLUG ||
+      process.env.NEXT_PUBLIC_POLAR_ORGANIZATION_SLUG;
+
+    if (!orgSlug) {
+      try {
+        const polar = getPolarClient();
+        const orgs = await polar.organizations.listOrganizations({});
+        for await (const page of orgs) {
+          const item = page.result?.items?.[0];
+          if (item && "slug" in item && typeof item.slug === "string") {
+            orgSlug = item.slug;
+            break;
+          }
+        }
+      } catch (orgErr) {
+        console.warn("[Polar Customer Portal] Could not resolve organization slug:", orgErr);
+      }
+    }
+
+    if (orgSlug) {
+      const orgPortalUrl = `https://${isSandbox ? "sandbox.polar.sh" : "polar.sh"}/${orgSlug}/portal`;
+      return {
+        success: true,
+        portalUrl: orgPortalUrl,
+      };
+    }
+
+    // If session failed due to insufficient_scope and no org slug is known, inform user cleanly
+    if (scopeErrorOccurred) {
+      return {
+        success: false,
+        error:
+          "Polar Access Token requires 'customer_sessions:write' permission in Polar Dashboard -> Settings -> Access Tokens to open the customer billing portal.",
+      };
+    }
+
     return {
-      success: true,
-      portalUrl: fallbackHostedPortalUrl,
+      success: false,
+      error:
+        "Unable to generate customer portal session. Please ensure your Polar subscription is active and POLAR_ACCESS_TOKEN has customer_sessions:write scope.",
     };
   } catch (err: unknown) {
     console.error("Error creating customer portal session:", err);
-    const isSandbox = (process.env.POLAR_SERVER || "sandbox") === "sandbox";
     return {
-      success: true,
-      portalUrl: isSandbox ? "https://sandbox.polar.sh/portal" : "https://polar.sh/portal",
+      success: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to open billing portal. Please check your Polar access token scopes.",
     };
   }
 }

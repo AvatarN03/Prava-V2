@@ -31,7 +31,8 @@ export async function syncUserProfile(user: User) {
       data: {
         email: email || existingById.email,
         fullName: fullName ?? existingById.fullName,
-        avatarUrl: avatarUrl ?? existingById.avatarUrl,
+        // Always preserve custom uploaded avatar from the database
+        avatarUrl: existingById.avatarUrl || avatarUrl,
         username,
       },
     });
@@ -61,7 +62,8 @@ export async function syncUserProfile(user: User) {
           id: user.id,
           email: email,
           fullName: fullName ?? existingByEmail.fullName,
-          avatarUrl: avatarUrl ?? existingByEmail.avatarUrl,
+          // Always preserve custom uploaded avatar from previous profile
+          avatarUrl: existingByEmail.avatarUrl || avatarUrl,
           username: initialUsername,
           bio: existingByEmail.bio,
           isPublic: existingByEmail.isPublic,
@@ -74,12 +76,37 @@ export async function syncUserProfile(user: User) {
         data: { profileId: user.id },
       });
 
+      await db.subscription.updateMany({
+        where: { userId: existingByEmail.id },
+        data: { userId: user.id },
+      });
+
       await db.aiConversation.updateMany({
         where: { profileId: existingByEmail.id },
         data: { profileId: user.id },
       });
 
       await db.blogPost.updateMany({
+        where: { profileId: existingByEmail.id },
+        data: { profileId: user.id },
+      });
+
+      await db.communityPost.updateMany({
+        where: { profileId: existingByEmail.id },
+        data: { profileId: user.id },
+      });
+
+      await db.communityReply.updateMany({
+        where: { profileId: existingByEmail.id },
+        data: { profileId: user.id },
+      });
+
+      await db.communityPostUpvote.updateMany({
+        where: { profileId: existingByEmail.id },
+        data: { profileId: user.id },
+      });
+
+      await db.communitySavedPost.updateMany({
         where: { profileId: existingByEmail.id },
         data: { profileId: user.id },
       });

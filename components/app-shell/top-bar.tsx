@@ -279,7 +279,7 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
                   )}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[130px] truncate select-none">
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[130px] truncate select-none hidden sm:inline">
                 {userInfo.name || "Traveler"}
               </span>
             </div>

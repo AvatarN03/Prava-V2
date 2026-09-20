@@ -267,6 +267,19 @@ export async function updateProfile(input: UpdateProfileInput) {
       },
     });
 
+    try {
+      if (avatarUrl !== undefined || fullName !== undefined) {
+        await supabase.auth.updateUser({
+          data: {
+            ...(avatarUrl !== undefined && { avatar_url: avatarUrl, picture: avatarUrl }),
+            ...(fullName !== undefined && { full_name: fullName }),
+          },
+        });
+      }
+    } catch (authErr) {
+      console.warn("Could not sync auth user metadata:", authErr);
+    }
+
     revalidatePath("/profile");
     if (targetUsername) {
       revalidatePath(`/u/${targetUsername}`);
