@@ -43,6 +43,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
+import { TopBarWeather } from "./top-bar-weather";
+
 import { getTopBarUserInfo, type TopBarUserInfo } from "@/features/profile/actions";
 
 interface TopBarProps {
@@ -235,8 +237,11 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
           </div>
         </div>
 
-        {/* Right: Theme Toggle, Notifications & User Profile */}
+        {/* Right: Weather Pill, Theme Toggle, Notifications & User Profile */}
         <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Live Weather Header Widget */}
+          <TopBarWeather />
+
           {/* Theme Toggle Button with MorphIcons Transition (Sun <-> Moon) */}
           <Tooltip>
             <TooltipTrigger asChild>

@@ -379,19 +379,192 @@ async function fetchFromOpenMeteo(query: string): Promise<WeatherData | null> {
 }
 
 /**
- * Main weather entrypoint:
- * Uses OpenWeather API when OPENWEATHER_API_KEY is available, otherwise uses Open-Meteo
+ * Reverse geocode latitude and longitude to find nearest city
  */
-export async function fetchWeather(query: string = "Mumbai"): Promise<WeatherData | null> {
+async function reverseGeocodeCoords(lat: number, lon: number): Promise<{ city: string; country: string }> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      {
+        headers: { "User-Agent": "PravaTravel/2.0" },
+        next: { revalidate: 86400 },
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address || {};
+      const city = addr.city || addr.town || addr.village || addr.suburb || addr.state_district || addr.county || "Local Area";
+      const country = addr.country || "";
+      return { city, country };
+    }
+  } catch {
+    // fallback
+  }
+  return { city: "Current Location", country: "" };
+}
+
+/**
+ * Fetch weather by coordinates (OpenWeather if key exists, otherwise Open-Meteo)
+ */
+export async function fetchWeatherByCoords(
+  lat: number,
+  lon: number,
+  cityName?: string,
+  countryName?: string
+): Promise<WeatherData | null> {
   const apiKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
 
   if (apiKey && apiKey.trim() && apiKey !== "your-openweather-api-key") {
-    const owData = await fetchFromOpenWeather(query, apiKey.trim());
+    try {
+      const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey.trim()}`;
+      const currentRes = await fetch(currentUrl, { next: { revalidate: 1800 } });
+      if (currentRes.ok) {
+        const current = await currentRes.json();
+        const resolvedCity = cityName || current.name || "Current Location";
+        const owData = await fetchFromOpenWeather(resolvedCity, apiKey.trim());
+        if (owData) return owData;
+      }
+    } catch {
+      // Fall through to Open-Meteo
+    }
+  }
+
+  // Open-Meteo direct coordinates
+  try {
+    let resolvedCity = cityName;
+    let resolvedCountry = countryName;
+    if (!resolvedCity) {
+      const geo = await reverseGeocodeCoords(lat, lon);
+      resolvedCity = geo.city;
+      resolvedCountry = geo.country;
+    }
+
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&timezone=auto`;
+
+    const weatherRes = await fetch(weatherUrl, { next: { revalidate: 1800 } });
+    if (!weatherRes.ok) return null;
+    const data = await weatherRes.json();
+
+    const dailyDates: string[] = data.daily.time || [];
+    const hourlyTimes: string[] = data.hourly.time || [];
+
+    const forecastDays: DailyForecastItem[] = dailyDates.map((dateStr: string, idx: number) => {
+      const { dayName, formattedDate } = formatDayName(dateStr, idx);
+      const code = data.daily.weather_code[idx];
+      const desc = getWeatherDescription(code);
+
+      const dayHourly: HourlyForecastItem[] = [];
+      hourlyTimes.forEach((isoTime: string, hIdx: number) => {
+        if (isoTime.startsWith(dateStr)) {
+          const timePart = isoTime.split("T")[1]?.slice(0, 5) || "00:00";
+          const hourNum = parseInt(timePart.split(":")[0], 10) || 0;
+          dayHourly.push({
+            time: timePart,
+            fullTime: isoTime,
+            hour: hourNum,
+            temperature: Math.round(data.hourly.temperature_2m[hIdx]),
+            apparentTemperature: Math.round(data.hourly.apparent_temperature[hIdx]),
+            weatherCode: data.hourly.weather_code[hIdx],
+            weatherDescription: getWeatherDescription(data.hourly.weather_code[hIdx]),
+            precipitationProbability: data.hourly.precipitation_probability[hIdx] || 0,
+            precipitation: data.hourly.precipitation[hIdx] || 0,
+            windSpeed: Math.round(data.hourly.wind_speed_10m[hIdx] || 0),
+            humidity: data.hourly.relative_humidity_2m[hIdx] || 0,
+            uvIndex: data.hourly.uv_index ? Math.round(data.hourly.uv_index[hIdx]) : undefined,
+          });
+        }
+      });
+
+      const sunriseRaw = data.daily.sunrise?.[idx];
+      const sunsetRaw = data.daily.sunset?.[idx];
+      const sunriseStr = sunriseRaw ? sunriseRaw.split("T")[1] : undefined;
+      const sunsetStr = sunsetRaw ? sunsetRaw.split("T")[1] : undefined;
+
+      return {
+        date: dateStr,
+        dayName,
+        formattedDate,
+        temperatureMax: Math.round(data.daily.temperature_2m_max[idx]),
+        temperatureMin: Math.round(data.daily.temperature_2m_min[idx]),
+        weatherCode: code,
+        weatherDescription: desc,
+        precipitationProbability: data.daily.precipitation_probability_max?.[idx] || 0,
+        precipitationAmount: data.daily.precipitation_sum?.[idx] || 0,
+        windSpeed: Math.round(data.daily.wind_speed_10m_max?.[idx] || 0),
+        humidity: data.current.relative_humidity_2m || 60,
+        uvIndex: data.daily.uv_index_max?.[idx] ? Math.round(data.daily.uv_index_max[idx]) : undefined,
+        sunrise: sunriseStr,
+        sunset: sunsetStr,
+        hourly: dayHourly,
+      };
+    });
+
+    const currentWeatherCode = data.current.weather_code;
+
+    return {
+      city: resolvedCity || "Current Location",
+      country: resolvedCountry || "",
+      coordinates: { lat, lon },
+      timezone: data.timezone,
+      source: "Open-Meteo",
+      temperature: Math.round(data.current.temperature_2m),
+      apparentTemperature: Math.round(data.current.apparent_temperature),
+      weatherCode: currentWeatherCode,
+      weatherDescription: getWeatherDescription(currentWeatherCode),
+      humidity: data.current.relative_humidity_2m,
+      windSpeed: Math.round(data.current.wind_speed_10m),
+      windDirection: data.current.wind_direction_10m,
+      precipitation: data.current.precipitation || 0,
+      precipitationProbability: forecastDays[0]?.precipitationProbability || 0,
+      pressure: data.current.surface_pressure ? Math.round(data.current.surface_pressure) : undefined,
+      uvIndex: forecastDays[0]?.uvIndex,
+      sunrise: forecastDays[0]?.sunrise,
+      sunset: forecastDays[0]?.sunset,
+      updatedAt: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      forecastDays,
+      daily: {
+        time: data.daily.time,
+        temperatureMax: data.daily.temperature_2m_max.map((t: number) => Math.round(t)),
+        temperatureMin: data.daily.temperature_2m_min.map((t: number) => Math.round(t)),
+        weatherCode: data.daily.weather_code,
+        precipitationProbabilityMax: data.daily.precipitation_probability_max,
+      },
+    };
+  } catch (error) {
+    console.error("Open-Meteo coords error:", error);
+    return null;
+  }
+}
+
+/**
+ * Main weather entrypoint:
+ * Uses OpenWeather API when OPENWEATHER_API_KEY is available, otherwise uses Open-Meteo.
+ * Supports city names and "lat,lon" coordinates.
+ */
+export async function fetchWeather(query: string = "Mumbai"): Promise<WeatherData | null> {
+  const trimmed = query.trim();
+
+  // Check if query is latitude,longitude coordinates
+  if (trimmed.includes(",")) {
+    const coordsMatch = trimmed.match(/^([-+]?\d+(\.\d+)?),\s*([-+]?\d+(\.\d+)?)$/);
+    if (coordsMatch) {
+      const lat = parseFloat(coordsMatch[1]);
+      const lon = parseFloat(coordsMatch[3]);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        return await fetchWeatherByCoords(lat, lon);
+      }
+    }
+  }
+
+  const apiKey = process.env.OPENWEATHER_API_KEY || process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+
+  if (apiKey && apiKey.trim() && apiKey !== "your-openweather-api-key") {
+    const owData = await fetchFromOpenWeather(trimmed, apiKey.trim());
     if (owData) return owData;
   }
 
   // Fallback to open weather provider
-  return await fetchFromOpenMeteo(query);
+  return await fetchFromOpenMeteo(trimmed);
 }
 
 /**

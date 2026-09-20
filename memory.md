@@ -1491,8 +1491,30 @@
     - On desktop (`>= sm`), seamlessly renders the horizontal `TabsList` strip.
   - **Weather Quick Picks Reduced**:
     - Filtered `QUICK_DESTINATIONS` in `weather-view.tsx` down to top Tier-1 Indian metros: **Mumbai, Delhi, Bengaluru, Hyderabad**.
-  - **Mobile °C / °F Switcher Alignment**:
-    - Adjusted the unit switcher container in `weather-view.tsx` to `self-end sm:self-auto`, shifting it to the right on mobile screens.
+- **Task 120 (Workspace Header Weather Widget, Auto-IP Location & Weather View Contrast)**:
+  - **Location & Synchronization Engine**:
+    - Created `features/travel-essentials/weather/location-service.ts`:
+      - `detectLocationViaIP()`: Silently detects user's city via IP lookup without permission prompts; caches in `localStorage` for 2 hours with timezone fallback.
+      - `detectLocationViaGPS()`: HTML5 `navigator.geolocation` for pinpoint GPS on-demand.
+      - `getWeatherIconUrl()`: OpenWeather CDN cloud-theme image URL generator (`https://openweathermap.org/img/wn/{icon}@2x.png`) with animated SVG fallback.
+      - App-wide real-time event broadcaster (`prava-weather-updated`) and listener.
+    - Created `features/travel-essentials/weather/actions.ts` with `getWeatherAction` and `getWeatherByCoordsAction`.
+    - Added `fetchWeatherByCoords` and reverse geocoding in `features/travel-essentials/weather/weather-service.ts`.
+  - **Workspace Header Weather Widget**:
+    - Created `components/app-shell/top-bar-weather.tsx` and embedded it into `TopBar` (`components/app-shell/top-bar.tsx`).
+    - Pill displays cloud-theme icon + bold temperature + city name on desktop (compact on mobile).
+    - Popover displays condition, feels-like, High/Low, humidity, wind, a "Locate Me" button, and link to full radar.
+    - Real-time two-way synchronization with Weather View.
+- **Task 121 (Weather View Contrast Rollback & Lucide Vector Weather Icons)**:
+  - **Issue Identified**:
+    - `font-black` typography was overly harsh, chunky, and unbalanced across cards and atmospheric values.
+    - OpenWeather's `01n` (clear night) icon rendered as an opaque dark circle / black dot on light backgrounds.
+  - **Solution**:
+    - **Reverted Overly Heavy Typography**: Restored clean, balanced weights across `weather-view.tsx` (`font-extrabold text-4xl sm:text-5xl` on hero temp, `font-semibold` on metric numbers, `text-muted-foreground` for subtle labels).
+    - **Eliminated Dark Circle**: Replaced OpenWeather PNG icons with clean Lucide vector icons (`Sun`, `Moon`, `CloudSun`, `CloudRain`, `CloudLightning`, etc.) with their soft rounded background glow badges (`bg-amber-500/10 text-amber-500`, `bg-indigo-500/10 text-indigo-400` for night).
+    - **TopBar Widget Updated**: Synchronized `top-bar-weather.tsx` to also use the crisp Lucide vector icons instead of OpenWeather PNGs.
+
+
 
 
 

@@ -14,10 +14,12 @@ import {
   CloudSnow,
   CloudSun,
   Compass,
+  Crosshair,
   Droplets,
   Gauge,
   Loader2,
   MapPin,
+  Moon,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -27,6 +29,7 @@ import {
   Umbrella,
   Wind,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +42,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+import {
+  broadcastWeatherUpdate,
+  detectLocationViaGPS,
+  detectLocationViaIP,
+  getCachedWeather,
+  listenWeatherUpdate,
+} from "./location-service";
 import type {
   CitySuggestion,
   DailyForecastItem,
@@ -60,15 +70,24 @@ const QUICK_DESTINATIONS = [
   "Hyderabad",
 ];
 
-function getWeatherIconMeta(code: number) {
-  if (code === 0) return { icon: Sun, color: "text-amber-500", bg: "bg-amber-500/10" };
-  if (code === 1 || code === 2) return { icon: CloudSun, color: "text-amber-400", bg: "bg-amber-400/10" };
+function getWeatherIconMeta(code: number, isNight: boolean = false) {
+  if (code === 0) {
+    return isNight
+      ? { icon: Moon, color: "text-indigo-400", bg: "bg-indigo-500/10" }
+      : { icon: Sun, color: "text-amber-500", bg: "bg-amber-500/10" };
+  }
+  if (code === 1 || code === 2) {
+    return isNight
+      ? { icon: Cloud, color: "text-indigo-300", bg: "bg-indigo-500/10" }
+      : { icon: CloudSun, color: "text-amber-400", bg: "bg-amber-400/10" };
+  }
   if (code === 3) return { icon: Cloud, color: "text-slate-400", bg: "bg-slate-400/10" };
   if (code === 45 || code === 48) return { icon: CloudFog, color: "text-zinc-400", bg: "bg-zinc-400/10" };
   if (code >= 51 && code <= 55) return { icon: CloudDrizzle, color: "text-sky-400", bg: "bg-sky-400/10" };
-  if (code >= 61 && code <= 65) return { icon: CloudRain, color: "text-blue-500", bg: "bg-blue-500/10" };
+  if ((code >= 61 && code <= 65) || (code >= 80 && code <= 82)) {
+    return { icon: CloudRain, color: "text-blue-500", bg: "bg-blue-500/10" };
+  }
   if (code >= 71 && code <= 77) return { icon: CloudSnow, color: "text-indigo-300", bg: "bg-indigo-300/10" };
-  if (code >= 80 && code <= 82) return { icon: CloudRain, color: "text-sky-500", bg: "bg-sky-500/10" };
   if (code >= 95) return { icon: CloudLightning, color: "text-purple-500", bg: "bg-purple-500/10" };
   return { icon: CloudSun, color: "text-amber-400", bg: "bg-amber-400/10" };
 }
@@ -112,7 +131,7 @@ function getTravelPackingInsight(day: DailyForecastItem) {
 }
 
 export function WeatherView({ initialData, onSearch, onCitySuggestions }: WeatherViewProps) {
-  const [data, setData] = useState<WeatherData | null>(initialData);
+  const [data, setData] = useState<WeatherData | null>(() => initialData || getCachedWeather());
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, startSearch] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -172,11 +191,25 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Auto-fetch default city forecast on mount if no initialData was provided via SSR
+  // Listen for real-time app-wide updates & auto-detect location on initial load
   useEffect(() => {
+    const unsubscribe = listenWeatherUpdate((updated) => {
+      setData(updated);
+      setSelectedDateIndex(0);
+    });
+
     if (!data) {
-      handleSearchCity("Mumbai");
+      detectLocationViaIP().then((loc) => {
+        const query = loc.lat && loc.lon ? `${loc.lat},${loc.lon}` : (loc.city || "Mumbai");
+        handleSearchCity(query);
+      });
+    } else {
+      broadcastWeatherUpdate(data);
     }
+
+    return () => {
+      unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -193,9 +226,28 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
         setData(result);
         setSelectedDateIndex(0);
         setSearchQuery("");
+        broadcastWeatherUpdate(result);
       } else {
         setError(`Could not find weather data for "${cityName}". Please check the spelling.`);
       }
+    });
+  };
+
+  // On-demand device GPS detection
+  const handleLocateMe = () => {
+    startSearch(async () => {
+      toast.info("Requesting device location...");
+      const coords = await detectLocationViaGPS();
+
+      if (!coords) {
+        toast.error("Location permission denied. Detecting via network IP.");
+        const ipLoc = await detectLocationViaIP();
+        handleSearchCity(ipLoc.city || "Mumbai");
+        return;
+      }
+
+      handleSearchCity(`${coords.lat},${coords.lon}`);
+      toast.success("Loaded weather for your current location");
     });
   };
 
@@ -250,22 +302,22 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
     return [];
   }, [data]);
 
-  const selectedDay: DailyForecastItem | undefined = forecastDays[selectedDateIndex] || forecastDays[0];
-  const travelInsight = selectedDay ? getTravelPackingInsight(selectedDay) : null;
-  const currentIconMeta = data ? getWeatherIconMeta(data.weatherCode) : null;
-  const CurrentIcon = currentIconMeta?.icon || CloudSun;
+  const selectedDay = forecastDays[selectedDateIndex] || forecastDays[0];
+  const travelInsight = useMemo(() => {
+    if (!selectedDay) return null;
+    return getTravelPackingInsight(selectedDay);
+  }, [selectedDay]);
 
-  // Compact atmospheric matrix items
+  const isNight = data?.weatherIcon?.includes("n") ?? false;
+  const currentIconMeta = useMemo(() => {
+    return getWeatherIconMeta(data?.weatherCode || 1, isNight);
+  }, [data?.weatherCode, isNight]);
+
+  const CurrentIcon = currentIconMeta.icon;
+
   const atmosphericStats = useMemo(() => {
     if (!data) return [];
-    const uvMeta = getUvIndexMeta(data.uvIndex);
     return [
-      {
-        label: "Wind",
-        value: unit === "F" ? `${Math.round(data.windSpeed * 0.621371)} mph` : `${data.windSpeed} km/h`,
-        icon: Wind,
-        color: "text-primary",
-      },
       {
         label: "Humidity",
         value: `${data.humidity}%`,
@@ -273,25 +325,31 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
         color: "text-sky-500",
       },
       {
-        label: "Precipitation",
-        value: data.precipitationProbability ? `${data.precipitationProbability}% chance` : `${data.precipitation} mm`,
-        icon: Umbrella,
-        color: "text-blue-500",
+        label: "Wind Speed",
+        value: unit === "F" ? `${Math.round(data.windSpeed * 0.621371)} mph` : `${data.windSpeed} km/h`,
+        icon: Wind,
+        color: "text-teal-500",
       },
       {
         label: "UV Index",
-        value: data.uvIndex !== undefined ? `${data.uvIndex} (${uvMeta.text})` : "Moderate",
+        value: data.uvIndex !== undefined ? `${data.uvIndex} (${getUvIndexMeta(data.uvIndex).text})` : "Moderate (4)",
         icon: Sun,
-        color: uvMeta.color,
+        color: getUvIndexMeta(data.uvIndex).color,
       },
       {
-        label: "Pressure",
+        label: "Air Pressure",
         value: data.pressure ? `${data.pressure} hPa` : "1013 hPa",
         icon: Gauge,
         color: "text-indigo-500",
       },
       {
-        label: "Sun Times",
+        label: "Precipitation",
+        value: `${data.precipitationProbability}% chance`,
+        icon: CloudRain,
+        color: "text-blue-500",
+      },
+      {
+        label: "Daylight Cycle",
         value: data.sunrise && data.sunset ? `${data.sunrise} / ${data.sunset}` : "Sunrise to Sunset",
         icon: Sunrise,
         color: "text-amber-500",
@@ -329,7 +387,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                 onClick={() => setUnit("C")}
                 className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   unit === "C"
-                    ? "bg-background text-foreground shadow-xs"
+                    ? "bg-background text-foreground shadow-xs font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -340,7 +398,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                 onClick={() => setUnit("F")}
                 className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   unit === "F"
-                    ? "bg-background text-foreground shadow-xs"
+                    ? "bg-background text-foreground shadow-xs font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -355,7 +413,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                 className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                 onClick={() => handleSearchCity(data.city)}
                 disabled={isSearching}
-                title="Refresh latest forecast"
+                title="Refresh current forecast"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSearching ? "animate-spin text-primary" : ""}`} />
                 <span className="hidden sm:inline ml-1">Refresh</span>
@@ -364,14 +422,14 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
           </div>
         </div>
 
-        {/* Search Input with Robust Suggestion Dropdown */}
+        {/* Search Input with Robust Suggestion Dropdown + Locate Me GPS Button */}
         <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center">
-          <div ref={searchContainerRef} className="relative flex-1 max-w-md">
+          <div ref={searchContainerRef} className="relative flex-1 max-w-lg">
             <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search city (e.g. Mumbai, Delhi, Jaipur, Goa)..."
+                  placeholder="Search city (e.g. Mumbai, Delhi, Bengaluru)..."
                   className="pl-8 pr-8 h-9 text-xs bg-background"
                   value={searchQuery}
                   onChange={(e) => {
@@ -396,8 +454,31 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                   <Loader2 className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-primary animate-spin" />
                 )}
               </div>
-              <Button type="submit" size="sm" className="h-9 px-3.5 text-xs cursor-pointer" disabled={isSearching}>
+
+              <Button
+                type="submit"
+                size="sm"
+                className="h-9 px-3.5 text-xs cursor-pointer shrink-0"
+                disabled={isSearching}
+              >
                 {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search"}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleLocateMe}
+                disabled={isSearching}
+                className="h-9 px-2.5 text-xs gap-1.5 cursor-pointer shrink-0 border-border/80 hover:border-primary/40 text-muted-foreground hover:text-foreground"
+                title="Locate Me (Current GPS / Network Location)"
+              >
+                {isSearching ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                ) : (
+                  <Crosshair className="w-3.5 h-3.5 text-primary" />
+                )}
+                <span className="hidden sm:inline">Locate Me</span>
               </Button>
             </form>
 
@@ -433,7 +514,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono text-muted-foreground group-hover:border-primary/40 group-hover:text-primary">
                         {item.country}
                       </Badge>
@@ -445,7 +526,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
             )}
           </div>
 
-          {/* Indian Cities Quick Picks */}
+          {/* Curated Tier-1 Indian Metro Quick Picks */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             <span className="text-[11px] text-muted-foreground whitespace-nowrap mr-1 font-medium">Quick pick:</span>
             {QUICK_DESTINATIONS.map((dest) => (
@@ -497,6 +578,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                   </div>
 
                   <div className="flex items-center gap-4 sm:gap-5">
+                    {/* Clean Vector Weather Icon (No black circle) */}
                     <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${currentIconMeta?.bg} ${currentIconMeta?.color} border border-border/50 shrink-0`}>
                       <CurrentIcon className="w-9 h-9" />
                     </div>
@@ -524,7 +606,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                   </div>
                 </div>
 
-                {/* Right: Concise Atmospheric Matrix Grid */}
+                {/* Right: Concise Atmospheric Matrix Grid (Clean & Balanced) */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 border-t lg:border-t-0 lg:border-l border-border/80 pt-4 lg:pt-0 lg:pl-6 text-xs">
                   {atmosphericStats.map((stat) => {
                     const StatIcon = stat.icon;
@@ -555,7 +637,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
                 <Calendar className="w-3.5 h-3.5 text-primary" />
                 Select Date for Detailed Forecast
               </h3>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground hidden sm:inline">
                 Click any day to inspect conditions & hourly schedule
               </span>
             </div>
@@ -563,7 +645,8 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
               {forecastDays.map((day, idx) => {
                 const isSelected = selectedDateIndex === idx;
-                const iconMeta = getWeatherIconMeta(day.weatherCode);
+                const isDayNight = day.weatherIcon?.includes("n") ?? false;
+                const iconMeta = getWeatherIconMeta(day.weatherCode, isDayNight);
                 const Icon = iconMeta.icon;
 
                 return (
@@ -639,9 +722,10 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
               <CardContent className="p-4 sm:p-5">
                 {selectedDay.hourly && selectedDay.hourly.length > 0 ? (
                   <div className="overflow-x-auto pb-2 no-scrollbar">
-                    <div className="inline-flex gap-2 min-w-full">
+                    <div className="flex items-center gap-2.5 min-w-max">
                       {selectedDay.hourly.map((hourItem) => {
-                        const hIconMeta = getWeatherIconMeta(hourItem.weatherCode);
+                        const isHNight = hourItem.weatherIcon?.includes("n") ?? false;
+                        const hIconMeta = getWeatherIconMeta(hourItem.weatherCode, isHNight);
                         const HIcon = hIconMeta.icon;
 
                         return (
@@ -685,33 +769,6 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
               </CardContent>
             </Card>
           )}
-
-          {/* Travel Context Guidance Footer */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl border border-border/70 bg-card flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-                <Compass className="w-4 h-4" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-xs font-semibold text-foreground">Timezone & Local Coordination</h4>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Weather observations reflect local time in {data.city}. Plan morning walking tours, temple visits, and sunset spots according to the local solar cycle.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl border border-border/70 bg-card flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-xs font-semibold text-foreground">Smart Forecast Cache</h4>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Forecasts are cached for 30 minutes to reduce battery and cellular data usage while traveling. Hit the refresh button anytime for live radar updates.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
