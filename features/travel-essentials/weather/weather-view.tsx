@@ -276,7 +276,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
     return `${celsius}°C`;
   };
 
-  const forecastDays = useMemo(() => {
+  const forecastDays = useMemo<DailyForecastItem[]>(() => {
     if (data?.forecastDays && data.forecastDays.length > 0) {
       return data.forecastDays;
     }
@@ -291,6 +291,7 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
           temperatureMin: data.daily.temperatureMin[idx] || 20,
           weatherCode: data.daily.weatherCode[idx] || 1,
           weatherDescription: "Forecast Outlook",
+          weatherIcon: undefined,
           precipitationProbability: data.daily.precipitationProbabilityMax[idx] || 0,
           precipitationAmount: 0,
           windSpeed: data.windSpeed || 12,

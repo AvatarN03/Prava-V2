@@ -43,6 +43,9 @@ import {
 import type { WeatherData } from "@/features/travel-essentials/types";
 
 function getTopBarWeatherIcon(code?: number, iconCode?: string) {
+  if (code === undefined) {
+    return { Icon: CloudSun, color: "text-amber-500", bg: "bg-amber-500/10" };
+  }
   const isNight = iconCode?.includes("n");
   if (code === 0) {
     return isNight

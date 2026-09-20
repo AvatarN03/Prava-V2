@@ -1514,15 +1514,82 @@
     - **Eliminated Dark Circle**: Replaced OpenWeather PNG icons with clean Lucide vector icons (`Sun`, `Moon`, `CloudSun`, `CloudRain`, `CloudLightning`, etc.) with their soft rounded background glow badges (`bg-amber-500/10 text-amber-500`, `bg-indigo-500/10 text-indigo-400` for night).
     - **TopBar Widget Updated**: Synchronized `top-bar-weather.tsx` to also use the crisp Lucide vector icons instead of OpenWeather PNGs.
 
+- **Task 122 (Currency Converter — Desktop Numbers & Values Legibility Scaling)**:
+  - **Issue Identified**:
+    - On desktop viewports, numbers, rates, input fields, and table cell values in `CurrencyConverter` were rendered in small font sizes (`text-base` input, `text-xs` rates, `text-[10px]` quick chips, `text-xs` watchlist prices, `text-xs` table rate columns), causing eye strain and poor readability on larger monitors.
+  - **Enhancements Implemented in `features/travel-essentials/currency/currency-converter.tsx`**:
+    - **Header & Base Currency Strip**:
+      - Title enlarged to `text-base sm:text-lg font-semibold` with larger icons (`w-4 h-4 sm:w-5 sm:h-5`).
+      - Base currency selector enlarged to `h-8 sm:h-9 w-22 sm:w-24 text-xs sm:text-sm font-semibold`.
+    - **Quick Converter Bar (Hero Calculator)**:
+      - "You Pay" & "You Receive" input labels upgraded to `text-xs sm:text-sm font-semibold`.
+      - Pay amount input box scaled from `h-10 text-base` to `h-12 sm:h-14 text-lg sm:text-2xl lg:text-3xl font-bold font-mono`.
+      - Currency code indicator scaled to `text-xs sm:text-sm font-bold text-muted-foreground font-mono pointer-events-none`.
+      - Quick preset chips (`500`, `1,000`, `5,000`, etc.) enlarged from `text-[10px]` to `text-xs sm:text-sm px-2.5 py-1 sm:px-3 sm:py-1.5 font-mono font-medium`.
+      - Swap button enlarged to `h-9 w-9 sm:h-11 sm:w-11` with `w-4 h-4 sm:w-5 sm:h-5` icon.
+      - Receive output container enlarged to `h-12 sm:h-14 px-3.5 sm:px-4 text-lg sm:text-2xl lg:text-3xl font-bold font-mono`.
+      - Target currency dropdown trigger scaled to `h-8 sm:h-9 w-22 sm:w-26 text-xs sm:text-sm font-bold`.
+      - Inverse exchange rate subtexts scaled from `text-[10px]` to `text-xs sm:text-sm font-mono`.
+    - **Exchange Rate Watchlist**:
+      - Section header scaled to `text-xs sm:text-sm font-semibold uppercase`.
+      - Card grid updated to `grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3`.
+      - Individual card padding increased to `p-3 sm:p-3.5` with larger flag (`text-base sm:text-lg`) and code (`text-xs sm:text-sm font-bold`).
+      - Pinned exchange rate numbers enlarged from `text-xs` to `font-mono text-sm sm:text-base font-bold text-foreground tracking-tight`.
+      - Percentage change indicators increased to `text-xs font-mono` with `w-3 h-3` icons.
+    - **Historical Trend & Performance Card**:
+      - Time range pills scaled to `px-3 py-1 sm:px-3.5 sm:py-1.5 text-xs sm:text-sm`.
+      - Quick Metrics values (Current Rate, Net Change) scaled up from `text-sm font-bold` to `text-base sm:text-lg lg:text-xl font-bold font-mono`.
+      - Period Range (Low/High) scaled to `text-xs sm:text-sm font-semibold font-mono`.
+      - SVG chart container expanded to `h-48 sm:h-56` with enlarged hover badge (`text-xs sm:text-sm font-mono`) and X-axis date labels (`text-xs font-mono`).
+    - **Strength Gauge & Purchasing Power Card**:
+      - Status pill title enlarged to `text-sm sm:text-base font-bold` with `w-4 h-4 sm:w-5 sm:h-5` icons.
+      - Explanation paragraph scaled to `text-xs sm:text-sm leading-relaxed`.
+      - Travel Purchasing Power example values enlarged to `text-sm sm:text-base` (Start) and `text-sm sm:text-base lg:text-lg font-bold text-primary` (Today).
+    - **Trip Currency Ratings Table**:
+      - Table header scaled to `text-xs sm:text-sm font-semibold py-3 px-4`.
+      - Filter input box scaled to `h-9 text-xs sm:text-sm`.
+      - "1 Base Buys" rate values enlarged from generic `text-xs` to `py-3.5 px-4 font-mono font-bold text-sm sm:text-base text-foreground`.
+      - Inverse values scaled to `text-xs sm:text-sm font-medium font-mono`.
+      - Period change badge enlarged to `text-xs sm:text-sm font-semibold px-2.5 py-1` with `w-3.5 h-3.5` icons.
+      - Action buttons scaled to `h-8 text-xs px-3`.
 
+- **Task 123 (Vercel Production Build TypeScript Fixes for Weather Components)**:
+  - **Issue Identified**:
+    - Vercel production build failed during `npm run build` (`prisma generate && next build`):
+      1. `components/app-shell/top-bar-weather.tsx(59,7)`: `TS18048: 'code' is possibly 'undefined'`.
+      2. `features/travel-essentials/weather/weather-view.tsx(648,40)`: `TS2551: Property 'weatherIcon' does not exist on type ...`.
+  - **Root Causes**:
+    - In `top-bar-weather.tsx`, `getTopBarWeatherIcon(code?: number, iconCode?: string)` allowed `code` to be undefined without an early guard, causing relational comparison operators (`code >= 51`, etc.) to fail strict undefined checks.
+    - In `weather-view.tsx`, the `forecastDays` `useMemo` fallback mapping omitted `weatherIcon` from its object literal and lacked an explicit return type generic, inferring an anonymous object type without `weatherIcon`.
+  - **Fixes Applied**:
+    - Guarded `if (code === undefined) return { Icon: CloudSun, color: "text-amber-500", bg: "bg-amber-500/10" };` at the start of `getTopBarWeatherIcon` in `components/app-shell/top-bar-weather.tsx`.
+    - Added explicit generic typing `useMemo<DailyForecastItem[]>` and `weatherIcon: undefined` to the fallback mapping in `features/travel-essentials/weather/weather-view.tsx`.
 
+- **Task 124 (Currency Converter — UI Sizing Restoration, Direct Chart Pair Selector & Table Clean Up)**:
+  - **User Feedback**:
+    - Oversized containers and inputs made the layout feel clumsy and bloated. Requested a full revert of the UI dimensions back to clean, compact productivity sizing.
+    - Requested moving the currency selection option directly into the historical chart card itself so the user can easily switch the chart pair without scrolling down.
+    - Requested removing the "Trends" button from the Trip Currency Ratings table below so rows are simple and focused on rates and pinning.
+  - **Changes Implemented in `features/travel-essentials/currency/currency-converter.tsx`**:
+    - **Reverted UI Bloat & Restored Sleek Proportions**:
+      - Reverted input and converted boxes to standard `h-10` with clean `text-base font-mono font-bold`.
+      - Reverted Quick Converter Card padding to `p-4 sm:p-5` with `gap-3`.
+      - Reverted quick chips to `px-2 py-0.5 text-[10px] font-mono`.
+      - Reverted swap button to `h-8 w-8`.
+      - Reverted Watchlist grid to `grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2.5` with compact `p-2.5` card padding.
+      - Reverted all headers, badges, and subtitles to clean, balanced weights.
+    - **Embedded Target Currency Selector in Chart Card**:
+      - Added a clean `Select` dropdown directly in the historical trend chart header (`Pair:` + dropdown), allowing users to switch target currencies right on the chart without jumping around.
+    - **Removed "Trends" Button & Decoupled Table Rows**:
+      - Completely removed the "Trends" button from the table Actions column.
+      - Removed table row-level click handlers (`onClick setSelectedTarget`) and row highlight tints so table rows are purely for comparing rates and pinning/unpinning from the watchlist.
 
-
-
-
-
-
-
-
-
-
+- **Task 125 (Currency Converter — Mobile Alignment & Merged Exchange Rate Column)**:
+  - **User Requirements**:
+    - Shift the base currency dropdown and refresh button ("ref button") to the right side on mobile viewports.
+    - Merge the separate "1 {baseCurrency} Buys" and "Inverse" table columns into a single concise "1 {baseCurrency} Buys / Inverse" column.
+    - Remove redundant currency symbols from the numbers since the first column ("Currency") already provides the currency flag, code, and symbol. Separate the rates with a clean forward slash (`/`).
+  - **Changes Implemented in `features/travel-essentials/currency/currency-converter.tsx`**:
+    - Added `self-end sm:self-auto ml-auto sm:ml-0` to the base currency selector and refresh button container so it aligns to the far right on mobile viewports.
+    - Merged the rate and inverse columns in `thead` into `1 {baseCurrency} Buys / Inverse`.
+    - Rendered the merged cell content as `<span className="font-bold text-foreground">{rate}</span> <span className="text-muted-foreground/60 mx-1.5">/</span> <span className="text-muted-foreground font-medium">{inverse}</span>` without redundant symbol clutter.

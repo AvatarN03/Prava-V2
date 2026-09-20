@@ -338,7 +338,7 @@ export function CurrencyConverter({
         </div>
 
         {/* Base Currency Selector & Reset */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto ml-auto sm:ml-0">
           <div className="flex items-center gap-1.5 bg-muted/60 border border-border/70 rounded-lg p-1 text-xs">
             <span className="text-muted-foreground text-[11px] font-medium pl-1.5 hidden sm:inline">
               Base:
@@ -393,7 +393,7 @@ export function CurrencyConverter({
             <div className="sm:col-span-5 space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-foreground">You Pay ({baseCurrencyMeta.flag} {baseCurrency})</span>
-                <span className="text-[11px] text-muted-foreground">1 {baseCurrency} = {targetRate.toFixed(4)} {selectedTarget}</span>
+                <span className="text-[11px] text-muted-foreground font-mono">1 {baseCurrency} = {targetRate.toFixed(4)} {selectedTarget}</span>
               </div>
               <div className="relative">
                 <Input
@@ -605,22 +605,42 @@ export function CurrencyConverter({
                 </CardDescription>
               </div>
 
-              {/* Range Toggle Buttons */}
-              <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/60 text-xs font-semibold self-start sm:self-auto">
-                {(["7D", "1M", "3M", "1Y"] as TimeRange[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRange(r)}
-                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                      range === r
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
+              {/* Target Currency Selector & Range Toggle Buttons */}
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center gap-1 bg-muted/60 border border-border/70 rounded-lg p-0.5 text-xs">
+                  <span className="text-muted-foreground text-[11px] font-medium pl-1 hidden sm:inline">
+                    Pair:
+                  </span>
+                  <Select value={selectedTarget} onValueChange={setSelectedTarget}>
+                    <SelectTrigger className="h-7 w-24 text-xs font-semibold bg-background border-border/60 cursor-pointer px-2">
+                      <SelectValue placeholder={selectedTarget}>{selectedTarget}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 w-60 thin-scrollbar">
+                      {SUPPORTED_CURRENCIES.filter((c) => c.code !== baseCurrency).map((c) => (
+                        <SelectItem key={c.code} value={c.code} className="text-xs cursor-pointer">
+                          <span className="font-semibold">{c.code}</span> - {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/60 text-xs font-semibold">
+                  {(["7D", "1M", "3M", "1Y"] as TimeRange[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRange(r)}
+                      className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                        range === r
+                          ? "bg-background text-foreground shadow-xs font-bold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -925,8 +945,7 @@ export function CurrencyConverter({
             <thead className="bg-muted/40 border-b border-border text-muted-foreground text-[11px] font-semibold">
               <tr>
                 <th className="py-2.5 px-4">Currency</th>
-                <th className="py-2.5 px-4 font-mono">1 {baseCurrency} Buys</th>
-                <th className="py-2.5 px-4 font-mono">Inverse (1 Unit =)</th>
+                <th className="py-2.5 px-4 font-mono">1 {baseCurrency} Buys / Inverse</th>
                 <th className="py-2.5 px-4 font-mono">Period Change</th>
                 <th className="py-2.5 px-4 text-right">Actions</th>
               </tr>
@@ -937,17 +956,13 @@ export function CurrencyConverter({
                 const inverse = rate > 0 ? (1 / rate).toFixed(4) : "0";
                 const change = rates?.changes?.[curr.code] ?? 0;
                 const isWatchlisted = watchlist.includes(curr.code);
-                const isSelected = selectedTarget === curr.code;
 
                 return (
                   <tr
                     key={curr.code}
-                    onClick={() => setSelectedTarget(curr.code)}
-                    className={`transition-colors cursor-pointer hover:bg-muted/40 ${
-                      isSelected ? "bg-primary/5 font-medium" : ""
-                    }`}
+                    className="transition-colors hover:bg-muted/30"
                   >
-                    <td className="py-3 px-4">
+                    <td className="py-2.5 px-4">
                       <div className="flex items-center gap-2">
                         <span className="text-base">{curr.flag}</span>
                         <div>
@@ -959,19 +974,20 @@ export function CurrencyConverter({
                       </div>
                     </td>
 
-                    <td className="py-3 px-4 font-mono font-bold text-foreground">
-                      {rate.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 4,
-                      })}{" "}
-                      {curr.symbol}
+                    <td className="py-2.5 px-4 font-mono text-xs">
+                      <span className="font-bold text-foreground">
+                        {rate.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 4,
+                        })}
+                      </span>
+                      <span className="text-muted-foreground/60 mx-1.5 font-normal">/</span>
+                      <span className="text-muted-foreground font-medium">
+                        {inverse}
+                      </span>
                     </td>
 
-                    <td className="py-3 px-4 font-mono text-muted-foreground">
-                      {inverse} {baseCurrency}
-                    </td>
-
-                    <td className="py-3 px-4 font-mono">
+                    <td className="py-2.5 px-4 font-mono">
                       <span
                         className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
                           change >= 0
@@ -988,8 +1004,8 @@ export function CurrencyConverter({
                       </span>
                     </td>
 
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-2.5 px-4 text-right">
+                      <div className="flex items-center justify-end">
                         <Button
                           variant={isWatchlisted ? "secondary" : "ghost"}
                           size="sm"
@@ -1007,15 +1023,6 @@ export function CurrencyConverter({
                             }`}
                           />
                           {isWatchlisted ? "Pinned" : "Pin"}
-                        </Button>
-
-                        <Button
-                          variant={isSelected ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 text-[11px] px-2.5 cursor-pointer"
-                          onClick={() => setSelectedTarget(curr.code)}
-                        >
-                          Trends
                         </Button>
                       </div>
                     </td>
