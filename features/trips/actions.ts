@@ -506,16 +506,16 @@ export async function getDestinationCoverImages(
 export async function getUserAiPreferences(): Promise<{ aiAutoPropose: boolean; defaultCurrency: string }> {
   try {
     const authData = await getAuthenticatedUser();
-    if (!authData) return { aiAutoPropose: true, defaultCurrency: "USD" };
+    if (!authData) return { aiAutoPropose: true, defaultCurrency: "INR" };
     const profile = await db.profile.findUnique({
       where: { id: authData.user.id },
       select: { aiAutoPropose: true, defaultCurrency: true },
     });
     return {
       aiAutoPropose: profile?.aiAutoPropose ?? true,
-      defaultCurrency: profile?.defaultCurrency || "USD",
+      defaultCurrency: profile?.defaultCurrency || "INR",
     };
   } catch {
-    return { aiAutoPropose: true, defaultCurrency: "USD" };
+    return { aiAutoPropose: true, defaultCurrency: "INR" };
   }
 }

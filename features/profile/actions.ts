@@ -83,6 +83,7 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
           fullName: fullName,
           avatarUrl: userMeta.avatar_url || userMeta.picture || null,
           username: initialUsername,
+          defaultCurrency: "INR",
         },
         include: {
           _count: {
@@ -150,7 +151,7 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
         bio: profile.bio,
         avatarUrl: profile.avatarUrl,
         isPublic: profile.isPublic,
-        defaultCurrency: (profile as unknown as { defaultCurrency?: string }).defaultCurrency || "USD",
+        defaultCurrency: (profile as unknown as { defaultCurrency?: string }).defaultCurrency || "INR",
         aiAutoPropose: (profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? true,
         emailNotifications: (profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? true,
         offlineMode: (profile as unknown as { offlineMode?: boolean }).offlineMode ?? false,
@@ -490,6 +491,10 @@ export interface TopBarUserInfo {
   email: string | null;
   avatarUrl: string | null;
   username: string | null;
+  tier?: "free" | "pro";
+  defaultCurrency?: string;
+  totalTrips?: number;
+  memberSince?: string;
 }
 
 /**
@@ -507,15 +512,29 @@ export async function getTopBarUserInfo(): Promise<{ success: boolean; data?: To
       return { success: false };
     }
 
-    const profile = await db.profile.findUnique({
-      where: { id: user.id },
-      select: {
-        fullName: true,
-        username: true,
-        avatarUrl: true,
-        email: true,
-      },
-    });
+    const [profile, activeSub] = await Promise.all([
+      db.profile.findUnique({
+        where: { id: user.id },
+        select: {
+          fullName: true,
+          username: true,
+          avatarUrl: true,
+          email: true,
+          defaultCurrency: true,
+          createdAt: true,
+          _count: {
+            select: { trips: true },
+          },
+        },
+      }),
+      db.subscription.findFirst({
+        where: {
+          userId: user.id,
+          status: "ACTIVE",
+        },
+        select: { id: true },
+      }),
+    ]);
 
     const userMeta = user.user_metadata || {};
     const name =
@@ -532,6 +551,8 @@ export async function getTopBarUserInfo(): Promise<{ success: boolean; data?: To
       userMeta.picture ||
       null;
 
+    const tier = activeSub ? "pro" : "free";
+
     return {
       success: true,
       data: {
@@ -539,6 +560,15 @@ export async function getTopBarUserInfo(): Promise<{ success: boolean; data?: To
         email: profile?.email || user.email || null,
         avatarUrl,
         username: profile?.username || null,
+        tier,
+        defaultCurrency: profile?.defaultCurrency || "INR",
+        totalTrips: profile?._count?.trips ?? 0,
+        memberSince: profile?.createdAt
+          ? new Date(profile.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              year: "numeric",
+            })
+          : undefined,
       },
     };
   } catch (err) {

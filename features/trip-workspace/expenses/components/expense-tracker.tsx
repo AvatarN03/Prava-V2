@@ -88,7 +88,7 @@ function getCurrencySymbol(code?: string): string {
 export function ExpenseTracker({
   tripId,
   items,
-  userCurrency = "USD",
+  userCurrency = "INR",
   fxRates = {},
   tripTitle = "Trip",
   initialBudget = null,
@@ -109,7 +109,7 @@ export function ExpenseTracker({
   // Convert an amount in `fromCurrency` to `userCurrency`
   const convertToUserCurrency = (amount: number, fromCurrency: string): number => {
     const cleanFrom = fromCurrency?.toUpperCase() || "USD";
-    const cleanUser = userCurrency?.toUpperCase() || "USD";
+    const cleanUser = userCurrency?.toUpperCase() || "INR";
 
     if (cleanFrom === cleanUser) return amount;
     const rate = fxRates[cleanFrom];

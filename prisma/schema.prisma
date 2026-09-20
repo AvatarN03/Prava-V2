@@ -19,7 +19,7 @@ model Profile {
   isPublic           Boolean  @default(false) @map("is_public")
   
   // General & Workspace Preferences
-  defaultCurrency    String   @default("USD") @map("default_currency")
+  defaultCurrency    String   @default("INR") @map("default_currency")
   aiAutoPropose      Boolean  @default(true) @map("ai_auto_propose")
   emailNotifications Boolean  @default(true) @map("email_notifications")
   offlineMode        Boolean  @default(false) @map("offline_mode")

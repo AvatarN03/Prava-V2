@@ -23,6 +23,15 @@ export default async function AppLayout({
     email: res.profile.email,
     avatarUrl: res.profile.avatarUrl,
     username: res.profile.username,
+    tier: res.profile.tier,
+    defaultCurrency: res.profile.defaultCurrency,
+    totalTrips: res.profile.totalTrips,
+    memberSince: res.profile.createdAt
+      ? new Date(res.profile.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        })
+      : undefined,
   } : null;
 
   return (

@@ -74,7 +74,7 @@ export async function getPublicTripTemplates(): Promise<TemplateTripItem[]> {
         ...t.expenses.map((e) => e.currency),
         ...t.accommodations.map((a) => a.currency),
       ].filter(Boolean);
-      const currency = currencies[0] || t.profile?.defaultCurrency || "USD";
+      const currency = currencies[0] || t.profile?.defaultCurrency || "INR";
 
       return {
         id: t.id,

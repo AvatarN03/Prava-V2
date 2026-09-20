@@ -1371,11 +1371,51 @@
     - Replaced with an interactive SVG Line & Scatter Chart tracking monthly AI credits usage against the quota cap.
     - Integrated smooth gradient area fill, primary blue connection line (`#2D9BF0`), scatter points at each monthly data node with hover halos, dashed quota cap line, vertical guide lines, and clean tooltip tracking.
 
+- **Task 112 (Default Profile & Workspace Currency Standardized to INR)**:
+  - **Prisma Schema & Database Default (`prisma/schema.prisma`)**:
+    - Updated `Profile.defaultCurrency` to `@default("INR") @map("default_currency")`.
+    - Executed `npx prisma db push` to synchronize Postgres column default constraint on `default_currency` to `'INR'`.
+  - **Auth Sync & Profile Creation (`lib/auth/sync-profile.ts`)**:
+    - In step 3 (brand new profiles created on sign-in or OAuth), explicitly set `defaultCurrency: "INR"`.
+    - In step 2 (re-linked email profiles), ensured fallback defaults to `"INR"`.
+    - In step 1 (existing profiles on session login), automatically upgraded unset or default `"USD"` values to `"INR"`.
+  - **Actions & State Consistency**:
+    - Updated `features/profile/schema.ts` (`updateGeneralPreferencesSchema` defaults `defaultCurrency` to `"INR"`).
+    - Updated `features/profile/actions.ts` (`getCurrentProfile` auto-creation and fallback default to `"INR"`).
+    - Updated `features/profile/components/profile-editor.tsx` (initial state fallback to `"INR"`).
+    - Updated `features/trips/actions.ts` (`getUserAiPreferences` fallback to `"INR"`).
+    - Updated `features/templates/actions.ts` (creator template currency fallback to `"INR"`).
+    - Updated `app/(app)/trips/[tripId]/expenses/page.tsx` (userCurrency fallback to `"INR"`).
+    - Updated `features/trip-workspace/expenses/components/add-expense-dialog.tsx` (defaultCurrency prop and form reset default to `"INR"`).
+    - Updated `features/trip-workspace/expenses/components/expense-tracker.tsx` (userCurrency default to `"INR"`).
+
+- **Task 113 (Unified Workspace Header Profile Trigger & Quick-Glance Popover Card)**:
+  - **Collected Interactive Trigger Element (`components/app-shell/top-bar.tsx`)**:
+    - Wrapped user avatar and display name into a single unified interactive button acting as a `PopoverTrigger`.
+    - Applied theme-responsive hover styling (`hover:bg-slate-100 dark:hover:bg-slate-800/80` with smooth border transitions and subtle rounded pill geometry).
+  - **Quick-Glance Popover Component (`PopoverContent`)**:
+    - Positioned with `align="end"` and smooth elevation shadow.
+    - Displays user identity header with high-res avatar, full name, `@username`, and subscription tier badge (`Pro` / `Free`).
+    - Lists essential profile details at a glance:
+      - Linked email address
+      - Active default currency (e.g. `INR`)
+      - Active workspace trips count
+      - Member since registration date
+    - Added clean "View Profile & Settings" action link leading to `/profile`.
+    - Strictly omitted sign-out / logout options as per requirement.
+  - **Data Enrichment (`features/profile/actions.ts` & `app/(app)/layout.tsx`)**:
+    - Extended `TopBarUserInfo` interface and `getTopBarUserInfo()` query with `tier`, `defaultCurrency`, `totalTrips`, and `memberSince`.
+    - Hydrated `initialUserInfo` directly in `app/(app)/layout.tsx` from `getCurrentProfile()`.
+
 ## Status: All user issues resolved & verified
 - Google OAuth production state cookie preservation and session recovery implemented.
 - Immediate profile sync for new Google accounts added to auth callback.
 - Usage view metric cards display badges and credit numbers in flex-col on mobile viewports.
 - Usage chart transformed to a clean Line & Scatter graph tracking AI credits.
+- Default currency for new user profile sessions and workspace modules standardized to INR.
+- Workspace header avatar and username collected into a single hoverable trigger opening a glance Popover with profile details (no sign out).
+
+
 
 
 

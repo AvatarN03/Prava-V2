@@ -1,16 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 import {
+  ArrowRight,
   Bell,
   BookOpen,
+  Calendar,
+  Coins,
   Compass,
   CreditCard,
   LayoutDashboard,
   LayoutTemplate,
+  Mail,
   Menu,
   MessageSquare,
   ShieldAlert,
@@ -22,6 +27,11 @@ import { MorphIcon } from "morphicons/react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -66,6 +76,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
   });
 
   const [loading, setLoading] = useState(!initialUserInfo && !cachedUserInfo);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -277,34 +288,157 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
             </TooltipContent>
           </Tooltip>
 
-          {/* User Profile (Avatar and Name with Loading Skeleton & Fallback) */}
+          {/* User Profile (Avatar and Name collected in a single interactive Popover trigger) */}
           {loading ? (
             <div className="flex items-center gap-2 pl-1 pr-1" aria-busy="true" aria-label="Loading profile">
               <Skeleton className="h-7 w-7 rounded-full bg-slate-200 dark:bg-slate-800" />
               <Skeleton className="h-3.5 w-16 rounded bg-slate-200 dark:bg-slate-800 hidden sm:block" />
             </div>
           ) : (
-            <div className="flex items-center gap-2 pl-1 pr-1">
-              <Avatar className="h-7 w-7 ring-1 ring-slate-200/60 dark:ring-slate-700/60">
-                {userInfo.avatarUrl && (
-                  <AvatarImage
-                    src={userInfo.avatarUrl}
-                    alt={userInfo.name || "Avatar"}
-                    className="object-cover"
-                  />
-                )}
-                <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-[11px]">
-                  {userInfo.name ? (
-                    userInfo.name.replace(/^@/, "").charAt(0).toUpperCase()
-                  ) : (
-                    <User className="h-3.5 w-3.5" />
+            <Popover open={profileOpen} onOpenChange={setProfileOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-full border border-transparent hover:border-slate-200/80 dark:hover:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2D9BF0]"
+                  aria-label="User profile overview"
+                >
+                  <Avatar className="h-7 w-7 ring-1 ring-slate-200/60 dark:ring-slate-700/60">
+                    {userInfo.avatarUrl && (
+                      <AvatarImage
+                        src={userInfo.avatarUrl}
+                        alt={userInfo.name || "Avatar"}
+                        className="object-cover"
+                      />
+                    )}
+                    <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-[11px]">
+                      {userInfo.name ? (
+                        userInfo.name.replace(/^@/, "").charAt(0).toUpperCase()
+                      ) : (
+                        <User className="h-3.5 w-3.5" />
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[130px] truncate select-none hidden sm:inline">
+                    {userInfo.name || "Traveler"}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                sideOffset={8}
+                className="w-80 p-0 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xl overflow-hidden"
+              >
+                {/* Profile Identity Card */}
+                <div className="p-4 bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-11 w-11 ring-2 ring-white dark:ring-slate-800 shadow-xs shrink-0">
+                      {userInfo.avatarUrl && (
+                        <AvatarImage
+                          src={userInfo.avatarUrl}
+                          alt={userInfo.name || "Avatar"}
+                          className="object-cover"
+                        />
+                      )}
+                      <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-sm">
+                        {userInfo.name ? (
+                          userInfo.name.replace(/^@/, "").charAt(0).toUpperCase()
+                        ) : (
+                          <User className="h-5 w-5" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {userInfo.name || "Traveler"}
+                        </p>
+                        {userInfo.tier === "pro" ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Pro
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            Free
+                          </span>
+                        )}
+                      </div>
+                      {userInfo.username && (
+                        <p className="text-xs text-[#2D9BF0] dark:text-[#55B8FF] font-medium truncate mt-0.5">
+                          @{userInfo.username}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details at a glance */}
+                <div className="p-3.5 space-y-2.5 text-xs">
+                  {/* Email */}
+                  <div className="flex items-start gap-2.5 text-slate-600 dark:text-slate-400">
+                    <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 block mb-0.5">
+                        Email
+                      </span>
+                      <span className="text-slate-800 dark:text-slate-200 font-medium break-all select-all">
+                        {userInfo.email || "No email linked"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Currency & Trips */}
+                  <div className="flex items-start gap-2.5 text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                    <Coins className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 block mb-0.5">
+                          Default Currency
+                        </span>
+                        <span className="text-slate-800 dark:text-slate-200 font-medium">
+                          {userInfo.defaultCurrency || "INR"}
+                        </span>
+                      </div>
+                      {userInfo.totalTrips !== undefined && (
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 block mb-0.5">
+                            Workspace Trips
+                          </span>
+                          <span className="text-slate-800 dark:text-slate-200 font-medium">
+                            {userInfo.totalTrips} {userInfo.totalTrips === 1 ? "Trip" : "Trips"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Member Since */}
+                  {userInfo.memberSince && (
+                    <div className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                      <span className="text-[11px]">
+                        Member since {userInfo.memberSince}
+                      </span>
+                    </div>
                   )}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[130px] truncate select-none hidden sm:inline">
-                {userInfo.name || "Traveler"}
-              </span>
-            </div>
+                </div>
+
+                {/* Footer: View & Edit Profile Link (Strictly NO sign-out) */}
+                <div className="p-2.5 bg-slate-50/70 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-800/80">
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold text-[#2D9BF0] hover:text-white bg-[#2D9BF0]/10 hover:bg-[#2D9BF0] transition-all duration-150 cursor-pointer group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5" />
+                      View Profile &amp; Settings
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
       </header>

@@ -34,6 +34,10 @@ export async function syncUserProfile(user: User) {
         // Always preserve custom uploaded avatar from the database
         avatarUrl: existingById.avatarUrl || avatarUrl,
         username,
+        // Upgrade legacy/fresh USD defaults to INR
+        ...((!existingById.defaultCurrency || existingById.defaultCurrency === "USD") && {
+          defaultCurrency: "INR",
+        }),
       },
     });
   }
@@ -67,6 +71,7 @@ export async function syncUserProfile(user: User) {
           username: initialUsername,
           bio: existingByEmail.bio,
           isPublic: existingByEmail.isPublic,
+          defaultCurrency: existingByEmail.defaultCurrency && existingByEmail.defaultCurrency !== "USD" ? existingByEmail.defaultCurrency : "INR",
         },
       });
 
@@ -143,6 +148,7 @@ export async function syncUserProfile(user: User) {
       fullName: fullName,
       avatarUrl: avatarUrl,
       username: initialUsername,
+      defaultCurrency: "INR",
     },
   });
 }

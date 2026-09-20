@@ -31,7 +31,7 @@ export default async function ExpensesPage({ params }: ExpensesPageProps) {
       })
     : null;
 
-  const userCurrency = profile?.defaultCurrency || "USD";
+  const userCurrency = profile?.defaultCurrency || "INR";
 
   const [items, fxRatesData] = await Promise.all([
     db.expense.findMany({

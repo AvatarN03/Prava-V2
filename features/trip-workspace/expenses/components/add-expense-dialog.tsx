@@ -54,7 +54,7 @@ const CURRENCIES = [
   { value: "CHF", label: "CHF (Fr)" },
 ];
 
-export function AddExpenseDialog({ tripId, trigger, defaultCurrency = "USD" }: AddExpenseDialogProps) {
+export function AddExpenseDialog({ tripId, trigger, defaultCurrency = "INR" }: AddExpenseDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -62,7 +62,7 @@ export function AddExpenseDialog({ tripId, trigger, defaultCurrency = "USD" }: A
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
-    currency: defaultCurrency || "USD",
+    currency: defaultCurrency || "INR",
     category: "FOOD" as ExpenseCategory,
     date: new Date().toISOString().split("T")[0],
     paidBy: "",
@@ -75,7 +75,7 @@ export function AddExpenseDialog({ tripId, trigger, defaultCurrency = "USD" }: A
     setFormData({
       title: "",
       amount: "",
-      currency: "USD",
+      currency: defaultCurrency || "INR",
       category: "FOOD",
       date: new Date().toISOString().split("T")[0],
       paidBy: "",

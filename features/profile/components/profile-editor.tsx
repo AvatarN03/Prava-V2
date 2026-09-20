@@ -46,7 +46,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   const [isPublic, setIsPublic] = useState(initialProfile.isPublic);
 
   // General & Workspace Preferences (Loaded from Database)
-  const [defaultCurrency, setDefaultCurrency] = useState(initialProfile.defaultCurrency || "USD");
+  const [defaultCurrency, setDefaultCurrency] = useState(initialProfile.defaultCurrency || "INR");
   const [aiAutoPropose, setAiAutoPropose] = useState(initialProfile.aiAutoPropose ?? true);
   const [emailNotifications, setEmailNotifications] = useState(initialProfile.emailNotifications ?? true);
   const [offlineMode, setOfflineMode] = useState(initialProfile.offlineMode ?? false);
