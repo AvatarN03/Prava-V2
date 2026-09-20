@@ -37,21 +37,35 @@ import { getTopBarUserInfo, type TopBarUserInfo } from "@/features/profile/actio
 
 interface TopBarProps {
   onMobileMenuOpen: () => void;
+  initialUserInfo?: TopBarUserInfo | null;
 }
 
-export function TopBar({ onMobileMenuOpen }: TopBarProps) {
+// In-memory module cache to completely eliminate redundant roundtrips and avatar flashing across route navigations
+let cachedUserInfo: TopBarUserInfo | null = null;
+
+export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
   const pathname = usePathname();
   const supabase = createClient();
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [userInfo, setUserInfo] = useState<TopBarUserInfo>({
-    name: "Traveler",
-    email: null,
-    avatarUrl: null,
-    username: null,
+  const [userInfo, setUserInfo] = useState<TopBarUserInfo>(() => {
+    if (initialUserInfo) {
+      cachedUserInfo = initialUserInfo;
+      return initialUserInfo;
+    }
+    if (cachedUserInfo) {
+      return cachedUserInfo;
+    }
+    return {
+      name: "Traveler",
+      email: null,
+      avatarUrl: null,
+      username: null,
+    };
   });
+
+  const [loading, setLoading] = useState(!initialUserInfo && !cachedUserInfo);
 
   useEffect(() => {
     setMounted(true);
@@ -60,12 +74,15 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadUser() {
+    async function loadUser(showSkeleton = false) {
       try {
-        setLoading(true);
+        if (showSkeleton) {
+          setLoading(true);
+        }
         // Fetch verified user profile with avatar from Postgres database
         const res = await getTopBarUserInfo();
         if (res.success && res.data && isMounted) {
+          cachedUserInfo = res.data;
           setUserInfo(res.data);
           setLoading(false);
           return;
@@ -78,7 +95,7 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
 
         if (user && isMounted) {
           const userMeta = user.user_metadata || {};
-          setUserInfo({
+          const fallbackData: TopBarUserInfo = {
             name:
               userMeta.full_name ||
               userMeta.name ||
@@ -87,7 +104,9 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
             email: user.email || null,
             avatarUrl: userMeta.avatar_url || userMeta.picture || null,
             username: userMeta.username || null,
-          });
+          };
+          cachedUserInfo = fallbackData;
+          setUserInfo(fallbackData);
         }
       } catch (err) {
         console.error("Failed to load user in topbar:", err);
@@ -98,11 +117,14 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
       }
     }
 
-    loadUser();
+    // Only load if not cached yet or if needing background refresh
+    if (!cachedUserInfo) {
+      loadUser(!initialUserInfo);
+    }
 
     // Listen for custom profile update events (e.g. after uploading a new avatar)
     const handleProfileUpdate = () => {
-      loadUser();
+      loadUser(false);
     };
     window.addEventListener("prava-profile-updated", handleProfileUpdate);
 
@@ -110,11 +132,11 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
       isMounted = false;
       window.removeEventListener("prava-profile-updated", handleProfileUpdate);
     };
-  }, [supabase, pathname]);
+  }, [supabase]);
 
   const getPageInfo = () => {
     if (pathname.startsWith("/dashboard")) {
-      return { title: "Prava Dashboards", icon: LayoutDashboard };
+      return { title: "Prava Dashboard", icon: LayoutDashboard };
     }
     if (pathname.startsWith("/trips")) {
       return { title: "Prava Trips", icon: Compass };
@@ -193,10 +215,10 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
           </Button>
 
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs shrink-0">
+            <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-xs bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs shrink-0">
               <PageIcon className="h-4 w-4" />
             </div>
-            <h1 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-sm sm:text-base font-light sm:font-bold text-slate-900 dark:text-white tracking-tight truncate">
               {pageInfo.title}
             </h1>
           </div>

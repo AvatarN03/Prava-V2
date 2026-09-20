@@ -39,16 +39,16 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             href={item.href}
             onClick={onMobileClose}
             className={cn(
-              "group flex items-center gap-2.5 rounded-l-none rounded-r-md pl-4 pr-3 py-2 text-xs font-normal transition-all duration-200 ease-in-out relative cursor-pointer",
+              "group flex items-center gap-3 md:gap-2.5 rounded-l-none rounded-r-md pl-4 pr-3 py-2.5 md:py-2 text-sm md:text-xs font-medium md:font-normal transition-all duration-200 ease-in-out relative cursor-pointer",
               // Opposite-theme styling: In light mode, sidebar is dark; in dark mode, sidebar is light
               isActive
-                ? "bg-[#2D9BF0] text-white/90  shadow-xs"
-                : "text-slate-400 hover:text-white hover:bg-slate-100/15 hover:translate-x-0.5 dark:text-slate-600 dark:hover:text-slate-950 dark:hover:bg-slate-200 dark:hover:translate-x-0.5"
+                ? "bg-[#2D9BF0] text-white/90 shadow-xs"
+                : "text-slate-300 hover:text-white hover:bg-slate-100/15 hover:translate-x-0.5 dark:text-slate-600 dark:hover:text-slate-950 dark:hover:bg-slate-200 dark:hover:translate-x-0.5"
             )}
           >
             <Icon
               className={cn(
-                "h-4 w-4 transition-transform duration-200 shrink-0",
+                "h-4.5 w-4.5 md:h-4 md:w-4 transition-transform duration-200 shrink-0",
                 isActive
                   ? "text-white scale-105"
                   : "text-slate-400 group-hover:text-white group-hover:scale-110 dark:text-slate-500 dark:group-hover:text-slate-900"
@@ -58,7 +58,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             {item.badge && (
               <span
                 className={cn(
-                  "ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-medium shadow-2xs",
+                  "ml-auto rounded-full px-2 md:px-1.5 py-0.5 text-[10px] md:text-[9px] font-medium shadow-2xs",
                   isActive
                     ? "bg-white/20 text-white"
                     : "bg-white/10 text-slate-300 dark:bg-slate-300 dark:text-slate-800"
@@ -86,7 +86,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       {/* Sidebar Container: Static flex child on desktop, fixed overlay drawer on mobile */}
       <aside
         className={cn(
-          "w-52 shrink-0 flex flex-col transition-transform duration-300 ease-in-out",
+          "w-60 md:w-52 shrink-0 flex flex-col transition-transform duration-300 ease-in-out",
           // Mobile fixed drawer styling
           "fixed inset-y-0 left-0 z-40 bg-[#090E1A] text-slate-200 border-r border-[#152033] dark:bg-slate-100 dark:text-slate-900 dark:border-slate-300",
           // Desktop flex child styling (seamless transparent background matching outer shell)
@@ -135,7 +135,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <div className="flex-1 overflow-y-auto py-4 space-y-6 scrollbar-none">
           {/* Group 1: Workspace */}
           <div>
-            <div className="px-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400/80 dark:text-slate-500/90 select-none">
+            <div className="px-4 pb-2 text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300/90 dark:text-slate-600 select-none">
               Workspace
             </div>
             {renderNavGroup(workspaceNavItems)}
@@ -143,7 +143,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
           {/* Group 2: Explore */}
           <div>
-            <div className="px-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400/80 dark:text-slate-500/90 select-none">
+            <div className="px-4 pb-2 text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300/90 dark:text-slate-600 select-none">
               Explore
             </div>
             {renderNavGroup(otherNavItems)}
@@ -153,7 +153,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         {/* Bottom Area: Account Section (No border, with generous bottom padding) */}
         <div className="shrink-0 pt-2 pb-8 md:pb-10">
           <div>
-            <div className="px-4 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400/80 dark:text-slate-500/90 select-none">
+            <div className="px-4 pb-2 text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300/90 dark:text-slate-600 select-none">
               Account
             </div>
             {renderNavGroup(accountNavItems)}

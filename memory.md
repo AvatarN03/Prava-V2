@@ -1334,8 +1334,22 @@
       - Fixed `DialogHeader` with `pr-12` to prevent close icon collision.
       - Scrollable body (`flex-1 min-h-0 overflow-y-auto comfortable-scrollbar`).
       - Pinned `DialogFooter` with `Cancel` and `Create Trip`/`Save Changes` buttons always accessible.
-  - **Custom Visible Scrollbar (`app/globals.css`)**:
-    - Added `.comfortable-scrollbar` utility with `scrollbar-width: auto;`, 8px width, subtle rounded track (`rgba(148, 163, 184, 0.12)`), Prava Cerulean blue thumb (`rgba(45, 155, 240, 0.65)`), touch support, and `overscroll-behavior: contain`.
+- **Task 110 (Navigation Performance, Avatar Stability & Mobile UI Polish)**:
+  - **Avatar Re-rendering & Navigation Lag Elimination (`components/app-shell/top-bar.tsx`, `app-shell.tsx`, `layout.tsx`)**:
+    - Identified root cause of navigation lag: `useEffect` in `TopBar` had `pathname` in its dependency array. On every route transition, `TopBar` invoked the async `getTopBarUserInfo` database Server Action, unmounted the `<Avatar>`, rendered a flashing `<Skeleton>`, and triggered browser image re-requests.
+    - Server-rendered `initialUserInfo` directly in `app/(app)/layout.tsx` from `getCurrentProfile()` and piped through `AppShell` to `TopBar`.
+    - Implemented in-memory module-level caching (`cachedUserInfo`) and removed `pathname` dependency so the avatar mounts once, never unmounts, and route transitions are completely instantaneous. Background re-fetches (e.g. upon `prava-profile-updated`) update state seamlessly without flashing skeletons.
+  - **Dashboard Header Title Alignment**:
+    - Renamed "Prava Dashboards" to "Prava Dashboard" in `components/app-shell/top-bar.tsx` (`getPageInfo`) and `app/(app)/dashboard/page.tsx` (title, badge, metadata).
+  - **Plan with AI Button Removal**:
+    - Removed redundant "Plan with AI" button from `app/(app)/dashboard/page.tsx` header actions.
+  - **Mobile Sidebar Menus & Caps Polish (`components/app-shell/sidebar.tsx`)**:
+    - Increased mobile drawer width to `w-60 md:w-52`.
+    - Enlarged nav links to `text-sm md:text-xs font-medium md:font-normal py-2.5 md:py-2 gap-3 md:gap-2.5` with `h-4.5 w-4.5 md:h-4 md:w-4` icons.
+    - Enhanced uppercase group labels to `text-[11px] md:text-[10px] tracking-widest font-bold uppercase text-slate-300/90 dark:text-slate-600`.
+  - **Mobile Responsive Header Title & Icon Removal (`components/app-shell/top-bar.tsx` & `workspace-header.tsx`)**:
+    - Added `hidden sm:flex` to page icon container in workspace headers so the icon is cleanly hidden on mobile viewports.
+    - Adjusted title font to mini light font on mobile: `text-sm sm:text-base font-light sm:font-bold truncate`.
 
 ## Status: All user issues resolved & verified
 - UI test buttons removed from `/subscription`.
@@ -1345,5 +1359,11 @@
 - Avatar 15-minute reversion bug fixed.
 - Workspace header username hidden on mobile viewports.
 - Create Trip & Edit Trip dialogs mobile-responsive, capped to 75vh, with comfortable visible scrollbar.
+- Dashboard title fixed to "Prava Dashboard" (singular).
+- "Plan with AI" button removed from dashboard.
+- Page navigation lag & avatar flashing resolved via layout hydration & memoized user info.
+- Mobile menu text enlarged, tap spacing increased, caps headers tracking widened.
+- Workspace header title set to light font on mobile and icons hidden on mobile view.
 - All temporary files cleaned up.
+
 

@@ -357,10 +357,10 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs shrink-0">
+            <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-xs bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs shrink-0">
               <Compass className="h-4 w-4" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-xl sm:text-2xl font-light sm:font-bold tracking-tight text-foreground">
               {trip.title}
             </h1>
           </div>

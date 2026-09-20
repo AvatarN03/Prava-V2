@@ -2,7 +2,6 @@ import {
   Compass,
   LayoutDashboard,
   Plus,
-  Sparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ import { getDashboardSummary } from "@/features/dashboard/queries";
 import { CreateTripDialog } from "@/features/trips/components/create-trip-dialog";
 
 export const metadata = {
-  title: "Prava Dashboards",
+  title: "Prava Dashboard",
   description: "Cross-trip overview, upcoming schedules, and departure readiness.",
 };
 
@@ -63,7 +62,7 @@ export default async function DashboardPage() {
               <LayoutDashboard className="h-3.5 w-3.5" />
             </span>
             <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Prava Dashboards
+              Prava Dashboard
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
@@ -75,15 +74,6 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 cursor-pointer border-border hover:border-primary/50"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span>Plan with AI</span>
-          </Button>
-
           <CreateTripDialog
             trigger={
               <Button size="sm" className="gap-1.5 cursor-pointer">
