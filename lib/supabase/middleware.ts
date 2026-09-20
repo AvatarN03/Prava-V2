@@ -33,22 +33,31 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
+  const pathname = request.nextUrl.pathname;
+
+  // Crucial: Allow /auth/callback to process PKCE code exchange directly without premature getUser() session modification
+  if (pathname.startsWith("/auth/callback")) {
+    return supabaseResponse;
+  }
+
   // IMPORTANT: Avoid writing any logic between createServerClient and getUser().
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
   // Fallback: If auth code or token_hash lands on any route other than /auth/callback,
   // redirect immediately to /auth/callback to ensure server-side PKCE / OTP exchange.
   const hasAuthCode = request.nextUrl.searchParams.has("code") || request.nextUrl.searchParams.has("token_hash");
-  if (hasAuthCode && !pathname.startsWith("/auth/callback")) {
+  if (hasAuthCode) {
     const callbackUrl = new URL("/auth/callback", request.url);
     request.nextUrl.searchParams.forEach((val, key) => {
       callbackUrl.searchParams.set(key, val);
     });
-    return NextResponse.redirect(callbackUrl);
+    const redirectResponse = NextResponse.redirect(callbackUrl);
+    supabaseResponse.cookies.getAll().forEach((c) => {
+      redirectResponse.cookies.set(c.name, c.value, c);
+    });
+    return redirectResponse;
   }
 
   // Handle legacy /login and /signup route requests

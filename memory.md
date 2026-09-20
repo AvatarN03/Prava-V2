@@ -1351,19 +1351,31 @@
     - Added `hidden sm:flex` to page icon container in workspace headers so the icon is cleanly hidden on mobile viewports.
     - Adjusted title font to mini light font on mobile: `text-sm sm:text-base font-light sm:font-bold truncate`.
 
+- **Task 111 (Google OAuth Production State Fix, Mobile Usage Cards & Line/Scatter Chart)**:
+  - **Google OAuth Production Redirection & "Bad OAuth State" Fix**:
+    - **Root-Cause Analysis**:
+      1. In Next.js App Router, `NextResponse.redirect()` returns a fresh response object with empty `Set-Cookie` headers, dropping any session cookies written during `supabase.auth.exchangeCodeForSession()`.
+      2. `lib/supabase/middleware.ts` was running `supabase.auth.getUser()` on requests hitting `/auth/callback?code=...` before the route handler could exchange the code, causing token race conditions and modifying cookie state prematurely.
+      3. `app/auth/page.tsx` was passing `prompt: "consent"` to Supabase Google OAuth, which triggered forced re-consent dialogues on each sign-in that invalidated PKCE state cookies.
+    - **Implemented Solution**:
+      - In `app/auth/callback/route.ts`, created `createRedirectWithCookies` to explicitly attach all cookies from `await cookies()` to outgoing `NextResponse.redirect` instances.
+      - Synced user profile immediately upon successful OAuth code exchange using `syncUserProfile(user)` so new Google accounts are provisioned in PostgreSQL instantly.
+      - Added active-session recovery: If `exchangeCodeForSession(code)` returns a warning or duplicate code error, the callback checks `supabase.auth.getUser()`. If a valid session already exists, it forwards to `/dashboard` instead of redirecting with `bad_oauth_state`.
+      - In `lib/supabase/middleware.ts`, excluded `/auth/callback` from calling `supabase.auth.getUser()` prior to the route handler exchange, and attached `supabaseResponse.cookies` to fallback redirects.
+      - In `app/auth/page.tsx`, changed Google OAuth `prompt: "consent"` to `prompt: "select_account"`.
+  - **Usage View Mobile Metric Cards Layout (`features/pricing/components/usage-view.tsx`)**:
+    - Converted AI Credits and Workspace Trips metric headers to `flex flex-col sm:flex-row sm:items-center justify-between gap-3`.
+    - Wrapped badges and credit/trip quota numbers in `flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-1.5 self-start sm:self-auto` to cleanly stack vertically one below another in flex-col on mobile screens while preserving horizontal layout on desktop.
+  - **Usage Chart Transformation (`features/pricing/components/usage-chart.tsx`)**:
+    - Completely removed trips metrics and dual-bar chart visualization.
+    - Replaced with an interactive SVG Line & Scatter Chart tracking monthly AI credits usage against the quota cap.
+    - Integrated smooth gradient area fill, primary blue connection line (`#2D9BF0`), scatter points at each monthly data node with hover halos, dashed quota cap line, vertical guide lines, and clean tooltip tracking.
+
 ## Status: All user issues resolved & verified
-- UI test buttons removed from `/subscription`.
-- Pro Active & Manage Subscription preserved.
-- Polar customer portal 404 & 403 gracefully handled.
-- Database deduplication & clean slate executed.
-- Avatar 15-minute reversion bug fixed.
-- Workspace header username hidden on mobile viewports.
-- Create Trip & Edit Trip dialogs mobile-responsive, capped to 75vh, with comfortable visible scrollbar.
-- Dashboard title fixed to "Prava Dashboard" (singular).
-- "Plan with AI" button removed from dashboard.
-- Page navigation lag & avatar flashing resolved via layout hydration & memoized user info.
-- Mobile menu text enlarged, tap spacing increased, caps headers tracking widened.
-- Workspace header title set to light font on mobile and icons hidden on mobile view.
-- All temporary files cleaned up.
+- Google OAuth production state cookie preservation and session recovery implemented.
+- Immediate profile sync for new Google accounts added to auth callback.
+- Usage view metric cards display badges and credit numbers in flex-col on mobile viewports.
+- Usage chart transformed to a clean Line & Scatter graph tracking AI credits.
+
 
 

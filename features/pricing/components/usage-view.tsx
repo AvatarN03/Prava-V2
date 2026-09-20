@@ -116,9 +116,9 @@ export function UsageView({ initialUsage }: UsageViewProps) {
         {/* Metric 1: AI Message Credits (Primary Highlight) */}
         <Card className="border-border bg-card shadow-xs rounded-sm">
           <CardHeader className="p-4 pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary shrink-0">
                   <Sparkles className="h-4 w-4" />
                 </span>
                 <div>
@@ -128,7 +128,7 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-1.5 self-start sm:self-auto">
                 {isCreditsExhausted ? (
                   <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5 rounded-xs">
                     Limit Reached
@@ -181,9 +181,9 @@ export function UsageView({ initialUsage }: UsageViewProps) {
         {/* Metric 2: Workspace Trip Slots */}
         <Card className="border-border bg-card shadow-xs rounded-sm">
           <CardHeader className="p-4 pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary shrink-0">
                   <Compass className="h-4 w-4" />
                 </span>
                 <div>
@@ -193,7 +193,7 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-1.5 self-start sm:self-auto">
                 <Badge variant="outline" className="text-[10px] font-medium border-border">
                   {usage.tripsRemaining} Slots Free
                 </Badge>

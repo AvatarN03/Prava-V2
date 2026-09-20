@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { type EmailOtpType } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
@@ -17,10 +19,37 @@ export async function GET(request: Request) {
     next = "/dashboard";
   }
 
-  // Handle OAuth or Supabase provider error (e.g., user cancelled Google login)
+  const cookieStore = await cookies();
+
+  // Helper to ensure all session cookies are explicitly attached to the redirect response
+  const createRedirectWithCookies = (targetUrl: string) => {
+    const response = NextResponse.redirect(targetUrl);
+    cookieStore.getAll().forEach((c) => {
+      response.cookies.set(c.name, c.value, c);
+    });
+    return response;
+  };
+
+  // Determine target origin (supporting x-forwarded-host in production)
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const isLocalEnv = process.env.NODE_ENV === "development";
+  const redirectOrigin = isLocalEnv || !forwardedHost ? origin : `https://${forwardedHost}`;
+
+  // Handle OAuth or Supabase provider error (e.g., user cancelled Google login or stale state)
   if (error) {
     const message = errorDescription || error;
-    return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(message)}`);
+    // Check if session is already active despite provider error parameter
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      try {
+        await syncUserProfile(user);
+      } catch (e) {
+        console.error("Profile sync error on active user:", e);
+      }
+      return createRedirectWithCookies(`${redirectOrigin}${next}`);
+    }
+    return createRedirectWithCookies(`${redirectOrigin}/auth?error=${encodeURIComponent(message)}`);
   }
 
   const supabase = await createClient();
@@ -29,20 +58,29 @@ export async function GET(request: Request) {
   if (code) {
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     if (!exchangeError) {
-      const forwardedHost = request.headers.get("x-forwarded-host");
-      const isLocalEnv = process.env.NODE_ENV === "development";
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          await syncUserProfile(user);
+        } catch (e) {
+          console.error("Profile sync error on Google sign-in:", e);
+        }
       }
+      return createRedirectWithCookies(`${redirectOrigin}${next}`);
     } else {
-      console.error("Auth callback code exchange error:", exchangeError.message);
-      return NextResponse.redirect(
-        `${origin}/auth?error=${encodeURIComponent(exchangeError.message)}`
+      console.warn("Auth callback code exchange warning:", exchangeError.message);
+      // Resilient fallback: Check if session is already active (e.g. duplicate callback or session already established)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          await syncUserProfile(user);
+        } catch (e) {
+          console.error("Profile sync error on active session:", e);
+        }
+        return createRedirectWithCookies(`${redirectOrigin}${next}`);
+      }
+      return createRedirectWithCookies(
+        `${redirectOrigin}/auth?error=${encodeURIComponent(exchangeError.message)}`
       );
     }
   }
@@ -55,26 +93,30 @@ export async function GET(request: Request) {
     });
 
     if (!verifyError) {
-      const forwardedHost = request.headers.get("x-forwarded-host");
-      const isLocalEnv = process.env.NODE_ENV === "development";
-
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        try {
+          await syncUserProfile(user);
+        } catch (e) {
+          console.error("Profile sync error on OTP verify:", e);
+        }
       }
+      return createRedirectWithCookies(`${redirectOrigin}${next}`);
     } else {
       console.error("Auth callback token verification error:", verifyError.message);
-      return NextResponse.redirect(
-        `${origin}/auth?error=${encodeURIComponent(verifyError.message)}`
+      return createRedirectWithCookies(
+        `${redirectOrigin}/auth?error=${encodeURIComponent(verifyError.message)}`
       );
     }
   }
 
-  // Fallback: If no code or token_hash was provided
-  return NextResponse.redirect(
-    `${origin}/auth?error=${encodeURIComponent("Invalid or expired authentication link.")}`
+  // Fallback: If no code or token_hash was provided, check if user has active session
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    return createRedirectWithCookies(`${redirectOrigin}${next}`);
+  }
+
+  return createRedirectWithCookies(
+    `${redirectOrigin}/auth?error=${encodeURIComponent("Invalid or expired authentication link.")}`
   );
 }
