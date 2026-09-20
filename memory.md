@@ -1407,6 +1407,48 @@
     - Extended `TopBarUserInfo` interface and `getTopBarUserInfo()` query with `tier`, `defaultCurrency`, `totalTrips`, and `memberSince`.
     - Hydrated `initialUserInfo` directly in `app/(app)/layout.tsx` from `getCurrentProfile()`.
 
+- **Task 114 (Dashboard Empty-State Visual Card, Minimalist Create Trip Buttons & Pro Avatar Circle Indicator)**:
+  - **Dashboard Empty-State Visual Card (`features/dashboard/components/dashboard-empty-state.tsx`)**:
+    - Built a responsive split card (`grid grid-cols-1 lg:grid-cols-12`) replacing the plain text empty placeholder when no trips exist.
+    - Left column features travel workspace badge, heading, value propositions (Itinerary timeline, Stays & confirmation codes, Multi-currency budget in INR, Offline checklists), and a prominent, clickable Create Trip button.
+    - Right column renders a tailored travel-themed SVG illustration featuring a world globe wireframe, flight path arc with airplane, Prava-branded luggage/suitcase with vertical ribs and wheels, compass rose, map pins, and passport expedition stamp.
+  - **Create Trip Button Tactile Minimalist Polish (`app/(app)/dashboard/page.tsx` & empty state)**:
+    - Updated both the dashboard header "Create trip" button and the empty state card button to `rounded-xs` with `active:scale-[0.98]`, prominent `#2D9BF0` brand coloring, and tactile click feedback.
+  - **TopBar Profile Popover Minimal Rounding (`components/app-shell/top-bar.tsx`)**:
+    - Reduced radius across the trigger button and `PopoverContent` to `rounded-xs` for a high-efficiency Linear/Notion feel.
+  - **Pro Member Visual Avatar Ring (`components/app-shell/top-bar.tsx`)**:
+    - For Pro members (`userInfo.tier === "pro"`), added a glowing amber/gold circular ring (`ring-2 ring-amber-400 dark:ring-amber-400 ring-offset-1 ring-offset-background`) and an amber sparkles badge overlay on the avatar.
+    - In the Popover card, the avatar also displays a prominent `ring-2 ring-amber-400` with sparkles badge.
+
+- **Task 115 (Combined Travel Essentials Quick Actions & Mobile Padding Polish)**:
+  - **Combined Quick Actions Component (`features/dashboard/components/dashboard-quick-actions.tsx`)**:
+    - Created a cohesive 3-card suite combining related travel tools instead of scattered individual menus:
+      1. **Weather & Currency Tools** (`Live Travel Utilities`): Real-time 5-day weather radar, ECB currency conversion to INR, and Leaflet maps.
+      2. **Country Guide & Languages** (`Destination Intelligence`): Country profiles, visa facts, emergency lines, and local phrases.
+      3. **Curated Templates & Forum** (`Community & Discovery`): 1-click cloneable templates, travel stories, and discussions.
+    - Integrated deep-link pills for every sub-tool with instant click navigations.
+  - **Dashboard Integration (`app/(app)/dashboard/page.tsx`)**:
+    - Rendered `DashboardQuickActions` directly beneath `DashboardEmptyState` when `metrics.totalTrips === 0`, ensuring new travelers have instant access to tools.
+    - Also placed `DashboardQuickActions` at the bottom of active dashboards before cross-trip metrics.
+  - **Button Mobile Padding & Touch Polish**:
+    - Increased mobile padding on `DashboardEmptyState`'s "Create Your First Trip" button (`h-12 sm:h-11 px-7 sm:px-6 py-3 sm:py-2.5 w-full sm:w-auto`).
+    - Increased mobile padding on the top header "Create trip" button (`h-10 sm:h-9 px-5 sm:px-4 py-2 sm:py-1.5`).
+
+- **Task 116 (Profile Popover Subtle Rounding & Mobile Right-Shifted Create Trip Buttons)**:
+  - **Profile Popover Subtle Rounding (`components/app-shell/top-bar.tsx`)**:
+    - Replaced harsh `rounded-xs` with modern subtle rounding:
+      - Trigger button: `rounded-md`
+      - PopoverContent: `rounded-lg`
+      - Badges: `rounded`
+      - Bottom "View Profile & Settings" link: `rounded-md`
+  - **Create Trip Button Sizing & Mobile Right Alignment**:
+    - In `app/(app)/dashboard/page.tsx`:
+      - Container styled with `self-end sm:self-auto` to shift to the right on mobile viewports.
+      - Compact desktop padding (`h-8.5 px-3.5 py-1.5 rounded-sm text-xs`) and generous mobile padding (`h-10 px-5 py-2.5 rounded-md text-sm`).
+    - In `features/dashboard/components/dashboard-empty-state.tsx`:
+      - Container styled with `flex justify-end sm:justify-start` to shift to the right on mobile.
+      - Compact desktop padding (`h-9 px-4 py-1.5 rounded-sm text-xs`) and generous mobile padding (`h-11 px-6 py-2.5 rounded-md text-sm`).
+
 ## Status: All user issues resolved & verified
 - Google OAuth production state cookie preservation and session recovery implemented.
 - Immediate profile sync for new Google accounts added to auth callback.
@@ -1414,6 +1456,24 @@
 - Usage chart transformed to a clean Line & Scatter graph tracking AI credits.
 - Default currency for new user profile sessions and workspace modules standardized to INR.
 - Workspace header avatar and username collected into a single hoverable trigger opening a glance Popover with profile details (no sign out).
+- TopBar profile popup updated with subtle rounded corners (rounded-lg) and trigger (rounded-md).
+- Pro member avatar highlighted with a distinctive amber circular ring and badge.
+- Dashboard empty state upgraded with responsive travel-theme SVG illustration, value highlights, and prominent minimalist button.
+- Combined travel essentials quick actions implemented beneath the empty state and across the dashboard.
+- Create trip buttons mobile touch targets and padding increased and right-aligned on mobile.
+
+- **Task 117 (Modal Dialog Scrollbars — Ultra-Thin & Hidden Scrollbar Utilities)**:
+  - **Issue**: In `CreateTripDialog` and `EditTripDialog`, the modal body previously had `comfortable-scrollbar` (8px width with visible track), creating a wide, prominent scrollbar that distracted from the modal content.
+  - **Solution**:
+    - Added `.no-scrollbar` (`scrollbar-width: none; -ms-overflow-style: none; ::-webkit-scrollbar { display: none; }`) to `app/globals.css` for zero-distraction hidden scrollbars.
+    - Added `.ultra-thin-scrollbar` (`scrollbar-width: thin; ::-webkit-scrollbar { width: 2px; height: 2px; }` with transparent track and subtle 2px Cerulean thumb) to `app/globals.css` for whisper-thin, modern scrollbars.
+    - Updated `create-trip-dialog.tsx` (line 248) and `edit-trip-dialog.tsx` (line 192) to use `ultra-thin-scrollbar`.
+    - Preserved full smooth scrollability via touch, trackpad, and mousewheel while keeping the dialog clean and visually balanced.
+    - Preserved user explicit constraint: build skipped.
+
+
+
+
 
 
 

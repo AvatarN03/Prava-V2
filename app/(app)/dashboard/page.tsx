@@ -1,5 +1,4 @@
 import {
-  Compass,
   LayoutDashboard,
   Plus,
 } from "lucide-react";
@@ -9,7 +8,9 @@ import { Card } from "@/components/ui/card";
 
 import { ActiveTripWorkspaceCard } from "@/features/dashboard/components/active-trip-workspace-card";
 import { AiAssistantCard } from "@/features/dashboard/components/ai-assistant-card";
+import { DashboardEmptyState } from "@/features/dashboard/components/dashboard-empty-state";
 import { DashboardMetrics } from "@/features/dashboard/components/dashboard-metrics";
+import { DashboardQuickActions } from "@/features/dashboard/components/dashboard-quick-actions";
 import { FinancialSnapshotCard } from "@/features/dashboard/components/financial-snapshot-card";
 import { RecentTripsList } from "@/features/dashboard/components/recent-trips-list";
 import { TravelEssentialsGrid } from "@/features/dashboard/components/travel-essentials-grid";
@@ -73,11 +74,11 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-end self-end sm:self-auto gap-2.5">
           <CreateTripDialog
             trigger={
-              <Button size="sm" className="gap-1.5 cursor-pointer">
-                <Plus className="w-4 h-4" />
+              <Button className="h-10 sm:h-8.5 px-5 sm:px-3.5 py-2.5 sm:py-1.5 rounded-md sm:rounded-sm text-sm sm:text-xs font-semibold gap-1.5 cursor-pointer shadow-xs hover:shadow transition-all active:scale-[0.99] bg-[#2D9BF0] hover:bg-[#2587D3] text-white">
+                <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 <span>Create trip</span>
               </Button>
             }
@@ -87,22 +88,10 @@ export default async function DashboardPage() {
 
       {/* Empty State vs Full Workspace */}
       {metrics.totalTrips === 0 ? (
-        <Card className="border-border bg-card p-12 text-center shadow-xs">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-4">
-            <Compass className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground">No Trips Found</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto mb-6">
-            Start planning your first travel adventure. Track itineraries, stays, expenses, and notes in one place.
-          </p>
-          <CreateTripDialog
-            trigger={
-              <Button className="gap-2 cursor-pointer">
-                <Plus className="w-4 h-4" /> Create Your First Trip
-              </Button>
-            }
-          />
-        </Card>
+        <div className="space-y-6">
+          <DashboardEmptyState />
+          <DashboardQuickActions />
+        </div>
       ) : (
         <>
           {/* Hero Section: Upcoming Trip Card (Full Width) */}
@@ -128,6 +117,9 @@ export default async function DashboardPage() {
               <AiAssistantCard />
             </div>
           </div>
+
+          {/* Quick Actions & Travel Utilities */}
+          <DashboardQuickActions />
 
           {/* Bottom Section: Cross-Trip Metrics Overview */}
           <div className="pt-2">

@@ -299,25 +299,42 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-full border border-transparent hover:border-slate-200/80 dark:hover:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2D9BF0]"
+                  className="flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-md border border-transparent hover:border-slate-200/80 dark:hover:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2D9BF0]"
                   aria-label="User profile overview"
                 >
-                  <Avatar className="h-7 w-7 ring-1 ring-slate-200/60 dark:ring-slate-700/60">
-                    {userInfo.avatarUrl && (
-                      <AvatarImage
-                        src={userInfo.avatarUrl}
-                        alt={userInfo.name || "Avatar"}
-                        className="object-cover"
-                      />
-                    )}
-                    <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-[11px]">
-                      {userInfo.name ? (
-                        userInfo.name.replace(/^@/, "").charAt(0).toUpperCase()
-                      ) : (
-                        <User className="h-3.5 w-3.5" />
+                  <div className="relative shrink-0">
+                    <Avatar
+                      className={cn(
+                        "h-7 w-7 transition-all",
+                        userInfo.tier === "pro"
+                          ? "ring-2 ring-amber-400 dark:ring-amber-400 ring-offset-1 ring-offset-background shadow-xs"
+                          : "ring-1 ring-slate-200/60 dark:ring-slate-700/60"
                       )}
-                    </AvatarFallback>
-                  </Avatar>
+                    >
+                      {userInfo.avatarUrl && (
+                        <AvatarImage
+                          src={userInfo.avatarUrl}
+                          alt={userInfo.name || "Avatar"}
+                          className="object-cover"
+                        />
+                      )}
+                      <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-[11px]">
+                        {userInfo.name ? (
+                          userInfo.name.replace(/^@/, "").charAt(0).toUpperCase()
+                        ) : (
+                          <User className="h-3.5 w-3.5" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    {userInfo.tier === "pro" && (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-amber-500 ring-1 ring-white dark:ring-slate-900"
+                        title="Verified Pro Member"
+                      >
+                        <Sparkles className="h-1.5 w-1.5 text-white" />
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[130px] truncate select-none hidden sm:inline">
                     {userInfo.name || "Traveler"}
                   </span>
@@ -326,27 +343,44 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
               <PopoverContent
                 align="end"
                 sideOffset={8}
-                className="w-80 p-0 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xl overflow-hidden"
+                className="w-80 p-0 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0E1526] shadow-xl overflow-hidden"
               >
                 {/* Profile Identity Card */}
                 <div className="p-4 bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800/80">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-11 w-11 ring-2 ring-white dark:ring-slate-800 shadow-xs shrink-0">
-                      {userInfo.avatarUrl && (
-                        <AvatarImage
-                          src={userInfo.avatarUrl}
-                          alt={userInfo.name || "Avatar"}
-                          className="object-cover"
-                        />
-                      )}
-                      <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-sm">
-                        {userInfo.name ? (
-                          userInfo.name.replace(/^@/, "").charAt(0).toUpperCase()
-                        ) : (
-                          <User className="h-5 w-5" />
+                    <div className="relative shrink-0">
+                      <Avatar
+                        className={cn(
+                          "h-11 w-11 shadow-xs",
+                          userInfo.tier === "pro"
+                            ? "ring-2 ring-amber-400 dark:ring-amber-400 ring-offset-2 ring-offset-background"
+                            : "ring-2 ring-white dark:ring-slate-800"
                         )}
-                      </AvatarFallback>
-                    </Avatar>
+                      >
+                        {userInfo.avatarUrl && (
+                          <AvatarImage
+                            src={userInfo.avatarUrl}
+                            alt={userInfo.name || "Avatar"}
+                            className="object-cover"
+                          />
+                        )}
+                        <AvatarFallback className="bg-gradient-to-tr from-[#2D9BF0] to-[#55B8FF] text-white font-bold text-sm">
+                          {userInfo.name ? (
+                            userInfo.name.replace(/^@/, "").charAt(0).toUpperCase()
+                          ) : (
+                            <User className="h-5 w-5" />
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      {userInfo.tier === "pro" && (
+                        <span
+                          className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 ring-1.5 ring-white dark:ring-slate-900 text-white shadow-xs"
+                          title="Verified Pro Member"
+                        >
+                          <Sparkles className="h-2.5 w-2.5" />
+                        </span>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
@@ -428,7 +462,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
                   <Link
                     href="/profile"
                     onClick={() => setProfileOpen(false)}
-                    className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-semibold text-[#2D9BF0] hover:text-white bg-[#2D9BF0]/10 hover:bg-[#2D9BF0] transition-all duration-150 cursor-pointer group"
+                    className="flex items-center justify-between w-full px-3 py-2 rounded-md text-xs font-semibold text-[#2D9BF0] hover:text-white bg-[#2D9BF0]/10 hover:bg-[#2D9BF0] transition-all duration-150 cursor-pointer group"
                   >
                     <span className="flex items-center gap-2">
                       <User className="h-3.5 w-3.5" />

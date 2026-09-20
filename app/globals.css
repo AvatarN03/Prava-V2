@@ -248,6 +248,49 @@ html {
 }
 
 /* =========================================================
+   NO SCROLLBAR UTILITY (Hides scrollbar while preserving scroll)
+   ========================================================= */
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* =========================================================
+   ULTRA-THIN SCROLLBAR UTILITY (2px whisper-thin bar)
+   ========================================================= */
+
+.ultra-thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(45, 155, 240, 0.3) transparent;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(45, 155, 240, 0.3);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.ultra-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(45, 155, 240, 0.75);
+}
+
+/* =========================================================
    SUBTLE BLUE WORKSPACE BACKGROUND PATTERN (Independent of Theme)
    ========================================================= */
 

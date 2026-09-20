@@ -245,7 +245,7 @@ export function CreateTripDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4 comfortable-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4 ultra-thin-scrollbar">
             {error && (
               <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs space-y-1.5">
                 <p className="text-destructive font-medium">{error}</p>
