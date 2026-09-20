@@ -20,7 +20,6 @@ model Profile {
   
   // General & Workspace Preferences
   defaultCurrency    String   @default("USD") @map("default_currency")
-  dateFormat         String   @default("MMM D, YYYY") @map("date_format")
   aiAutoPropose      Boolean  @default(true) @map("ai_auto_propose")
   emailNotifications Boolean  @default(true) @map("email_notifications")
   offlineMode        Boolean  @default(false) @map("offline_mode")

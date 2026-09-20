@@ -335,6 +335,10 @@ export async function getTripConversation(tripId: string, conversationId?: strin
     });
 
     const userQuota = await getUserAiCredits(user.id);
+    const profile = await db.profile.findUnique({
+      where: { id: user.id },
+      select: { aiAutoPropose: true },
+    });
 
     return {
       success: true,
@@ -343,6 +347,7 @@ export async function getTripConversation(tripId: string, conversationId?: strin
       messages,
       totalMessages: messages.length,
       userQuota,
+      aiAutoPropose: profile?.aiAutoPropose ?? true,
     };
   } catch (error) {
     console.error("Error loading conversation:", error);
@@ -445,12 +450,13 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
       },
     });
 
-    // Lookup user's currency preference (default to INR for seamless Indian & global traveler support)
+    // Lookup user's currency and proposal preferences
     const profile = await db.profile.findUnique({
       where: { id: user.id },
-      select: { defaultCurrency: true },
+      select: { defaultCurrency: true, aiAutoPropose: true },
     });
     const userCurrency = profile?.defaultCurrency || "INR";
+    const aiAutoPropose = profile?.aiAutoPropose ?? true;
 
     // Build chat history for graph
     const history = conversation.messages.map((m) => ({
@@ -467,6 +473,7 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
       userCurrency,
       preloadedContext: contextResult,
       forceFreeFallback: userQuota.remaining <= 0,
+      aiAutoPropose,
     });
 
     // Persist assistant message
@@ -481,7 +488,7 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
     let savedProposalDTO: AiProposalDTO | null = null;
     const payload = agentResult.proposalPayload;
 
-    if (payload && payload.changes.length > 0) {
+    if (aiAutoPropose && payload && payload.changes.length > 0) {
       const savedProposal = await db.aiProposal.create({
         data: {
           tripId,

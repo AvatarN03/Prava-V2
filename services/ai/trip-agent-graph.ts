@@ -30,6 +30,7 @@ export interface AgentGraphInput {
   userCurrency?: string;
   preloadedContext?: Awaited<ReturnType<typeof buildTripContext>>;
   forceFreeFallback?: boolean;
+  aiAutoPropose?: boolean;
 }
 
 export interface AgentGraphOutput {
@@ -181,6 +182,7 @@ export async function runTripAgentGraph(
     userCurrency = "INR",
     preloadedContext,
     forceFreeFallback = false,
+    aiAutoPropose = true,
   } = input;
 
   // 1. Resolve trip context (avoid duplicate PostgreSQL roundtrips)
@@ -222,7 +224,9 @@ export async function runTripAgentGraph(
           model,
           contents: geminiContents,
           config: {
-            systemInstruction: context?.proposalPrompt || "You are Prava AI travel assistant.",
+            systemInstruction: aiAutoPropose
+              ? (context?.proposalPrompt || "You are Prava AI travel assistant.")
+              : (context?.conversationalPrompt || "You are Prava AI travel assistant."),
             temperature: 0.5,
             maxOutputTokens: 8192,
             thinkingConfig: {
@@ -237,7 +241,7 @@ export async function runTripAgentGraph(
         return {
           responseText: cleanedText,
           modelUsed: model,
-          proposalPayload: payload,
+          proposalPayload: aiAutoPropose ? payload : null,
         };
       } catch (error) {
         console.warn(`Gemini trips model [${model}] failed, trying fallback:`, error);

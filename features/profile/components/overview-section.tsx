@@ -1,10 +1,12 @@
 "use client";
 
-import { ProfileWithStats } from "../actions";
+import Link from "next/link";
+
+import { Globe, Lock, Loader2, Save, ExternalLink } from "lucide-react";
+
 import { AvatarUpload } from "@/components/storage/avatar-upload";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardHeader,
@@ -13,9 +15,11 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Globe, Lock, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+
+import { ProfileWithStats } from "../actions";
 
 interface OverviewSectionProps {
   profile: ProfileWithStats;
@@ -42,6 +46,11 @@ export function OverviewSection({
   onSave,
   isSaving,
 }: OverviewSectionProps) {
+  const hasUnsavedChanges =
+    fullName.trim() !== (profile.fullName || "").trim() ||
+    bio.trim() !== (profile.bio || "").trim() ||
+    isPublic !== profile.isPublic;
+
   return (
     <div className="space-y-6 max-w-3xl">
       {/* 1. Profile Picture & Summary Card */}
@@ -66,8 +75,8 @@ export function OverviewSection({
                   <h3 className="text-base font-semibold text-foreground">
                     {profile.fullName || profile.username || "Travel Creator"}
                   </h3>
-                  <Badge variant={isPublic ? "default" : "secondary"} className="text-[10px]">
-                    {isPublic ? (
+                  <Badge variant={profile.isPublic ? "default" : "secondary"} className="text-[10px]">
+                    {profile.isPublic ? (
                       <span className="flex items-center gap-1">
                         <Globe className="h-2.5 w-2.5" /> Public Creator
                       </span>
@@ -77,6 +86,14 @@ export function OverviewSection({
                       </span>
                     )}
                   </Badge>
+                  {isPublic !== profile.isPublic && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40"
+                    >
+                      Pending Save ({isPublic ? "Will be Public" : "Will be Private"})
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs font-mono text-muted-foreground">
                   @{profile.username || "traveler"}
@@ -171,7 +188,7 @@ export function OverviewSection({
           </div>
 
           {/* Public Creator Toggle */}
-          <div className="rounded-sm border border-border bg-muted/30 p-3.5 space-y-2">
+          <div className="rounded-sm border border-border bg-muted/30 p-3.5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5 pr-4">
                 <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
@@ -189,19 +206,77 @@ export function OverviewSection({
                 disabled={isSaving}
               />
             </div>
+
+            <div className="pt-2 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+              <div className="text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                <span className="font-medium text-foreground">Current State:</span>
+                {isPublic ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    Public (Enabled)
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground font-medium">
+                    Private (Hidden from public)
+                  </span>
+                )}
+                {isPublic !== profile.isPublic && (
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                    — Click &quot;Save Configurations&quot; to apply
+                  </span>
+                )}
+              </div>
+
+              {profile.isPublic && profile.username ? (
+                <Link href={`/u/${profile.username}`} target="_blank" className="shrink-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10 cursor-pointer"
+                  >
+                    <Globe className="h-3 w-3" />
+                    View as Public Visitor
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  className="h-7 px-2 text-[11px] gap-1 text-muted-foreground opacity-60 cursor-not-allowed shrink-0"
+                  title="Profile is private. Save configurations to enable public viewing."
+                >
+                  <Lock className="h-3 w-3" />
+                  View as Public Visitor (Disabled)
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-end pt-3 pb-4 px-6 border-t border-border/60">
+        <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 pb-4 px-6 border-t border-border/60">
+          <div>
+            {hasUnsavedChanges && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                You have unsaved changes. Click Save Configurations to update.
+              </p>
+            )}
+          </div>
           <Button
             type="button"
             onClick={onSave}
             disabled={isSaving}
             size="sm"
-            className="cursor-pointer"
+            className="cursor-pointer gap-1.5 w-full sm:w-auto"
           >
-            {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-            Save Account Changes
+            {isSaving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+            ) : (
+              <Save className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            Save Configurations
           </Button>
         </CardFooter>
       </Card>

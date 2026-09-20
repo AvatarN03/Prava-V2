@@ -1,6 +1,16 @@
 "use client";
 
-import { ProfileWithStats } from "../actions";
+import {
+  Globe,
+  Sparkles,
+  Bell,
+  Save,
+  Compass,
+  Loader2,
+  RefreshCw,
+  HardDrive,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,14 +30,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Globe, Sparkles, Bell, Save, Compass, Loader2, CheckCircle2, RefreshCw, HardDrive, Sun, Moon } from "lucide-react";
+
 import { useOfflineSyncContext } from "@/lib/offline";
-import { ThemeChanger } from "@/components/app-shell/theme-changer";
+
+import { ProfileWithStats } from "../actions";
 
 interface GeneralSectionProps {
   profile: ProfileWithStats;
   defaultCurrency: string;
-  dateFormat: string;
   aiAutoPropose: boolean;
   emailNotifications: boolean;
   offlineMode: boolean;
@@ -36,7 +46,6 @@ interface GeneralSectionProps {
   onUpdatePreference: (
     partial: Partial<{
       defaultCurrency: string;
-      dateFormat: string;
       aiAutoPropose: boolean;
       emailNotifications: boolean;
       offlineMode: boolean;
@@ -49,7 +58,6 @@ interface GeneralSectionProps {
 
 export function GeneralSection({
   defaultCurrency,
-  dateFormat,
   aiAutoPropose,
   emailNotifications,
   offlineMode,
@@ -62,36 +70,7 @@ export function GeneralSection({
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* 1. Theme & Appearance */}
-      <Card className="rounded-sm border border-border bg-card shadow-xs">
-        <CardHeader className="p-4 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary">
-              <Sun className="h-3.5 w-3.5" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold text-foreground">Theme & Appearance</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Customize your workspace visual style with Light, Dark, or System mode.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-4 pt-0 text-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
-            <div>
-              <p className="font-semibold text-foreground">Interface Theme Mode</p>
-              <p className="text-muted-foreground text-[11px]">Choose between light aesthetic, high-contrast dark palette, or OS sync</p>
-            </div>
-            <div className="w-full sm:w-64">
-              <ThemeChanger />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 2. Regional & Currency Defaults */}
+      {/* 1. Regional & Currency Defaults */}
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">
           <div className="flex items-center gap-2">
@@ -101,7 +80,7 @@ export function GeneralSection({
             <div>
               <CardTitle className="text-sm font-semibold text-foreground">Region & Currency Defaults</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Configure your preferred currency and date representation across trips and expenses.
+                Configure your preferred currency across trips, expense tracking, and budget calculations.
               </CardDescription>
             </div>
           </div>
@@ -111,9 +90,9 @@ export function GeneralSection({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
             <div>
               <p className="font-semibold text-foreground">Default Currency</p>
-              <p className="text-muted-foreground text-[11px]">Default currency for new trips, expense items, and budgets</p>
+              <p className="text-muted-foreground text-[11px]">Primary currency for new trips, live exchange rates, and expense allocations</p>
             </div>
-            <div className="w-full sm:w-56">
+            <div className="w-full sm:w-64">
               <Select
                 value={defaultCurrency}
                 onValueChange={(val) =>
@@ -126,46 +105,31 @@ export function GeneralSection({
                 <SelectTrigger className="h-8 rounded-sm cursor-pointer text-xs">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
-                <SelectContent className="rounded-sm text-xs">
+                <SelectContent className="rounded-sm text-xs max-h-64">
                   <SelectItem value="USD" className="cursor-pointer text-xs">USD ($) — US Dollar</SelectItem>
                   <SelectItem value="EUR" className="cursor-pointer text-xs">EUR (€) — Euro</SelectItem>
                   <SelectItem value="GBP" className="cursor-pointer text-xs">GBP (£) — British Pound</SelectItem>
                   <SelectItem value="JPY" className="cursor-pointer text-xs">JPY (¥) — Japanese Yen</SelectItem>
+                  <SelectItem value="INR" className="cursor-pointer text-xs">INR (₹) — Indian Rupee</SelectItem>
                   <SelectItem value="AUD" className="cursor-pointer text-xs">AUD ($) — Australian Dollar</SelectItem>
                   <SelectItem value="CAD" className="cursor-pointer text-xs">CAD ($) — Canadian Dollar</SelectItem>
-                  <SelectItem value="INR" className="cursor-pointer text-xs">INR (₹) — Indian Rupee</SelectItem>
                   <SelectItem value="CHF" className="cursor-pointer text-xs">CHF (Fr) — Swiss Franc</SelectItem>
                   <SelectItem value="SGD" className="cursor-pointer text-xs">SGD ($) — Singapore Dollar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
-            <div>
-              <p className="font-semibold text-foreground">Date Display Format</p>
-              <p className="text-muted-foreground text-[11px]">Timeline schedules, activity cards, and itinerary milestones</p>
-            </div>
-            <div className="w-full sm:w-56">
-              <Select
-                value={dateFormat}
-                onValueChange={(val) =>
-                  onUpdatePreference(
-                    { dateFormat: val },
-                    "Date display format updated in database."
-                  )
-                }
-              >
-                <SelectTrigger className="h-8 rounded-sm cursor-pointer text-xs">
-                  <SelectValue placeholder="Select format" />
-                </SelectTrigger>
-                <SelectContent className="rounded-sm text-xs">
-                  <SelectItem value="MMM D, YYYY" className="cursor-pointer text-xs">Oct 14, 2026</SelectItem>
-                  <SelectItem value="DD/MM/YYYY" className="cursor-pointer text-xs">14/10/2026</SelectItem>
-                  <SelectItem value="YYYY-MM-DD" className="cursor-pointer text-xs">2026-10-14</SelectItem>
-                  <SelectItem value="MM/DD/YYYY" className="cursor-pointer text-xs">10/14/2026</SelectItem>
+                  <SelectItem value="NZD" className="cursor-pointer text-xs">NZD ($) — New Zealand Dollar</SelectItem>
+                  <SelectItem value="AED" className="cursor-pointer text-xs">AED (د.إ) — UAE Dirham</SelectItem>
+                  <SelectItem value="THB" className="cursor-pointer text-xs">THB (฿) — Thai Baht</SelectItem>
+                  <SelectItem value="KRW" className="cursor-pointer text-xs">KRW (₩) — South Korean Won</SelectItem>
+                  <SelectItem value="HKD" className="cursor-pointer text-xs">HKD ($) — Hong Kong Dollar</SelectItem>
+                  <SelectItem value="SEK" className="cursor-pointer text-xs">SEK (kr) — Swedish Krona</SelectItem>
+                  <SelectItem value="NOK" className="cursor-pointer text-xs">NOK (kr) — Norwegian Krone</SelectItem>
+                  <SelectItem value="MXN" className="cursor-pointer text-xs">MXN ($) — Mexican Peso</SelectItem>
+                  <SelectItem value="BRL" className="cursor-pointer text-xs">BRL (R$) — Brazilian Real</SelectItem>
+                  <SelectItem value="ZAR" className="cursor-pointer text-xs">ZAR (R) — South African Rand</SelectItem>
+                  <SelectItem value="MYR" className="cursor-pointer text-xs">MYR (RM) — Malaysian Ringgit</SelectItem>
+                  <SelectItem value="IDR" className="cursor-pointer text-xs">IDR (Rp) — Indonesian Rupiah</SelectItem>
+                  <SelectItem value="VND" className="cursor-pointer text-xs">VND (₫) — Vietnamese Dong</SelectItem>
+                  <SelectItem value="TRY" className="cursor-pointer text-xs">TRY (₺) — Turkish Lira</SelectItem>
+                  <SelectItem value="SAR" className="cursor-pointer text-xs">SAR (﷼) — Saudi Riyal</SelectItem>
                 </SelectContent>
               </Select>
             </div>

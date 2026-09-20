@@ -36,8 +36,12 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
-import { createTrip, getDestinationCoverImages } from "../actions";
+
+import { useWorkspaceAi } from "@/features/trip-workspace/context/workspace-ai-context";
+
+import { createTrip, getDestinationCoverImages, getUserAiPreferences } from "../actions";
 import { TripStatus } from "../types";
 import { UnsplashImage } from "@/services/unsplash";
 
@@ -53,6 +57,7 @@ export function CreateTripDialog({
   onOpenChange: setControlledOpen,
 }: CreateTripDialogProps) {
   const router = useRouter();
+  const { sendAiPrompt } = useWorkspaceAi();
   const [internalOpen, setInternalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -74,11 +79,24 @@ export function CreateTripDialog({
   const [imagesLoading, setImagesLoading] = useState(false);
   const [imagePage, setImagePage] = useState(1);
 
+  const [userAiAutoPropose, setUserAiAutoPropose] = useState<boolean>(true);
+  const [generateProposal, setGenerateProposal] = useState<boolean>(true);
+
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const lastSearchedDest = React.useRef<string>("");
   const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Check user's account proposal preference when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      getUserAiPreferences().then((pref) => {
+        setUserAiAutoPropose(pref.aiAutoPropose);
+        setGenerateProposal(pref.aiAutoPropose);
+      });
+    }
+  }, [isOpen]);
 
   // Fetch tour-vibe cover images from server action
   const fetchCoverImages = useCallback(async (destination: string, page: number = 1) => {
@@ -172,9 +190,16 @@ export function CreateTripDialog({
       });
 
       if (res.success && res.data) {
+        const newTripId = res.data.id;
+        const targetDest = res.data.destination || res.data.title;
         setIsOpen(false);
         resetForm();
-        router.push(`/trips/${res.data.id}`);
+        if (userAiAutoPropose && generateProposal) {
+          sendAiPrompt(
+            `Create an initial structured itinerary proposal for ${targetDest} with day-by-day activities, timings, and recommended accommodations.`
+          );
+        }
+        router.push(`/trips/${newTripId}`);
         router.refresh();
       } else {
         setError(res.error || "Failed to create trip");
@@ -455,6 +480,27 @@ export function CreateTripDialog({
                 className="text-sm focus-visible:ring-[#2D9BF0] resize-none"
               />
             </div>
+
+            {/* Structured Proposal Generation Option (Visible based on general preferences toggle) */}
+            {userAiAutoPropose && (
+              <div className="rounded-sm border border-[#2D9BF0]/30 bg-[#2D9BF0]/5 p-3.5 flex items-center justify-between gap-3">
+                <div className="space-y-0.5 pr-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                    <Sparkles className="h-3.5 w-3.5 text-[#2D9BF0]" />
+                    Structured Itinerary Proposal
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Auto-draft an initial day-by-day itinerary proposal with interactive 1-click additions upon workspace creation.
+                  </p>
+                </div>
+                <Switch
+                  checked={generateProposal}
+                  onCheckedChange={setGenerateProposal}
+                  className="cursor-pointer"
+                  disabled={isPending}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-100">

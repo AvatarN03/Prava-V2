@@ -498,3 +498,23 @@ export async function getDestinationCoverImages(
 ): Promise<{ success: boolean; images: UnsplashImage[]; source: "unsplash" | "fallback" }> {
   return await searchTourCoverImages(destination, page);
 }
+
+/**
+ * Server Action: Retrieve user's AI preferences (e.g. aiAutoPropose, defaultCurrency)
+ */
+export async function getUserAiPreferences(): Promise<{ aiAutoPropose: boolean; defaultCurrency: string }> {
+  try {
+    const authData = await getAuthenticatedUser();
+    if (!authData) return { aiAutoPropose: true, defaultCurrency: "USD" };
+    const profile = await db.profile.findUnique({
+      where: { id: authData.user.id },
+      select: { aiAutoPropose: true, defaultCurrency: true },
+    });
+    return {
+      aiAutoPropose: profile?.aiAutoPropose ?? true,
+      defaultCurrency: profile?.defaultCurrency || "USD",
+    };
+  } catch {
+    return { aiAutoPropose: true, defaultCurrency: "USD" };
+  }
+}

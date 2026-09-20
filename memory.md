@@ -1162,6 +1162,38 @@
     - Successfully tested live database update and reversion on a real trip record with `budget: 50000`, confirming zero validation or database errors.
   - **Verification**: Verified via `npm run build` (Turbopack, exit code 0) and live database update test script.
 
+- **Task 100 (Profile Public Configuration State & View Public Page Gating)**:
+  - **Single Database Call on Save**:
+    - Decoupled the `isPublic` switch in `features/profile/components/overview-section.tsx` from immediate mutation, ensuring it acts as local form state like `fullName` and `bio`.
+    - Renamed the save action button in the overview card footer to **Save Configurations** with a `Save` icon and an explicit unsaved changes indicator (`hasUnsavedChanges`).
+    - Both personal identity fields (`fullName`, `bio`) and privacy settings (`isPublic`) are committed in a single atomic DB mutation via `updateProfile` only when the user clicks "Save Configurations".
+  - **Public/Private Account View Gating**:
+    - In `features/profile/components/profile-editor.tsx`, the top-right **View Public Page** button is now always rendered.
+    - If `profile.isPublic` is `false` (private account), the button is strictly **disabled** (`cursor-not-allowed opacity-50`) with a `Lock` icon and a clear tooltip explaining that the profile is private.
+    - If `profile.isPublic` is `true` (public account), the button is **enabled** with a `Globe` and `ExternalLink` icon, opening `/u/[username]` in a new tab (`target="_blank"`) so the user can preview their profile as a third-person visitor.
+    - Added an in-card status preview row in `OverviewSection` with a secondary "View as Public Visitor" button that is enabled/disabled according to `profile.isPublic`.
+    - Added a "Pending Save" indicator on the identity card badge whenever the local toggle differs from the persisted database state.
+  - **Strict Hierarchy & Verification**:
+    - Standardized all imports in `features/profile/components/profile-editor.tsx` and `overview-section.tsx` to the strict 6-tier import hierarchy.
+    - Verified via `npm run build` (Turbopack, Next.js 16.3.3) with zero TypeScript errors across all 28+ routes.
+
+- **Task 101 (General Settings Clean-up: Date Format Removal, Currency Expansion, Theme Card Removal & Dynamic Structured Proposal Integration)**:
+  - **Date Format Removal (`dateFormat`)**:
+    - Confirmed `dateFormat` had 0 project references outside the general profile card.
+    - Dropped `date_format` column from Supabase PostgreSQL `profiles` table.
+    - Removed `dateFormat` field from `prisma/schema.prisma` (`Profile` model), ran `prisma db push` and `prisma generate` (bumped schema version to `2.6.0` in `lib/db.ts`).
+    - Removed `dateFormat` from Zod validation schemas (`features/profile/schema.ts`), Server Actions (`features/profile/actions.ts`), and UI components (`features/profile/components/general-section.tsx` & `profile-editor.tsx`).
+  - **Currency Selection Menu Expansion**:
+    - Expanded supported currencies to 24 major global travel currencies in `features/profile/components/general-section.tsx`: USD, EUR, GBP, JPY, INR, AUD, CAD, CHF, SGD, NZD, AED, THB, KRW, HKD, SEK, NOK, MXN, BRL, ZAR, MYR, IDR, VND, TRY, SAR.
+  - **Removal of Theme Card in General Settings**:
+    - Removed redundant "Theme & Appearance" card in `GeneralSection` as theme switching is already globally accessible in the app top bar and mobile navigation.
+  - **Dynamic Structured Proposal Toggle Management**:
+    - Trip Workspace Assistant (`features/trip-workspace/ai/actions.ts` & `services/ai/trip-agent-graph.ts`): Wired `aiAutoPropose` to switch system instructions between structured proposal mode and conversational prose. If disabled, AI responds in prose and generates zero proposal mutation records.
+    - Workspace AI Panel (`features/trip-workspace/ai/components/workspace-ai-panel.tsx`): Displays dynamic `⚡ Proposals Active` (emerald) vs `💬 Proposals Off` (slate) badge in the title bar.
+    - Trip Creation Dialog (`features/trips/components/create-trip-dialog.tsx`): Fetches `getUserAiPreferences()`; only displays the "Structured Itinerary Proposal" switch when `aiAutoPropose` is enabled in user profile settings. When enabled, automatically dispatches a starter proposal prompt upon trip initialization.
+  - **Production Build Verification**:
+    - Verified via `npm run build` (Turbopack, Next.js 16.3.3) with zero TypeScript errors across all 28+ routes.
+
 ## Next Steps
 - Continue iterative feature work and user testing on Prava V2.
 

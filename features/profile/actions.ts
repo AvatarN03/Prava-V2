@@ -20,7 +20,6 @@ export interface ProfileWithStats {
   avatarUrl: string | null;
   isPublic: boolean;
   defaultCurrency: string;
-  dateFormat: string;
   aiAutoPropose: boolean;
   emailNotifications: boolean;
   offlineMode: boolean;
@@ -149,7 +148,6 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
         avatarUrl: profile.avatarUrl,
         isPublic: profile.isPublic,
         defaultCurrency: (profile as unknown as { defaultCurrency?: string }).defaultCurrency || "USD",
-        dateFormat: (profile as unknown as { dateFormat?: string }).dateFormat || "MMM D, YYYY",
         aiAutoPropose: (profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? true,
         emailNotifications: (profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? true,
         offlineMode: (profile as unknown as { offlineMode?: boolean }).offlineMode ?? false,
@@ -305,7 +303,6 @@ export async function updateGeneralPreferences(input: UpdateGeneralPreferencesIn
 
     const {
       defaultCurrency,
-      dateFormat,
       aiAutoPropose,
       emailNotifications,
       offlineMode,
@@ -316,7 +313,6 @@ export async function updateGeneralPreferences(input: UpdateGeneralPreferencesIn
       where: { id: user.id },
       data: {
         defaultCurrency,
-        dateFormat,
         aiAutoPropose,
         emailNotifications,
         offlineMode,

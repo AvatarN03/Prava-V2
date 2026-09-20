@@ -21,6 +21,7 @@ import {
   Calendar,
   Zap,
   MoreHorizontal,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -245,6 +246,7 @@ export function WorkspaceAiPanel({
   const [headerTitleInput, setHeaderTitleInput] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [aiAutoPropose, setAiAutoPropose] = useState<boolean>(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
@@ -289,6 +291,9 @@ export function WorkspaceAiPanel({
       setActiveConversationTitle(res.conversationTitle || "Ichinose");
       if (res.userQuota) {
         setUserQuota(res.userQuota);
+      }
+      if ((res as unknown as { aiAutoPropose?: boolean }).aiAutoPropose !== undefined) {
+        setAiAutoPropose((res as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? true);
       }
     }
     setIsInitialized(true);
@@ -567,10 +572,27 @@ export function WorkspaceAiPanel({
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                       <span className="text-sm font-semibold text-white dark:text-slate-900 truncate block">
                         {activeConversationTitle || "Ichinose"}
                       </span>
+                      {aiAutoPropose ? (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-xs bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 border border-emerald-500/30 shrink-0"
+                          title="Structured Proposals Active: Ichinose will generate interactive 1-click workspace action cards"
+                        >
+                          <Sparkles className="h-2.5 w-2.5" />
+                          Proposals Active
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-xs bg-slate-800 px-1.5 py-0.5 text-[9px] font-semibold text-slate-400 border border-slate-700 shrink-0"
+                          title="Structured Proposals Disabled in Profile Settings. Ichinose responds in conversational prose only."
+                        >
+                          <MessageSquare className="h-2.5 w-2.5" />
+                          Proposals Off
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

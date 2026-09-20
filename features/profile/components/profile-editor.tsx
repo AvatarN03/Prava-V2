@@ -3,8 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ProfileWithStats, updateProfile, updateGeneralPreferences } from "../actions";
-import { Button } from "@/components/ui/button";
+
 import { toast } from "sonner";
 import {
   Globe,
@@ -12,12 +11,18 @@ import {
   User,
   SlidersHorizontal,
   Shield,
+  Lock,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+
+import { Button } from "@/components/ui/button";
 import { OverviewSection } from "./overview-section";
 import { GeneralSection } from "./general-section";
 import { SettingsSection } from "./settings-section";
+
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+import { ProfileWithStats, updateProfile, updateGeneralPreferences } from "../actions";
 
 type TabKey = "overview" | "general" | "security";
 
@@ -42,7 +47,6 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
 
   // General & Workspace Preferences (Loaded from Database)
   const [defaultCurrency, setDefaultCurrency] = useState(initialProfile.defaultCurrency || "USD");
-  const [dateFormat, setDateFormat] = useState(initialProfile.dateFormat || "MMM D, YYYY");
   const [aiAutoPropose, setAiAutoPropose] = useState(initialProfile.aiAutoPropose ?? true);
   const [emailNotifications, setEmailNotifications] = useState(initialProfile.emailNotifications ?? true);
   const [offlineMode, setOfflineMode] = useState(initialProfile.offlineMode ?? false);
@@ -100,7 +104,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           bio: res.profile.bio,
           isPublic: res.profile.isPublic,
         }));
-        toast.success("Account details saved successfully.");
+        toast.success("Account configurations saved successfully.");
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("prava-profile-updated"));
         }
@@ -113,7 +117,6 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
   const handleUpdatePreference = (
     partial: Partial<{
       defaultCurrency: string;
-      dateFormat: string;
       aiAutoPropose: boolean;
       emailNotifications: boolean;
       offlineMode: boolean;
@@ -122,14 +125,12 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     successMessage?: string
   ) => {
     const newCurrency = partial.defaultCurrency ?? defaultCurrency;
-    const newDateFormat = partial.dateFormat ?? dateFormat;
     const newAiAutoPropose = partial.aiAutoPropose ?? aiAutoPropose;
     const newEmailNotifications = partial.emailNotifications ?? emailNotifications;
     const newOfflineMode = partial.offlineMode ?? offlineMode;
     const newTravelPreferences = partial.travelPreferences ?? travelPreferences;
 
     if (partial.defaultCurrency !== undefined) setDefaultCurrency(partial.defaultCurrency);
-    if (partial.dateFormat !== undefined) setDateFormat(partial.dateFormat);
     if (partial.aiAutoPropose !== undefined) setAiAutoPropose(partial.aiAutoPropose);
     if (partial.emailNotifications !== undefined) setEmailNotifications(partial.emailNotifications);
     if (partial.offlineMode !== undefined) setOfflineMode(partial.offlineMode);
@@ -138,7 +139,6 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     startSavingPreferences(async () => {
       const res = await updateGeneralPreferences({
         defaultCurrency: newCurrency,
-        dateFormat: newDateFormat,
         aiAutoPropose: newAiAutoPropose,
         emailNotifications: newEmailNotifications,
         offlineMode: newOfflineMode,
@@ -149,7 +149,6 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
         setProfile((prev) => ({
           ...prev,
           defaultCurrency: (res.profile as unknown as { defaultCurrency?: string }).defaultCurrency || newCurrency,
-          dateFormat: (res.profile as unknown as { dateFormat?: string }).dateFormat || newDateFormat,
           aiAutoPropose: (res.profile as unknown as { aiAutoPropose?: boolean }).aiAutoPropose ?? newAiAutoPropose,
           emailNotifications: (res.profile as unknown as { emailNotifications?: boolean }).emailNotifications ?? newEmailNotifications,
           offlineMode: (res.profile as unknown as { offlineMode?: boolean }).offlineMode ?? newOfflineMode,
@@ -200,7 +199,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           </p>
         </div>
 
-        {isPublic && publicProfileUrl && (
+        {profile.isPublic && publicProfileUrl ? (
           <Link href={publicProfileUrl} target="_blank">
             <Button
               variant="outline"
@@ -212,6 +211,17 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
               <ExternalLink className="h-3 w-3" />
             </Button>
           </Link>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled
+            className="gap-1.5 text-xs cursor-not-allowed opacity-50"
+            title="Public profile is disabled for private accounts. Enable Public Creator Profile and click Save Configurations to activate."
+          >
+            <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+            View Public Page (Private)
+          </Button>
         )}
       </div>
 
@@ -273,7 +283,6 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
             <GeneralSection
               profile={profile}
               defaultCurrency={defaultCurrency}
-              dateFormat={dateFormat}
               aiAutoPropose={aiAutoPropose}
               emailNotifications={emailNotifications}
               offlineMode={offlineMode}
@@ -335,7 +344,6 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           <GeneralSection
             profile={profile}
             defaultCurrency={defaultCurrency}
-            dateFormat={dateFormat}
             aiAutoPropose={aiAutoPropose}
             emailNotifications={emailNotifications}
             offlineMode={offlineMode}
