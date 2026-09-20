@@ -127,13 +127,15 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    const aiCreditsUsed = await db.aiMessage.count({
+    const rawAiCredits = await db.aiMessage.count({
       where: {
+        role: "user",
         conversation: { profileId: user.id },
         createdAt: { gte: startOfMonth, lte: endOfMonth },
       },
     });
 
+    const aiCreditsUsed = Math.min(aiCreditsQuota, rawAiCredits);
     const tripsRemaining = Math.max(0, tripsQuota - profile._count.trips);
     const aiCreditsRemaining = Math.max(0, aiCreditsQuota - aiCreditsUsed);
 

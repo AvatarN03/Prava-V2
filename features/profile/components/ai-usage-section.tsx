@@ -116,12 +116,17 @@ export function AiUsageSection({ profile }: AiUsageSectionProps) {
               style={{ width: `${aiPct}%` }}
             />
           </div>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/50">
             <span className="font-medium text-foreground flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 text-primary" />
               {profile.aiCreditsRemaining} {profile.aiCreditsRemaining === 1 ? "credit" : "credits"} left this month
             </span>
-            <span className="font-mono text-muted-foreground">{aiPct}% used</span>
+            <Link
+              href="/usage"
+              className="text-primary hover:underline font-semibold flex items-center gap-1 text-[11px]"
+            >
+              View Detailed AI Usage &rarr;
+            </Link>
           </div>
         </CardContent>
       </Card>

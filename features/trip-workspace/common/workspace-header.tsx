@@ -262,10 +262,10 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
                       ? isAiOpen
                         ? "bg-primary-foreground/20 text-primary-foreground"
                         : "bg-primary/10 text-primary"
-                      : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                      : "bg-rose-500/20 text-rose-600 dark:text-rose-400"
                   }`}
                 >
-                  {userQuota.remaining > 0 ? `${userQuota.remaining}` : "Free"}
+                  {userQuota.remaining}
                 </span>
               )}
             </Button>

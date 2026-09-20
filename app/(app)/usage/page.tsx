@@ -27,6 +27,7 @@ export default async function UsagePage() {
     billingCycleEnd: "Current Month End",
     currentMonthName: "Current Billing Month",
     monthlyHistory: [],
+    tripUsage: [],
   };
 
   const usageData = usageRes.success && usageRes.data ? usageRes.data : fallbackUsage;

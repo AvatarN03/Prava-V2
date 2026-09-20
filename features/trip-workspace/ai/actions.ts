@@ -211,7 +211,7 @@ export async function getUserAiCredits(userId: string): Promise<UserAiQuotaDTO> 
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const used = await db.aiMessage.count({
+    const rawUsed = await db.aiMessage.count({
       where: {
         role: "user",
         createdAt: { gte: startOfMonth },
@@ -220,6 +220,8 @@ export async function getUserAiCredits(userId: string): Promise<UserAiQuotaDTO> 
         },
       },
     });
+
+    const used = Math.min(quota, rawUsed);
 
     return {
       used,
@@ -430,12 +432,11 @@ export async function sendTripMessage(tripId: string, prompt: string, conversati
 
     // Monthly AI Credits Check
     const userQuota = await getUserAiCredits(user.id);
-    const isPlanning = isItineraryPlanningIntent(trimmedPrompt, conversation.messages);
 
-    if (userQuota.remaining <= 0 && isPlanning) {
+    if (userQuota.remaining <= 0) {
       return {
         success: false,
-        error: `⚠️ **Monthly AI Planning Credits Depleted (0/${userQuota.quota})**\nYou have used all your Gemini AI itinerary planning credits for this month. Upgrade to Pro Wanderer for 150 credits/month, or continue asking travel questions using our free model.`,
+        error: `⚠️ **Monthly AI Credits Depleted (0/${userQuota.quota})**\nYou have used all your AI assistant credits for this month (${userQuota.quota}/${userQuota.quota}). Upgrade to Pro Wanderer for 150 credits/month, or wait until your quota renews on the 1st of next month.`,
         creditDepleted: true,
         userQuota,
       };

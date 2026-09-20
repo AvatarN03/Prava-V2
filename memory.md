@@ -1194,6 +1194,46 @@
   - **Production Build Verification**:
     - Verified via `npm run build` (Turbopack, Next.js 16.3.3) with zero TypeScript errors across all 28+ routes.
 
+- **Task 102 (AI Credits Quota Enforcement, Free-Model Fallback Bypass Removal & Usage Analytics Overhaul)**:
+  - **30-Credit Hard Stop & Fallback Bypass Removal**:
+    - Identified root cause of credits exceeding 30 (e.g. 59/30): `sendAiMessage` previously only blocked requests when `userQuota.remaining <= 0 && isPlanning`, allowing general conversation questions to fall back to the free OpenRouter model while still logging user and assistant rows to `db.aiMessage`.
+    - Removed the intent bypass in `features/trip-workspace/ai/actions.ts`: once `userQuota.remaining <= 0`, requests hard-stop immediately with `creditDepleted: true` and a clear depletion message without inserting database records or triggering model runs.
+    - Updated `getUserAiCredits(userId)` in `features/trip-workspace/ai/actions.ts` to strictly count `role: "user"` in the current calendar month and clamped `used` to `Math.min(quota, rawUsed)` so it never reports invalid numbers above quota.
+  - **Account & Profile Quota Count Clamping**:
+    - Fixed `getAccountUsage()` in `features/pricing/actions.ts` and `getCurrentProfile()` in `features/profile/actions.ts` to filter by `role: "user"` in `db.aiMessage.count()` and clamp `aiCreditsUsed` to `Math.min(aiCreditsQuota, rawCount)`.
+    - Added real monthly PostgreSQL aggregation for past 6 billing cycles in `getAccountUsage()`, eliminating synthetic `Math.min(tripsUsed - i)` mock math.
+    - Added per-trip AI credit consumption query (`TripAiUsageItem[]`) aggregating user messages per trip across all active conversations.
+  - **Interactive Usage Chart (`features/pricing/components/usage-chart.tsx`)**:
+    - Built responsive interactive SVG chart visualizing the correlation between monthly **Trips Created** and **AI Credits Consumed** over the last 6 calendar cycles.
+    - Features a distinct 30-credit quota threshold line, interactive hover tooltips with exact monthly metrics and cycle status, and Prava design tokens.
+  - **Usage Page Polish (`features/pricing/components/usage-view.tsx`)**:
+    - Replaced disconnected stats ("Stories Published", "Expenses Logged") with a goal-oriented layout focused on Quotas, Credits, and Workspaces.
+    - Added a high-contrast Quota Exhaustion Alert banner that activates when remaining credits reach 0 with a cycle renewal countdown.
+    - Added **Trip-by-Trip AI Usage Breakdown** listing each trip, destination, creation date, credits consumed, quota percentage, and direct workspace links.
+    - Rendered clean **Billing & Quota Cycles History** table with genuine PostgreSQL records.
+  - **Trip Workspace AI Panel State (`features/trip-workspace/ai/components/workspace-ai-panel.tsx`)**:
+    - Updated credit pill to display `0/30 (Depleted)` in rose styling when quota is exhausted.
+    - Replaced the confusing "Free Fallback Active" banner with a clear "Monthly Credits Depleted" banner informing travelers that AI planning is paused until the next monthly renewal.
+    - Disabled chat input when credits are depleted, showing an informative placeholder and an immediate "Upgrade" CTA button.
+- **Task 103 (Usage Page Buttons Cleanup, Trip Header Free Badge Removal & Dynamic Currency Upgrade Dialog)**:
+  - **Removed Redundant Upgrade Buttons**:
+    - Removed the upgrade CTA button from inside the quota exhaustion warning banner on `/usage` (`features/pricing/components/usage-view.tsx`).
+    - Removed the upgrade CTA button from inside the "AI Assistant Credits" quota meter card footer.
+    - Preserved a single, prominent Upgrade button in the top header.
+  - **Removed "Free" Badge from Trip AI Assistant**:
+    - In `features/trip-workspace/common/workspace-header.tsx`, replaced `{userQuota.remaining > 0 ? `${userQuota.remaining}` : "Free"}` with `{userQuota.remaining}` (displaying `0` with rose styling when depleted).
+  - **Upgrade Dialog Visual Overhaul (`features/pricing/components/upgrade-dialog.tsx`)**:
+    - Completely replaced the rounded-2xl, heavy blue gradient aesthetic with clean, professional `rounded-md` borders, restrained background contrast, and crisp typographical hierarchy adhering to Prava / Linear / Notion standards.
+    - Redesigned the billing switch with clean `rounded-xs` segmented buttons comparing Monthly vs. Yearly pricing.
+    - Updated the primary action button to navigate directly to `/pricing` (`router.push('/pricing')`) instead of a placeholder alert.
+  - **Dynamic User-Preferred Currency Conversion & Glitch-Free Toggle**:
+    - Built `getUserPricingCurrency()` in `features/pricing/actions.ts` leveraging `fetchFxRates("USD")` and `SUPPORTED_CURRENCIES` from the travel essentials currency service.
+    - Dynamically queries the authenticated user's preferred currency (e.g. INR / ₹ or profile `defaultCurrency`), converting USD $12/mo and $99/yr into live localized pricing (e.g. `₹1,000 / mo` and `₹8,250 / yr` for INR).
+    - Emphasizes the lower monthly equivalent rate (`₹690 / mo` or `$8.25 / mo`) when Annual is selected, with annual total (`₹8,250 / yr` or `$99 / yr`) shown as subtext.
+    - Fixed UI glitching during billing cycle toggle by standardizing button borders, stable segmented layout, and fixed container height.
+    - Removed the "Compare full plan matrix" link from the dialog footer.
+    - Implemented client-side session caching (`globalPricingCache`) to prevent repeated API calls across dialog open/close actions.
+
 ## Next Steps
 - Continue iterative feature work and user testing on Prava V2.
 

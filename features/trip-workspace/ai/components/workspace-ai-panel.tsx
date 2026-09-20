@@ -476,7 +476,7 @@ export function WorkspaceAiPanel({
   ];
 
   const isThreadLimitReached = messages.length >= MAX_MESSAGES_LIMIT;
-  const isFreeFallbackActive = userQuota && userQuota.remaining <= 0;
+  const isCreditDepleted = Boolean(userQuota && userQuota.remaining <= 0);
 
   return (
     <>
@@ -604,8 +604,8 @@ export function WorkspaceAiPanel({
                   type="button"
                   onClick={() => setUpgradeDialogOpen(true)}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-xs text-[10px] font-semibold transition-colors cursor-pointer border ${
-                    isFreeFallbackActive
-                      ? "bg-amber-500/20 text-amber-300 dark:text-amber-700 border-amber-500/40 hover:bg-amber-500/30"
+                    isCreditDepleted
+                      ? "bg-rose-500/20 text-rose-300 dark:text-rose-700 border-rose-500/40 hover:bg-rose-500/30"
                       : "bg-[#131E33] text-slate-200 border-[#1E2B45] hover:bg-[#1A2845] dark:bg-slate-200 dark:text-slate-800 dark:border-slate-300"
                   }`}
                   title="Click to view AI quota and upgrade"
@@ -615,7 +615,7 @@ export function WorkspaceAiPanel({
                     {userQuota
                       ? userQuota.remaining > 0
                         ? `${userQuota.remaining}/${userQuota.quota}`
-                        : `0/${userQuota.quota} Free`
+                        : `0/${userQuota.quota} (Depleted)`
                       : "Credits"}
                   </span>
                 </button>
@@ -900,19 +900,19 @@ export function WorkspaceAiPanel({
         {/* VIEW 2: ACTIVE CHAT FEED & CONVERSATION */}
         {activeTab === "chat" && (
           <>
-            {/* Free Fallback Notice Banner */}
-            {isFreeFallbackActive && (
-              <div className="mx-3 mt-2.5 p-2 rounded-xs bg-amber-500/15 border border-amber-500/30 text-[11px] text-amber-300 dark:text-amber-800 flex items-start gap-1.5 shrink-0">
-                <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            {/* Depleted Credits Notice Banner */}
+            {isCreditDepleted && (
+              <div className="mx-3 mt-2.5 p-2 rounded-xs bg-rose-500/15 border border-rose-500/30 text-[11px] text-rose-300 dark:text-rose-800 flex items-start gap-1.5 shrink-0">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                 <div className="flex-1 leading-tight">
-                  <span className="font-semibold">Free Fallback Active: </span>
-                  Monthly credits are depleted ({userQuota?.used}/{userQuota?.quota}). Live travel essentials & questions continue for free via OpenRouter.
+                  <span className="font-semibold">Monthly Credits Depleted: </span>
+                  You have used all {userQuota?.quota}/{userQuota?.quota} AI assistant credits for this month. AI generation is paused until quota renewal on the 1st of next month.
                   <button
                     type="button"
                     onClick={() => setUpgradeDialogOpen(true)}
                     className="ml-1 font-bold underline hover:text-white dark:hover:text-black cursor-pointer"
                   >
-                    Upgrade
+                    Upgrade to Pro (150 Credits)
                   </button>
                 </div>
               </div>
@@ -1129,27 +1129,41 @@ export function WorkspaceAiPanel({
                 <input
                   type="text"
                   placeholder={
-                    isThreadLimitReached
+                    isCreditDepleted
+                      ? `Monthly credits exhausted (${userQuota?.quota}/${userQuota?.quota}). Upgrade to Pro.`
+                      : isThreadLimitReached
                       ? "Thread limit reached. Start a new chat session."
                       : "Ask Ichinose or request changes (e.g. 'Add dinner at 7 PM')..."
                   }
                   className="flex-1 h-9 rounded-xs border border-[#1E2B45] bg-[#0E1729] px-3 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#2D9BF0] focus:border-[#2D9BF0] dark:border-slate-300 dark:bg-white dark:text-slate-900 dark:placeholder:text-slate-400 disabled:opacity-50"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  disabled={isLoading || isThreadLimitReached}
+                  disabled={isLoading || isThreadLimitReached || isCreditDepleted}
                 />
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="h-9 px-3 shrink-0 cursor-pointer bg-[#2D9BF0] text-white hover:bg-[#2087D6] rounded-xs shadow-xs"
-                  disabled={isLoading || !input.trim() || isThreadLimitReached}
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Send className="w-3.5 h-3.5" />
-                  )}
-                </Button>
+                {isCreditDepleted ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setUpgradeDialogOpen(true)}
+                    className="h-9 px-3 shrink-0 cursor-pointer bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xs shadow-xs gap-1"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-current" />
+                    Upgrade
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="h-9 px-3 shrink-0 cursor-pointer bg-[#2D9BF0] text-white hover:bg-[#2087D6] rounded-xs shadow-xs"
+                    disabled={isLoading || !input.trim() || isThreadLimitReached}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                  </Button>
+                )}
               </form>
               <p className="text-[10px] text-center text-slate-400/80 dark:text-slate-500/80 select-none leading-none">
                 AI can make mistakes. Cross-verify important travel details.
