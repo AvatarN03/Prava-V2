@@ -52,15 +52,12 @@ interface WeatherViewProps {
   onCitySuggestions?: (query: string) => Promise<CitySuggestion[]>;
 }
 
-// Minimal, curated destination hubs focused on India
+// Curated Tier-1 metropolitan hubs focused on India
 const QUICK_DESTINATIONS = [
   "Mumbai",
   "Delhi",
   "Bengaluru",
-  "Goa",
-  "Jaipur",
-  "Manali",
-  "Kochi",
+  "Hyderabad",
 ];
 
 function getWeatherIconMeta(code: number) {
@@ -173,6 +170,14 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Auto-fetch default city forecast on mount if no initialData was provided via SSR
+  useEffect(() => {
+    if (!data) {
+      handleSearchCity("Mumbai");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearchCity = (cityName: string) => {
@@ -316,8 +321,8 @@ export function WeatherView({ initialData, onSearch, onCitySuggestions }: Weathe
             </p>
           </div>
 
-          {/* Unit Switcher & Refresh Button */}
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Unit Switcher & Refresh Button (Right-aligned on mobile) */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/60 text-xs font-semibold">
               <button
                 type="button"

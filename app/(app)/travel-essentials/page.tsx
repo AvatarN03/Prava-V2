@@ -13,7 +13,7 @@ export const metadata = {
     "Real-time travel companion utilities: live weather forecasts, currency conversions, interactive maps, country guides, emergency contacts, local phrasebooks, and your global resource vault.",
 };
 
-const VALID_TABS = ["weather", "currency", "maps", "guide", "language", "vault"] as const;
+const VALID_TABS = ["currency", "weather", "guide", "language", "maps", "vault"] as const;
 type TabType = (typeof VALID_TABS)[number];
 
 interface PageProps {
@@ -25,7 +25,7 @@ export default async function TravelEssentialsPage({ searchParams }: PageProps) 
   const requestedTab = resolvedParams?.tab === "emergency" ? "guide" : resolvedParams?.tab;
   const activeTab: TabType = VALID_TABS.includes(requestedTab as TabType)
     ? (requestedTab as TabType)
-    : "weather";
+    : "currency";
 
   const profileRes = await getCurrentProfile();
   const preferredCurrency =
@@ -38,10 +38,10 @@ export default async function TravelEssentialsPage({ searchParams }: PageProps) 
   let initialFxRates = null;
   let initialVaultLinks = null;
 
-  if (activeTab === "weather") {
-    initialWeather = await fetchWeather("Mumbai");
-  } else if (activeTab === "currency") {
+  if (activeTab === "currency") {
     initialFxRates = await fetchFxRates(preferredCurrency);
+  } else if (activeTab === "weather") {
+    initialWeather = await fetchWeather("Mumbai");
   } else if (activeTab === "vault") {
     const vaultRes = await getVaultLinks();
     initialVaultLinks = vaultRes.data || [];

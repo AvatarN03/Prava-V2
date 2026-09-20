@@ -1471,6 +1471,31 @@
     - Preserved full smooth scrollability via touch, trackpad, and mousewheel while keeping the dialog clean and visually balanced.
     - Preserved user explicit constraint: build skipped.
 
+- **Task 118 (Travel Essentials — Instant Client-State & Tab Retention Architecture)**:
+  - **Issue**: Travel Essentials switched tools using Next.js `router.replace('?tab=...')`, causing full server component round-trips, blocking external API calls (weather/rates), double skeleton flash, and loss of client input on tab switches.
+  - **Solution**:
+    - Refactored `TravelEssentialsShell` (`app/(app)/travel-essentials/travel-essentials-shell.tsx`) to manage active tab in local `useState<TabType>`.
+    - Integrated shallow history updates via `window.history.replaceState(null, "", url)` so direct links and browser address bar remain synchronized without triggering server navigation.
+    - Added `popstate` listener for browser back/forward buttons.
+    - Implemented tab retention (`forceMount` with CSS `block`/`hidden` and `visitedTabs` Set): once a tool mounts, it stays in memory; switching back is instantaneous (0ms) and preserves user input and calculations.
+    - Added auto-load fallback in `WeatherView` (`features/travel-essentials/weather/weather-view.tsx`) to fetch default city if initialData is null.
+
+- **Task 119 (Travel Essentials — High-Utility Tabs Reorder, Mobile Dropdown Switcher & Weather Refinements)**:
+  - **Tabs Priority Reordered**:
+    - Reordered tools to elevate high-frequency utilities: **Currency** (1st & default) $\to$ **Weather** $\to$ **Country Guide** $\to$ **Language** $\to$ **Maps** $\to$ **Resource Vault**.
+    - Updated `VALID_TABS` and SSR resolution in `app/(app)/travel-essentials/page.tsx` to default to `currency`.
+  - **Mobile Responsive Tab Switcher**:
+    - On mobile viewports (`< sm`), replaced the cramped horizontal tab scrollbar with an accessible, high-feedback `Select` dropdown.
+    - Features active tool pill with icon, tool title, subtitle description, and tool counter ("1 of 6 tools").
+    - Dropdown shows all 6 tools with distinct category icons and descriptive subtitles for instant visual clarity.
+    - On desktop (`>= sm`), seamlessly renders the horizontal `TabsList` strip.
+  - **Weather Quick Picks Reduced**:
+    - Filtered `QUICK_DESTINATIONS` in `weather-view.tsx` down to top Tier-1 Indian metros: **Mumbai, Delhi, Bengaluru, Hyderabad**.
+  - **Mobile °C / °F Switcher Alignment**:
+    - Adjusted the unit switcher container in `weather-view.tsx` to `self-end sm:self-auto`, shifting it to the right on mobile screens.
+
+
+
 
 
 
