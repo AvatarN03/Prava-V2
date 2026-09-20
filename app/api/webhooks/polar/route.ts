@@ -1,8 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
+import { Webhook, WebhookVerificationError as StandardWebhookError } from "standardwebhooks";
+import { validateEvent, WebhookVerificationError as SdkWebhookError } from "@polar-sh/sdk/webhooks";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Verify incoming webhook payload using Standard Webhooks specification.
+ * Polar sandbox and production issue secrets with a `whsec_` prefix containing a base64-encoded key.
+ * Uses native StandardWebhooks verification to avoid SDK double-encoding issues.
+ */
+function verifyWebhookPayload(
+  rawBody: string,
+  headers: Record<string, string>,
+  secret: string
+): any {
+  // Strategy 1: Standard Webhooks native verify (handles `whsec_<base64>` correctly)
+  try {
+    const wh = new Webhook(secret);
+    return wh.verify(rawBody, headers);
+  } catch (err: unknown) {
+    console.warn(
+      "[Polar Webhook] StandardWebhooks verification failed with raw secret:",
+      err instanceof Error ? err.message : err
+    );
+  }
+
+  // Strategy 2: If secret starts with whsec_, try stripped base64 key
+  if (secret.startsWith("whsec_")) {
+    try {
+      const strippedSecret = secret.replace(/^whsec_/, "");
+      const whStripped = new Webhook(strippedSecret);
+      return whStripped.verify(rawBody, headers);
+    } catch (err: unknown) {
+      console.warn(
+        "[Polar Webhook] StandardWebhooks verification failed with stripped secret:",
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
+
+  // Strategy 3: Polar SDK validateEvent fallback
+  try {
+    return validateEvent(rawBody, headers, secret);
+  } catch (sdkErr: unknown) {
+    console.error(
+      "[Polar Webhook] Polar SDK validateEvent also failed:",
+      sdkErr instanceof Error ? sdkErr.message : sdkErr
+    );
+    throw sdkErr;
+  }
+}
 
 /**
  * POST /api/webhooks/polar
@@ -30,14 +78,11 @@ export async function POST(req: NextRequest) {
 
   // 2. Verify signature before parsing or trusting any payload
   try {
-    event = validateEvent(rawBody, headers, webhookSecret);
+    event = verifyWebhookPayload(rawBody, headers, webhookSecret);
   } catch (err: unknown) {
-    if (err instanceof WebhookVerificationError) {
-      console.warn("[Polar Webhook] Signature verification failed:", err.message);
-      return new Response("Invalid webhook signature", { status: 403 });
-    }
-    console.error("[Polar Webhook] Unexpected verification error:", err);
-    return new Response("Signature verification error", { status: 400 });
+    const errMsg = err instanceof Error ? err.message : "Invalid signature";
+    console.warn("[Polar Webhook] Signature verification rejected request:", errMsg);
+    return new Response(`Invalid webhook signature: ${errMsg}`, { status: 403 });
   }
 
   // 3. Extract unique event identifier (Standard Webhook header or payload event ID)
@@ -72,6 +117,7 @@ export async function POST(req: NextRequest) {
     "subscription.active",
     "subscription.canceled",
     "subscription.revoked",
+    "subscription.uncanceled",
     "subscription.past_due",
     "subscription.paused",
     "subscription.resumed",
