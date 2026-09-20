@@ -183,6 +183,32 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## 💳 Polar Subscription Billing (Sandbox Mode)
+
+Prava integrates with **Polar** for recurring subscriptions (`Prava Pro`).
+
+### Configuration
+Configure your `.env` with:
+```bash
+POLAR_ACCESS_TOKEN=polar_oat_...
+POLAR_PRODUCT_ID=...
+POLAR_WEBHOOK_SECRET=polar_whsec_...
+POLAR_SERVER=sandbox
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Webhook Tunneling (Local Development)
+To test webhooks locally, install the Polar CLI and forward events to Prava:
+```bash
+polar login --sandbox
+polar listen --sandbox http://localhost:3000/api/webhooks/polar
+```
+Copy the generated webhook signing secret into `POLAR_WEBHOOK_SECRET`.
+
+For full documentation on testing checkouts, customer portals, and production deployment, see [docs/polar-subscription.md](docs/polar-subscription.md).
+
+---
+
 ## 📁 Codebase Organization
 
 ```

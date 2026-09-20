@@ -44,8 +44,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     badge: "Most Popular",
     popular: true,
     tagline: "Expanded 25-trip workspace, 150 monthly AI assistant credits, and creator perks.",
-    monthlyPrice: 12,
-    annualPrice: 99,
+    monthlyPrice: 200,
+    annualPrice: 2000,
     ctaText: "Upgrade to Pro",
     features: [
       "Up to 25 active & planned trips",
@@ -64,21 +64,26 @@ export const PRICING_FAQS = [
   {
     question: "What happens when I reach the 10-trip limit on the Free plan?",
     answer:
-      "On the Free Explorer tier, you can manage up to 10 trips. If you reach 10 trips, you can either archive/delete older trips or upgrade to Pro Wanderer for unlimited trips.",
+      "On the Free Explorer tier, you can manage up to 10 active and planned trips. If you need more workspaces, you can upgrade to Pro Wanderer for an expanded capacity of 25 trips, or archive/delete older completed trips.",
   },
   {
-    question: "How does the AI Assistant proposal limit work?",
+    question: "How does the AI Assistant credit limit work?",
     answer:
-      "Free users get up to 30 AI assistant interactions per conversation thread with full structured proposal capabilities. Pro users get unlimited AI interactions.",
+      "Free users receive 30 AI assistant message credits each calendar month, renewing automatically on the 1st of every month. Pro Wanderer users receive an expanded quota of 150 AI message credits per month with full structured itinerary proposal mutations.",
+  },
+  {
+    question: "How is billing and checkout handled?",
+    answer:
+      "Subscriptions are securely handled via Polar.sh (Merchant of Record). We support all major international cards with 256-bit SSL encryption, transparent localized currency pricing, and zero hidden fees.",
   },
   {
     question: "Can I cancel my subscription anytime?",
     answer:
-      "Yes, you can cancel your Pro Wanderer subscription at any time with one click. Your Pro access will remain active until the end of your billing cycle.",
+      "Yes, you can cancel your Pro Wanderer subscription at any time with a single click. Your Pro access and privileges will remain active until the end of your current billing period.",
   },
   {
     question: "Are my published trips and stories preserved if I downgrade?",
     answer:
-      "Absolutely. All your published itineraries, travel stories, and public profile data remain online and accessible to the community.",
+      "Absolutely. All your published itineraries, travel stories, and public profile data remain online and accessible to the community regardless of your subscription tier.",
   },
 ];

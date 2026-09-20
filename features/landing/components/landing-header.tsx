@@ -125,11 +125,11 @@ export function LandingHeader({ user }: LandingHeaderProps) {
               Templates
             </Link>
             <Link
-              href="/pricing"
+              href="/subscription"
               onClick={() => setMobileMenuOpen(false)}
               className="py-1.5 hover:text-[#2D9BF0] transition-colors"
             >
-              Pricing & Quotas
+              Subscription & Plans
             </Link>
           </nav>
 

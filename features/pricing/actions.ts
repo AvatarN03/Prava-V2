@@ -2,6 +2,12 @@
 
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+import { getPolarClient } from "@/lib/polar/polar-client";
+import {
+  getUserTierAndQuotas,
+  getUserSubscription,
+  hasActiveProSubscription,
+} from "@/services/subscription/subscription-service";
 import {
   fetchFxRates,
   SUPPORTED_CURRENCIES,
@@ -24,7 +30,7 @@ export interface MonthlyHistoryItem {
 export interface TripAiUsageItem {
   id: string;
   title: string;
-  destination: string;
+  destination: string | null;
   createdAt: string;
   coverImageUrl?: string | null;
   creditsUsed: number;
@@ -47,6 +53,11 @@ export interface AccountUsageData {
   currentMonthName: string;
   monthlyHistory: MonthlyHistoryItem[];
   tripUsage: TripAiUsageItem[];
+  subscription?: {
+    status: string;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+  } | null;
 }
 
 export async function getAccountUsage(): Promise<{
@@ -71,14 +82,9 @@ export async function getAccountUsage(): Promise<{
     const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
     const endOfCurrentMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
 
-    // Determine tier (check metadata or default to free)
-    const isPro = user.user_metadata?.tier === "pro" || user.user_metadata?.is_pro === true;
-    const tier = isPro ? "pro" : "free";
-    const tierName = isPro ? "Pro Wanderer" : "Free Explorer";
-
-    // Quotas: Free = 10 trips, Pro = 25 trips; AI credits: Free = 30, Pro = 150
-    const tripsQuota = isPro ? 25 : 10;
-    const aiCreditsQuota = isPro ? 150 : 30;
+    // Determine tier and quotas strictly through the database entitlement authority
+    const { isPro, tier, tierName, tripsQuota, aiCreditsQuota, subscription } =
+      await getUserTierAndQuotas(user.id);
 
     // Real-time trip count (active workspaces)
     const tripsUsed = await db.trip.count({
@@ -238,6 +244,19 @@ export async function getAccountUsage(): Promise<{
         currentMonthName,
         monthlyHistory,
         tripUsage,
+        subscription: subscription
+          ? {
+              status: subscription.status,
+              currentPeriodEnd: subscription.currentPeriodEnd
+                ? subscription.currentPeriodEnd.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : null,
+              cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+            }
+          : null,
       },
     };
   } catch (error) {
@@ -249,30 +268,32 @@ export async function getAccountUsage(): Promise<{
 export interface ConvertedPricingDTO {
   currencyCode: string;
   currencySymbol: string;
-  rateFromUsd: number;
-  monthlyUsd: number;
-  annualUsd: number;
+  rateFromInr: number;
+  monthlyInr: number;
+  annualInr: number;
   monthlyConverted: number;
   annualConverted: number;
   annualMonthlyEquivalent: number;
+  savingsAmount: string;
   formattedMonthly: string;
   formattedAnnual: string;
   formattedAnnualMonthly: string;
 }
 
-export async function getUserPricingCurrency(): Promise<ConvertedPricingDTO> {
+export async function getUserPricingCurrency(requestedCurrency?: string): Promise<ConvertedPricingDTO> {
   const defaultPricing: ConvertedPricingDTO = {
     currencyCode: "INR",
     currencySymbol: "₹",
-    rateFromUsd: 83.5,
-    monthlyUsd: 12,
-    annualUsd: 99,
-    monthlyConverted: 1000,
-    annualConverted: 8250,
-    annualMonthlyEquivalent: 688,
-    formattedMonthly: "₹1,000",
-    formattedAnnual: "₹8,250",
-    formattedAnnualMonthly: "₹688",
+    rateFromInr: 1.0,
+    monthlyInr: 200,
+    annualInr: 2000,
+    monthlyConverted: 200,
+    annualConverted: 2000,
+    annualMonthlyEquivalent: 167,
+    savingsAmount: "₹400",
+    formattedMonthly: "₹200",
+    formattedAnnual: "₹2,000",
+    formattedAnnualMonthly: "₹167",
   };
 
   try {
@@ -281,8 +302,9 @@ export async function getUserPricingCurrency(): Promise<ConvertedPricingDTO> {
       data: { user },
     } = await supabase.auth.getUser();
 
-    let userCurrency = "INR";
-    if (user) {
+    // Default to INR as the primary base currency for the application
+    let userCurrency = requestedCurrency ? requestedCurrency.toUpperCase() : "INR";
+    if (!requestedCurrency && user) {
       const profile = await db.profile.findUnique({
         where: { id: user.id },
         select: { defaultCurrency: true },
@@ -292,55 +314,290 @@ export async function getUserPricingCurrency(): Promise<ConvertedPricingDTO> {
       }
     }
 
-    const currencyInfo = SUPPORTED_CURRENCIES.find((c) => c.code === userCurrency) || {
-      code: userCurrency,
-      symbol: userCurrency === "INR" ? "₹" : userCurrency === "USD" ? "$" : userCurrency,
-    };
-
-    if (userCurrency === "USD") {
-      return {
-        currencyCode: "USD",
-        currencySymbol: "$",
-        rateFromUsd: 1.0,
-        monthlyUsd: 12,
-        annualUsd: 99,
-        monthlyConverted: 12,
-        annualConverted: 99,
-        annualMonthlyEquivalent: 8.25,
-        formattedMonthly: "$12",
-        formattedAnnual: "$99",
-        formattedAnnualMonthly: "$8.25",
-      };
+    if (userCurrency === "INR") {
+      return defaultPricing;
     }
 
-    const ratesData = await fetchFxRates("USD");
-    const rate = ratesData?.rates[userCurrency] || (userCurrency === "INR" ? 83.5 : 1.0);
+    const currencyInfo = SUPPORTED_CURRENCIES.find((c) => c.code === userCurrency) || {
+      code: userCurrency,
+      symbol: userCurrency,
+    };
 
-    const monthlyConverted =
-      userCurrency === "INR"
-        ? Math.round((12 * rate) / 10) * 10
-        : Math.round(12 * rate);
-    const annualConverted =
-      userCurrency === "INR"
-        ? Math.round((99 * rate) / 50) * 50
-        : Math.round(99 * rate);
-    const annualMonthlyEquivalent = Math.round(annualConverted / 12);
+    // Calculate conversion from INR base (₹200 monthly, ₹2,000 yearly)
+    const usdRates = await fetchFxRates("USD");
+    const inrPerUsd = usdRates?.rates["INR"] || 83.5;
+    const targetPerUsd = usdRates?.rates[userCurrency] || (userCurrency === "USD" ? 1.0 : 1.0);
+    const rateFromInr = targetPerUsd / inrPerUsd;
+
+    const monthlyConverted = Math.round(200 * rateFromInr * 10) / 10;
+    const annualConverted = Math.round(2000 * rateFromInr);
+    const annualMonthlyEquivalent = Math.round((annualConverted / 12) * 10) / 10;
+    const savingsVal = Math.round((200 * 12 - 2000) * rateFromInr);
+
+    const formatPrice = (val: number) => {
+      if (val < 10) {
+        return `${currencyInfo.symbol}${val.toFixed(2)}`;
+      }
+      return `${currencyInfo.symbol}${Math.round(val).toLocaleString()}`;
+    };
 
     return {
       currencyCode: userCurrency,
       currencySymbol: currencyInfo.symbol,
-      rateFromUsd: rate,
-      monthlyUsd: 12,
-      annualUsd: 99,
+      rateFromInr,
+      monthlyInr: 200,
+      annualInr: 2000,
       monthlyConverted,
       annualConverted,
       annualMonthlyEquivalent,
-      formattedMonthly: `${currencyInfo.symbol}${monthlyConverted.toLocaleString()}`,
-      formattedAnnual: `${currencyInfo.symbol}${annualConverted.toLocaleString()}`,
-      formattedAnnualMonthly: `${currencyInfo.symbol}${annualMonthlyEquivalent.toLocaleString()}`,
+      savingsAmount: `${currencyInfo.symbol}${savingsVal.toLocaleString()}`,
+      formattedMonthly: formatPrice(monthlyConverted),
+      formattedAnnual: formatPrice(annualConverted),
+      formattedAnnualMonthly: formatPrice(annualMonthlyEquivalent),
     };
   } catch (err) {
     console.error("Error determining user pricing currency:", err);
     return defaultPricing;
+  }
+}
+
+export interface PolarCheckoutResult {
+  success: boolean;
+  checkoutUrl?: string;
+  isSimulation?: boolean;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Creates a Polar Checkout session URL for the Prava Pro product using the official Polar SDK.
+ */
+export async function createPolarCheckoutSession(params?: {
+  billingCycle?: "monthly" | "annual";
+  redirectUrl?: string;
+}): Promise<PolarCheckoutResult> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Please log in to upgrade to Pro Wanderer." };
+    }
+
+    // 1. Guard against duplicate active subscriptions
+    const alreadyPro = await hasActiveProSubscription(user.id);
+    if (alreadyPro) {
+      return {
+        success: false,
+        error:
+          "You already have an active Pro Wanderer subscription. Please use 'Manage Subscription' to update your plan or billing.",
+      };
+    }
+
+    const billingCycle = params?.billingCycle || "annual";
+    const productId = process.env.POLAR_PRODUCT_ID;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const successUrl = `${appUrl}/subscription?checkout=success&checkout_id={CHECKOUT_ID}`;
+
+    // 2. Primary Flow: Official Polar SDK Checkout Session
+    if (process.env.POLAR_ACCESS_TOKEN && productId) {
+      try {
+        const polar = getPolarClient();
+        const checkout = await polar.checkouts.create({
+          products: [productId],
+          customerEmail: user.email || undefined,
+          externalCustomerId: user.id,
+          metadata: {
+            userId: user.id,
+            billingCycle,
+          },
+          successUrl,
+        });
+
+        if (checkout && checkout.url) {
+          return {
+            success: true,
+            checkoutUrl: checkout.url,
+          };
+        }
+      } catch (polarErr: unknown) {
+        console.error("Polar SDK checkout initiation error:", polarErr);
+        // If SDK call fails, surface helpful message
+        const errMessage =
+          polarErr instanceof Error ? polarErr.message : "Failed to initiate Polar checkout";
+        return { success: false, error: errMessage };
+      }
+    }
+
+    // 3. Fallback: Direct configured checkout link if provided in env
+    const annualCheckoutUrl =
+      process.env.POLAR_CHECKOUT_ANNUAL_URL ||
+      process.env.NEXT_PUBLIC_POLAR_CHECKOUT_ANNUAL_URL;
+    const monthlyCheckoutUrl =
+      process.env.POLAR_CHECKOUT_MONTHLY_URL ||
+      process.env.NEXT_PUBLIC_POLAR_CHECKOUT_MONTHLY_URL;
+
+    const baseCheckoutUrl = billingCycle === "annual" ? annualCheckoutUrl : monthlyCheckoutUrl;
+
+    if (baseCheckoutUrl && baseCheckoutUrl.startsWith("http")) {
+      const url = new URL(baseCheckoutUrl);
+      if (user.email) {
+        url.searchParams.set("customer_email", user.email);
+      }
+      url.searchParams.set("client_reference_id", user.id);
+      url.searchParams.set("metadata[userId]", user.id);
+      url.searchParams.set("metadata[billingCycle]", billingCycle);
+      if (params?.redirectUrl) {
+        url.searchParams.set("success_url", params.redirectUrl);
+      }
+      return {
+        success: true,
+        checkoutUrl: url.toString(),
+      };
+    }
+
+    // 4. Dev simulation fallback when no Polar keys are configured
+    const planCostDesc =
+      billingCycle === "annual"
+        ? "₹2,000 / year (₹167/mo • Save ₹400 discount)"
+        : "₹200 / month";
+
+    return {
+      success: true,
+      isSimulation: true,
+      message: `Polar Checkout sandbox ready for Pro Wanderer (${planCostDesc}). Configure POLAR_ACCESS_TOKEN and POLAR_PRODUCT_ID in .env to initiate live sandbox checkout sessions.`,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to create checkout session";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Creates an authenticated Polar Customer Portal session for managing/canceling active subscriptions.
+ */
+export async function createPolarCustomerPortalSession(): Promise<{
+  success: boolean;
+  portalUrl?: string;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Please log in to access your billing portal." };
+    }
+
+    const sub = await getUserSubscription(user.id);
+    if (!sub || !sub.polarCustomerId) {
+      return {
+        success: false,
+        error:
+          "No active Polar subscription record found to manage. If you recently checked out, please allow a moment for the webhook to confirm.",
+      };
+    }
+
+    if (!process.env.POLAR_ACCESS_TOKEN) {
+      return {
+        success: false,
+        error: "POLAR_ACCESS_TOKEN is not configured on the server.",
+      };
+    }
+
+    const polar = getPolarClient();
+    const session = await polar.customerSessions.create({
+      customerId: sub.polarCustomerId,
+    });
+
+    if (!session || !session.customerPortalUrl) {
+      return { success: false, error: "Could not generate customer portal session from Polar." };
+    }
+
+    return {
+      success: true,
+      portalUrl: session.customerPortalUrl,
+    };
+  } catch (err: unknown) {
+    console.error("Error creating customer portal session:", err);
+    const message = err instanceof Error ? err.message : "Failed to open billing portal";
+    return { success: false, error: message };
+  }
+}
+
+
+/**
+ * Development simulation action to activate Pro Wanderer tier
+ */
+export async function simulatePolarUpgrade(params: {
+  billingCycle: "monthly" | "annual";
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: {
+        tier: "pro",
+        is_pro: true,
+        billing_cycle: params.billingCycle,
+        pro_since: new Date().toISOString(),
+      },
+    });
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to activate Pro tier";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Development simulation action to revert to Free Explorer tier
+ */
+export async function simulatePolarDowngrade(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: {
+        tier: "free",
+        is_pro: false,
+      },
+    });
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to downgrade tier";
+    return { success: false, error: message };
   }
 }

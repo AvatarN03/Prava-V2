@@ -36,7 +36,7 @@ export function AiUsageSection({ profile }: AiUsageSectionProps) {
             </p>
           </div>
 
-          <Link href="/pricing">
+          <Link href="/subscription">
             <Button
               variant="outline"
               size="sm"

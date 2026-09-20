@@ -418,7 +418,7 @@ export function UsageView({ initialUsage }: UsageViewProps) {
             </div>
           </div>
 
-          <Link href="/pricing">
+          <Link href="/subscription">
             <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm gap-1.5 cursor-pointer">
               <CreditCard className="h-3.5 w-3.5 text-primary" />
               View Subscription & Plans

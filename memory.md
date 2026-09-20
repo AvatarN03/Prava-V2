@@ -21,9 +21,10 @@
 - **Phase 17: Community Discovery Consolidation (Roadmap 2)** (Complete)
 - **Phase 18: Richer Trip & Community Imagery (Roadmap 2)** (Complete)
 - **Phase 19: Security, Integration & Production Verification (Roadmap 2)** (Complete)
+- **Phase 20: Polar Sandbox Subscription Billing** (Complete)
 
 ## Current Task
-- **Roadmap 2 Complete**: All 19 phases across Foundation and Roadmap 2 are fully implemented and integrated. Community Discovery Hub is consolidated with tabs for All Content, Curated Itineraries & Templates, Travel Stories & Guides, and Verified Creators, backed by unified search, region/style/tag filters, 1-click cloning, and public creator profiles (`/u/[username]`). Responsive image fallbacks and gradients are integrated across all cards. Authorization boundaries, ownership verification, and public/private scoping are strictly enforced.
+- **Phase 20 Complete**: Polar Sandbox subscription billing is fully implemented. Database `Subscription` and idempotent `WebhookEvent` models are configured. `@polar-sh/sdk` handles server-side checkout creation and customer billing portal sessions. Cryptographically verified webhook endpoint (`/api/webhooks/polar`) processes all subscription lifecycle events with deduplication. Single server entitlement service (`hasActiveProSubscription`) replaces client metadata checks across all modules. Bulletproof Prisma 7 initialization and build scripts (`postinstall: prisma generate`, `build: prisma generate && next build`) resolve Vercel deployment crashes.
 
 ## Completed Work
 - Inspected repository state and validated Next.js 16.3.0, React 19.2.8, Tailwind CSS v4, and ESLint 9 configuration.
@@ -1234,8 +1235,59 @@
     - Removed the "Compare full plan matrix" link from the dialog footer.
     - Implemented client-side session caching (`globalPricingCache`) to prevent repeated API calls across dialog open/close actions.
 
+- **Task 104 (Subscription Hub Overhaul, Polar Checkout Integration & Navigation Routing)**:
+  - **Dedicated Subscription Route (`/subscription`)**:
+    - Created dedicated `/subscription` route page (`app/(app)/subscription/page.tsx`) server-fetching live account usage and user-localized pricing currency.
+    - Updated `/pricing` (`app/(app)/pricing/page.tsx`) to perform an immediate server-side redirect to `/subscription`.
+    - Updated all navigation links across the application from `/pricing` to `/subscription`:
+      - `components/app-shell/nav-config.ts` (sidebar navigation)
+      - `components/app-shell/top-bar.tsx` (top bar title and icon resolution)
+      - `features/trips/components/create-trip-dialog.tsx` (quota exhaustion banner link)
+      - `features/pricing/components/usage-view.tsx` (cycle and billing link)
+      - `features/landing/components/landing-header.tsx` (header navigation)
+      - `features/landing/components/landing-footer.tsx` (footer links)
+      - `features/landing/components/animated-nav.tsx` (desktop animated navigation)
+      - `features/profile/components/ai-usage-section.tsx` (account settings billing link)
+      - `features/pricing/components/upgrade-dialog.tsx` (primary action button)
+  - **Dynamic User Preferred Currency Conversion & Switcher**:
+    - Enhanced `getUserPricingCurrency(requestedCurrency?: string)` in `features/pricing/actions.ts` to support on-demand live currency queries as well as automatic fallback to the user's `profile.defaultCurrency` (defaulting to INR `₹` or USD `$`).
+    - Added an interactive currency dropdown selector directly on `/subscription` (`AccountUsageView`) allowing users to switch pricing currencies (INR, USD, EUR, GBP, AUD, CAD, JPY, etc.) on the fly with instant rate recalculation.
+    - Accurately renders lower monthly equivalent pricing (e.g., `₹690 / mo` for Annual vs. `₹1,000 / mo` for Monthly in INR, `$8.25 / mo` vs. `$12 / mo` in USD) with clear subtotal and savings badges.
+  - **Polar Checkout Integration**:
+    - Transitioned payments and subscription architecture from Stripe to **Polar Payments** (Merchant of Record).
+    - Added `createPolarCheckoutSession({ billingCycle, redirectUrl })` server action reading `POLAR_CHECKOUT_ANNUAL_URL` and `POLAR_CHECKOUT_MONTHLY_URL` from environment variables, appending user metadata and customer email.
+    - Added `simulatePolarUpgrade({ billingCycle })` and `simulatePolarDowngrade()` server actions to allow complete local testing and demonstration of tier switching.
+    - Created a dedicated **Polar Checkout Modal** in `AccountUsageView` for development/test mode with complete billing details and one-click Pro activation.
+    - Added Polar Checkout environment variable templates in `.env.example`.
+  - **Refined Subscription Page Aesthetics**:
+    - Redesigned `AccountUsageView` with Prava's clean productivity aesthetic (Linear/Notion inspired, `rounded-sm`/`rounded-md` borders, subtle card rings, no heavy gradients).
+    - Prominent active tier banner with live meter chips for trip workspaces and AI messages.
+    - 4-column trust and security grid: Merchant of Record (Polar.sh global tax & VAT), 256-bit SSL encryption, instant quota activation, and 1-click self-service cancellation.
+    - Updated `PRICING_FAQS` in `features/pricing/pricing-config.ts` to accurately reflect 10 trips / 30 AI credits on Free Explorer and 25 trips / 150 AI credits on Pro Wanderer with Polar payment terms.
+  - **Strict Verification**:
+    - Verified complete production build (`npm run build`) passed with exit code 0 and zero TypeScript/lint errors across all routes.
+
+- **Task 105 (Base Indian INR Subscription Pricing & Recurring Renewal Integration)**:
+  - **Base Indian INR Pricing Architecture**:
+    - Reconfigured base pricing across Prava V2 to Indian Rupee (INR / ₹) values:
+      - **Monthly Subscription**: **₹200 / month** (recurring on the 1st of every month)
+      - **Yearly Subscription**: **₹2,000 / year** (equivalent to **₹167 / month**, saving **₹400** compared to 12 months at ₹200 = ₹2,400)
+    - Updated `PRICING_PLANS` in `features/pricing/pricing-config.ts` with `monthlyPrice: 200` and `annualPrice: 2000`.
+  - **Initial Default Values in INR**:
+    - `getUserPricingCurrency` in `features/pricing/actions.ts` sets `defaultPricing` to INR values (₹200/mo, ₹2,000/yr, ₹167/mo equivalent, and `savingsAmount: "₹400"`).
+    - If a user changes their preferred currency to USD, EUR, GBP, etc., the system calculates conversion rates relative to the INR base using live FX rates.
+  - **Polar Checkout Recurring Renewal & Messaging**:
+    - In `createPolarCheckoutSession` (`features/pricing/actions.ts`), updated simulation and session messaging to explicitly detail the ₹200/mo and ₹2,000/yr (save ₹400) pricing, recurring on the 1st of every month.
+    - Updated `UpgradeDialog` (`features/pricing/components/upgrade-dialog.tsx`) and `AccountUsageView` (`features/pricing/components/account-usage-view.tsx`):
+      - Fallback displays show `₹200 / mo` and `₹167 / mo` (`₹2,000 / yr`).
+      - Annual switcher badge displays `Save ₹400` (or dynamic localized savings).
+      - Subtext clearly explains recurring renewal on the 1st of every month and cancel-anytime policy.
+    - Updated `.env.example` with documented keys for `POLAR_CHECKOUT_ANNUAL_URL` and `POLAR_CHECKOUT_MONTHLY_URL` with India base pricing notes.
+  - **Strict Verification**:
+    - Executed `npm run build` with zero TypeScript or bundling errors, generating all 27 static and dynamic workspace routes.
+
 ## Next Steps
-- Continue iterative feature work and user testing on Prava V2.
+- User will initialize the Polar.sh project and configure `POLAR_CHECKOUT_ANNUAL_URL` and `POLAR_CHECKOUT_MONTHLY_URL` in `.env`.
 
 
 

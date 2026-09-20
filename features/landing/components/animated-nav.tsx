@@ -25,8 +25,8 @@ const navItems = [
     type: "link" as const,
   },
   {
-    label: "Pricing",
-    href: "/pricing",
+    label: "Subscription",
+    href: "/subscription",
     type: "link" as const,
   },
 ];

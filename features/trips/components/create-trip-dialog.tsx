@@ -252,7 +252,7 @@ export function CreateTripDialog({
               {error.includes("limit reached") && (
                 <div className="pt-0.5">
                   <a
-                    href="/pricing"
+                    href="/subscription"
                     className="inline-flex items-center gap-1 text-xs font-bold text-[#2D9BF0] hover:underline"
                   >
                     View Pro Wanderer Plans &rarr;

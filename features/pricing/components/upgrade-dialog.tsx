@@ -56,21 +56,25 @@ export function UpgradeDialog({
 
   const handleProceedToSubscription = () => {
     onOpenChange(false);
-    router.push("/pricing");
+    router.push("/subscription");
   };
 
-  // Pricing values - emphasizing lower monthly rate ($8.25 / ₹690) for annual billing
+  // Pricing values - base ₹200/mo, ₹2,000/yr (₹167/mo • Save ₹400)
   const monthlyRateDisplay = pricing
     ? `${pricing.formattedMonthly}`
-    : "$12";
+    : "₹200";
 
   const annualMonthlyEquivalentDisplay = pricing
     ? `${pricing.formattedAnnualMonthly}`
-    : "$8.25";
+    : "₹167";
 
   const annualTotalDisplay = pricing
     ? `${pricing.formattedAnnual}`
-    : "$99";
+    : "₹2,000";
+
+  const savingsBadge = pricing?.savingsAmount
+    ? `Save ${pricing.savingsAmount}`
+    : "Save ₹400";
 
   const isAnnual = billingCycle === "annual";
 
@@ -85,11 +89,9 @@ export function UpgradeDialog({
               <span>Pro Wanderer</span>
             </div>
 
-            {pricing && (
-              <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border bg-card px-2 py-0.5">
-                {pricing.currencyCode} Pricing
-              </Badge>
-            )}
+            <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border bg-card px-2 py-0.5">
+              {pricing ? `${pricing.currencyCode} (${pricing.currencySymbol}) Pricing` : "INR (₹) Pricing"}
+            </Badge>
           </div>
 
           <div className="space-y-1">
@@ -115,7 +117,7 @@ export function UpgradeDialog({
               >
                 <span>Yearly</span>
                 <span className="text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded-xs">
-                  Save 31%
+                  {savingsBadge}
                 </span>
               </button>
 
@@ -152,13 +154,13 @@ export function UpgradeDialog({
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               {isAnnual
-                ? `Total ${annualTotalDisplay} / year ($99 USD) • Renews annually`
-                : `Total ${monthlyRateDisplay} / month ($12 USD) • Flexible cancellation`}
+                ? `Total ${annualTotalDisplay} / year • Save ₹400 discount • Billed annually`
+                : `Total ${monthlyRateDisplay} / month • Renews on 1st of month • Cancel anytime`}
             </p>
           </div>
 
           <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded-xs border border-border shrink-0">
-            {isAnnual ? "$8.25 USD/mo" : "$12 USD/mo"}
+            {isAnnual ? `${annualMonthlyEquivalentDisplay}/mo` : `${monthlyRateDisplay}/mo`}
           </span>
         </div>
 
@@ -226,7 +228,7 @@ export function UpgradeDialog({
 
             <div className="flex items-center justify-center text-[11px] text-muted-foreground pt-0.5">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Cancel anytime • Billed securely via Stripe
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Cancel anytime • Billed securely via Polar
               </span>
             </div>
           </div>

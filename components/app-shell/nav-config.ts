@@ -68,7 +68,7 @@ export const accountNavItems: NavItem[] = [
   },
   {
     title: "Subscription",
-    href: "/pricing",
+    href: "/subscription",
     icon: CreditCard,
   },
 ];

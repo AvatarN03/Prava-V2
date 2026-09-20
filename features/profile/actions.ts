@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+import { hasActiveProSubscription } from "@/services/subscription/subscription-service";
 import { validateUsername } from "./reserved-usernames";
 import {
   updateProfileSchema,
@@ -118,7 +119,7 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
       });
     }
 
-    const isPro = user.user_metadata?.tier === "pro" || user.user_metadata?.is_pro === true;
+    const isPro = await hasActiveProSubscription(user.id);
     const tier = isPro ? ("pro" as const) : ("free" as const);
     const tripsQuota = isPro ? 25 : 10;
     const aiCreditsQuota = isPro ? 150 : 30;

@@ -137,8 +137,8 @@ export function TopBar({ onMobileMenuOpen }: TopBarProps) {
     if (pathname.startsWith("/usage")) {
       return { title: "Usage & Quotas", icon: Sparkles };
     }
-    if (pathname.startsWith("/pricing")) {
-      return { title: "Subscription & Usage", icon: CreditCard };
+    if (pathname.startsWith("/subscription") || pathname.startsWith("/pricing")) {
+      return { title: "Subscription & Plans", icon: CreditCard };
     }
     return { title: "Prava Workspace", icon: Compass };
   };

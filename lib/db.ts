@@ -1,51 +1,63 @@
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-const SCHEMA_VERSION = "2.6.0"; // Bump to force dev server singleton recreation after schema updates
-
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  schemaVersion: string | undefined;
+  pgPool: Pool | undefined;
 };
 
-function createPrismaClient() {
+function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL || process.env.DIRECT_URL;
-  const pool = new Pool({ connectionString });
+  if (!connectionString) {
+    throw new Error("Neither DATABASE_URL nor DIRECT_URL is configured in environment");
+  }
+
+  // Configure pg Pool for serverless / edge-friendly connection management
+  const poolConfig: PoolConfig = {
+    connectionString,
+    max: process.env.NODE_ENV === "production" ? 10 : 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  };
+
+  const pool = globalForPrisma.pgPool ?? new Pool(poolConfig);
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.pgPool = pool;
+  }
+
   const adapter = new PrismaPg(pool);
 
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 }
 
+// In development, if schema updated and cached singleton lacks new models, recreate client
+if (
+  process.env.NODE_ENV !== "production" &&
+  globalForPrisma.prisma &&
+  !("subscription" in globalForPrisma.prisma)
+) {
+  globalForPrisma.prisma = undefined;
+}
+
+export const db = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = db;
+}
+
 export function getDb(): PrismaClient {
-  // If in dev and the cached singleton schema version is stale, recreate it
   if (
     process.env.NODE_ENV !== "production" &&
     globalForPrisma.prisma &&
-    globalForPrisma.schemaVersion !== SCHEMA_VERSION
+    !("subscription" in globalForPrisma.prisma)
   ) {
-    globalForPrisma.prisma = undefined;
-  }
-
-  if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = createPrismaClient();
-    globalForPrisma.schemaVersion = SCHEMA_VERSION;
   }
-
-  return globalForPrisma.prisma;
+  return globalForPrisma.prisma ?? db;
 }
 
-export const db = new Proxy({} as PrismaClient, {
-  get(_target, prop: keyof PrismaClient) {
-    const client = getDb();
-    const value = client[prop];
-    if (typeof value === "function") {
-      return value.bind(client);
-    }
-    return value;
-  },
-});
 

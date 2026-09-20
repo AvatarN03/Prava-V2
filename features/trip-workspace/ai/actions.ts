@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+import { hasActiveProSubscription } from "@/services/subscription/subscription-service";
 import { buildTripContext } from "@/services/ai/context-builder";
 import {
   aiProposalPayloadSchema,
@@ -201,10 +202,7 @@ export async function getUserAiCredits(userId: string): Promise<UserAiQuotaDTO> 
       data: { user },
     } = await supabase.auth.getUser();
 
-    const isPro = Boolean(
-      user?.user_metadata?.tier === "pro" ||
-      user?.user_metadata?.is_pro === true
-    );
+    const isPro = await hasActiveProSubscription(userId);
     const quota = isPro ? 150 : 30;
 
     const startOfMonth = new Date();

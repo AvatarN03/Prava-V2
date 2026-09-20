@@ -56,10 +56,10 @@ export function LandingFooter() {
             Templates
           </Link>
           <Link
-            href="/pricing"
+            href="/subscription"
             className="hover:text-[#2D9BF0] dark:hover:text-sky-400 transition-colors cursor-pointer"
           >
-            Pricing
+            Subscription
           </Link>
           <Link
             href="/auth"

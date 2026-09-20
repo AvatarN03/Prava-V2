@@ -14,6 +14,7 @@ import {
 import { ActionResult, Trip } from "./types";
 
 import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { hasActiveProSubscription } from "@/services/subscription/subscription-service";
 
 /**
  * Helper to get the authenticated user and ensure profile exists in database.
@@ -60,7 +61,7 @@ export async function createTrip(
       validated.data;
 
     // Enforce Tier Trip Limits (10 for Free, 25 for Pro)
-    const isPro = authData.user.user_metadata?.tier === "pro" || authData.user.user_metadata?.is_pro === true;
+    const isPro = await hasActiveProSubscription(authData.user.id);
     const maxTrips = isPro ? 25 : 10;
 
     const userTripCount = await db.trip.count({
@@ -242,7 +243,7 @@ export async function duplicateTrip(tripId: string): Promise<ActionResult<Trip>>
     }
 
     // Check tier limits
-    const isPro = authData.user.user_metadata?.tier === "pro" || authData.user.user_metadata?.is_pro === true;
+    const isPro = await hasActiveProSubscription(authData.user.id);
     const maxTrips = isPro ? 25 : 10;
     const userTripCount = await db.trip.count({
       where: { profileId: authData.user.id },
@@ -414,7 +415,7 @@ export async function getTripUsageQuota(): Promise<{
       return { count: 0, maxTrips: 10, isPro: false };
     }
 
-    const isPro = authData.user.user_metadata?.tier === "pro" || authData.user.user_metadata?.is_pro === true;
+    const isPro = await hasActiveProSubscription(authData.user.id);
     const maxTrips = isPro ? 25 : 10;
     const count = await db.trip.count({
       where: { profileId: authData.user.id },
