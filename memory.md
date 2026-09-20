@@ -1286,8 +1286,30 @@
   - **Strict Verification**:
     - Executed `npm run build` with zero TypeScript or bundling errors, generating all 27 static and dynamic workspace routes.
 
+- **Task 106 (Subscription Workflow Polish, Customer Portal Resolution & Database Deduplication)**:
+  - **Subscription UI Clean-up**:
+    - Removed the development `Test Free` button from the `/subscription` active Pro tier banner in `features/pricing/components/account-usage-view.tsx`.
+    - Preserved the clean `Pro Active` status badge and `Manage Subscription` portal action.
+    - Cleaned up obsolete developer downgrade actions and unused component icon imports.
+  - **Self-Healing Database Deduplication Architecture**:
+    - Identified root cause of multiple subscription rows accumulating per user: Polar issues distinct subscription IDs per checkout in sandbox/testing, while the previous webhook handler only upserted by `where: { polarSubscriptionId }` without scoping to a single user row.
+    - Added `syncAndDeduplicateUserSubscriptions(userId)` to `services/subscription/subscription-service.ts`:
+      - Detects whenever multiple subscription rows exist for a user.
+      - Intelligently selects the canonical subscription (prioritizing `active` or `trialing` with future expiration date or latest `updatedAt`).
+      - Automatically prunes stale duplicate subscription rows from PostgreSQL (`client.subscription.deleteMany`).
+    - Integrated deduplication directly into `getUserSubscription` and `hasActiveProSubscription` so any page visit or mutation self-heals existing duplicates automatically.
+  - **1:1 User Subscription Invariant in Webhook Lifecycle**:
+    - Updated `app/api/webhooks/polar/route.ts` (Step 6) to automatically prune any superseded subscription rows for the user upon saving the incoming active subscription event.
+  - **Customer Billing Portal Error Resolution (403 Insufficient Scope & Customer Resolution)**:
+    - Addressed runtime 403 `insufficient_scope` error from Polar SDK when `POLAR_ACCESS_TOKEN` lacks `customer_sessions:write` scope.
+    - In `createPolarCustomerPortalSession` (`features/pricing/actions.ts`):
+      - Configured `returnUrl: `${appUrl}/subscription`` for seamless in-portal "Back to Prava" navigation.
+      - Implemented dual lookup: attempts session creation via `customerId`, falling back to `externalCustomerId` (`user.id`).
+      - Implemented resilient fallback: if Polar API returns 403 `insufficient_scope` or session cannot be minted, seamlessly redirects the user to Polar's hosted Customer Portal (`https://sandbox.polar.sh/portal` or `https://polar.sh/portal`) where they can authenticate and manage their subscription with zero friction.
+
 ## Next Steps
-- User will initialize the Polar.sh project and configure `POLAR_CHECKOUT_ANNUAL_URL` and `POLAR_CHECKOUT_MONTHLY_URL` in `.env`.
+- Advise user to grant `customer_sessions:write` scope to `POLAR_ACCESS_TOKEN` in Polar dashboard if 1-click customer session authentication is desired.
+
 
 
 

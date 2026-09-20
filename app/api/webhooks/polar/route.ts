@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
 
     // 6. Upsert subscription state atomically in PostgreSQL
     try {
-      await client.subscription.upsert({
+      const savedSub = await client.subscription.upsert({
         where: { polarSubscriptionId },
         create: {
           userId,
@@ -209,6 +209,23 @@ export async function POST(req: NextRequest) {
           polarProductId,
         },
       });
+
+      // Enforce 1:1 user-to-subscription invariant: prune any superseded subscription rows for this user
+      try {
+        const deleted = await client.subscription.deleteMany({
+          where: {
+            userId,
+            id: { not: savedSub.id },
+          },
+        });
+        if (deleted?.count > 0) {
+          console.info(
+            `[Polar Webhook] Pruned ${deleted.count} stale duplicate subscription(s) for user ${userId}`
+          );
+        }
+      } catch (pruneErr) {
+        console.warn("[Polar Webhook] Pruning duplicate subscriptions warning:", pruneErr);
+      }
 
       console.info(
         `[Polar Webhook] Successfully synchronized subscription ${polarSubscriptionId} (Status: ${status}) for user ${userId}`

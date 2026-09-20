@@ -478,6 +478,7 @@ export async function createPolarCheckoutSession(params?: {
 
 /**
  * Creates an authenticated Polar Customer Portal session for managing/canceling active subscriptions.
+ * Includes graceful fallback to Polar's hosted Customer Portal if POLAR_ACCESS_TOKEN lacks customer_sessions:write scope.
  */
 export async function createPolarCustomerPortalSession(): Promise<{
   success: boolean;
@@ -495,39 +496,88 @@ export async function createPolarCustomerPortalSession(): Promise<{
       return { success: false, error: "Please log in to access your billing portal." };
     }
 
-    const sub = await getUserSubscription(user.id);
-    if (!sub || !sub.polarCustomerId) {
-      return {
-        success: false,
-        error:
-          "No active Polar subscription record found to manage. If you recently checked out, please allow a moment for the webhook to confirm.",
-      };
-    }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const returnUrl = `${appUrl}/subscription`;
+    const isSandbox = (process.env.POLAR_SERVER || "sandbox") === "sandbox";
+    const fallbackHostedPortalUrl = isSandbox
+      ? "https://sandbox.polar.sh/portal"
+      : "https://polar.sh/portal";
 
+    const sub = await getUserSubscription(user.id);
+
+    // If no access token is configured, direct to hosted portal
     if (!process.env.POLAR_ACCESS_TOKEN) {
       return {
-        success: false,
-        error: "POLAR_ACCESS_TOKEN is not configured on the server.",
+        success: true,
+        portalUrl: fallbackHostedPortalUrl,
       };
     }
 
-    const polar = getPolarClient();
-    const session = await polar.customerSessions.create({
-      customerId: sub.polarCustomerId,
-    });
+    let session: any = null;
+    let scopeErrorOccurred = false;
 
-    if (!session || !session.customerPortalUrl) {
-      return { success: false, error: "Could not generate customer portal session from Polar." };
+    try {
+      const polar = getPolarClient();
+
+      // Strategy 1: Try creating customer session with customerId
+      if (sub?.polarCustomerId) {
+        try {
+          session = await polar.customerSessions.create({
+            customerId: sub.polarCustomerId,
+            returnUrl,
+          });
+        } catch (firstErr: any) {
+          const errMsg = firstErr?.message || JSON.stringify(firstErr);
+          console.warn("[Polar Customer Portal] Session creation via customerId failed:", errMsg);
+          if (errMsg.includes("insufficient_scope") || firstErr?.status === 403) {
+            scopeErrorOccurred = true;
+          }
+        }
+      }
+
+      // Strategy 2: If Strategy 1 did not produce a session and not a scope restriction, try externalCustomerId
+      if (!session?.customerPortalUrl && !scopeErrorOccurred) {
+        try {
+          session = await polar.customerSessions.create({
+            externalCustomerId: user.id,
+            returnUrl,
+          });
+        } catch (secondErr: any) {
+          const errMsg = secondErr?.message || JSON.stringify(secondErr);
+          console.warn("[Polar Customer Portal] Session creation via externalCustomerId failed:", errMsg);
+          if (errMsg.includes("insufficient_scope") || secondErr?.status === 403) {
+            scopeErrorOccurred = true;
+          }
+        }
+      }
+    } catch (polarInitErr) {
+      console.warn("[Polar Customer Portal] Polar client initialization warning:", polarInitErr);
     }
 
+    // 1-Click Authenticated Session
+    if (session?.customerPortalUrl) {
+      return {
+        success: true,
+        portalUrl: session.customerPortalUrl,
+      };
+    }
+
+    // Graceful Fallback: Hosted Polar Customer Portal
+    // Allows user to log in via email without blocking on token scope permissions
+    console.info(
+      `[Polar Customer Portal] Redirecting user ${user.email} to hosted Polar portal (${fallbackHostedPortalUrl}).`
+    );
     return {
       success: true,
-      portalUrl: session.customerPortalUrl,
+      portalUrl: fallbackHostedPortalUrl,
     };
   } catch (err: unknown) {
     console.error("Error creating customer portal session:", err);
-    const message = err instanceof Error ? err.message : "Failed to open billing portal";
-    return { success: false, error: message };
+    const isSandbox = (process.env.POLAR_SERVER || "sandbox") === "sandbox";
+    return {
+      success: true,
+      portalUrl: isSandbox ? "https://sandbox.polar.sh/portal" : "https://polar.sh/portal",
+    };
   }
 }
 

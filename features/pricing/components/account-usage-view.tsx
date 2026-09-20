@@ -8,8 +8,6 @@ import {
   Sparkles,
   Zap,
   CheckCircle2,
-  Calendar,
-  Clock,
   ShieldCheck,
   ChevronRight,
   HelpCircle,
@@ -48,7 +46,6 @@ import {
   createPolarCheckoutSession,
   createPolarCustomerPortalSession,
   simulatePolarUpgrade,
-  simulatePolarDowngrade,
 } from "../actions";
 import { PRICING_PLANS, PRICING_FAQS } from "../pricing-config";
 import { SUPPORTED_CURRENCIES } from "@/features/travel-essentials/currency/currency-service";
@@ -159,23 +156,6 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
     }
   };
 
-  const handleDevDowngrade = async () => {
-    setIsCheckingOut(true);
-    try {
-      const res = await simulatePolarDowngrade();
-      if (res.success) {
-        toast.info("Reverted to Free Explorer tier.");
-        router.refresh();
-      } else {
-        toast.error(res.error || "Failed to downgrade");
-      }
-    } catch {
-      toast.error("Downgrade error");
-    } finally {
-      setIsCheckingOut(false);
-    }
-  };
-
   const proMonthlyDisplay = pricing ? pricing.formattedMonthly : "₹200";
   const proAnnualMonthlyDisplay = pricing ? pricing.formattedAnnualMonthly : "₹167";
   const proAnnualTotalDisplay = pricing ? pricing.formattedAnnual : "₹2,000";
@@ -267,16 +247,6 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
                   <ExternalLink className="h-3.5 w-3.5 text-primary" />
                 )}
                 Manage Subscription
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDevDowngrade}
-                disabled={isCheckingOut}
-                className="h-8 text-[11px] text-muted-foreground hover:text-destructive cursor-pointer"
-                title="Revert to Free Explorer for quota testing"
-              >
-                Test Free
               </Button>
             </div>
           )}
