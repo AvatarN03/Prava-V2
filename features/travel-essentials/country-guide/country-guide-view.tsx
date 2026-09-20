@@ -74,7 +74,7 @@ import type { CountryInfo, EmergencyContacts } from "../types";
 import {
   ALLIANCE_FULL_NAMES,
   BORDER_COUNTRY_NAMES,
-  getIndianPassportVisaGuidance,
+  getPassportVisaGuidance,
   QUICK_PICK_COUNTRIES,
   type QuickPickCountry,
 } from "./country-constants";
@@ -144,10 +144,10 @@ export function CountryGuideView() {
     if (country) setTipPercent(country.tippingPercent ?? 10);
   }, [country]);
 
-  // Indian passport visa snapshot
-  const indianVisa = useMemo(() => {
+  // Passport visa snapshot
+  const visaSnapshot = useMemo(() => {
     if (!country) return null;
-    return getIndianPassportVisaGuidance(country.name, country.code);
+    return getPassportVisaGuidance(country.name, country.code);
   }, [country]);
 
   // Regenerate live AI summary on demand (bypasses cache)
@@ -271,9 +271,12 @@ export function CountryGuideView() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelectCountry = (targetName: string) => {
+  const handleSelectCountry = (targetName: string, shouldScroll = true) => {
     setShowDropdown(false);
     setSearchQuery("");
+    if (shouldScroll && typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
     const cached = getCachedCountryInfo(targetName);
     if (cached) {
       setCountry(cached);
@@ -1085,7 +1088,7 @@ export function CountryGuideView() {
           </CardContent>
         </Card>
 
-        {/* 4. Indian Passport Visa Snapshot */}
+        {/* 4. Passport & Visa Snapshot */}
         <Card className="border-border/80 bg-card shadow-xs">
           <CardHeader className="p-4 pb-2 border-b border-border/50">
             <div className="flex items-center justify-between gap-2">
@@ -1094,38 +1097,38 @@ export function CountryGuideView() {
                   <FileCheck className="w-4 h-4" />
                 </div>
                 <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  Indian Passport Visa Snapshot
+                  Passport & Visa Snapshot
                 </CardTitle>
               </div>
-              {indianVisa && (
+              {visaSnapshot && (
                 <Badge
                   variant="outline"
-                  className={`text-[10px] font-semibold ${indianVisa.status === "Citizen" || indianVisa.status === "Visa Free"
+                  className={`text-[10px] font-semibold ${visaSnapshot.status === "Citizen" || visaSnapshot.status === "Visa Free"
                     ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                    : indianVisa.status === "Visa on Arrival"
+                    : visaSnapshot.status === "Visa on Arrival"
                       ? "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30"
-                      : indianVisa.status === "eVisa"
+                      : visaSnapshot.status === "eVisa"
                         ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
                         : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
                     }`}
                 >
-                  {indianVisa.status}
+                  {visaSnapshot.status}
                 </Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="p-4 space-y-3 text-xs">
-            {indianVisa?.duration && (
+            {visaSnapshot?.duration && (
               <div className="flex items-center justify-between text-[11px] pb-2 border-b border-border/40">
                 <span className="text-muted-foreground font-medium">Permitted Stay:</span>
-                <strong className="font-semibold text-foreground font-mono">{indianVisa.duration}</strong>
+                <strong className="font-semibold text-foreground font-mono">{visaSnapshot.duration}</strong>
               </div>
             )}
             <p className="text-[11px] text-foreground leading-relaxed">
-              {indianVisa?.note || country.visaInfo}
+              {visaSnapshot?.note || country.visaInfo}
             </p>
             <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-2.5 leading-normal">
-              Indian passports must have at least <strong>6 months</strong> remaining validity from departure date.
+              Passports must have at least <strong>6 months</strong> remaining validity from departure date.
             </p>
           </CardContent>
         </Card>

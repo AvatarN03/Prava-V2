@@ -1648,5 +1648,61 @@
         2. OpenCode Zen (priority models if active/credited)
         3. Groq (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`)
         4. Curated dynamic baseline (`curatedFallback`).
-    - **Updated `features/travel-essentials/country-guide/country-guide-view.tsx`**:
-      - Replaced hardcoded "OpenRouter AI Service Notice" and "OpenRouter Notice" with provider-neutral "AI Service Notice" and neutral loading indicators.
+- **Task 130 (Travel Language — Select Dropdown, Header Cleanup, Sequential Audio Fix & OpenRouter Fish Audio TTS)**:
+  - **Context & User Request**:
+    1. Replace horizontal language scroll strip with a `<Select>` dropdown (defaulting to **Hindi**).
+    2. Remove the "11 Languages • Native Audio" and "Native Voice / OpenRouter Flux TTS" badges from the header to fix wrapping and mobile UI issues.
+    3. Fix sequential audio listening issue on mobile where clicking multiple cards in succession caused misplaced, overlapping OpenRouter calls instead of clean mobile native voice playback.
+    4. Switch OpenRouter TTS model from `deepgram/flux-tts:free` to `fish-audio/s2.1-pro-free:free`.
+  - **Root Cause Analysis (Audio playback bug)**:
+    - In W3C Web Speech API, calling `window.speechSynthesis.cancel()` while an utterance is speaking or queued triggers an `error` event on that utterance with `event.error === "canceled"` or `event.error === "interrupted"`.
+    - Previously, `utterance.onerror` did not filter out cancellation events and blindly invoked `playViaOpenRouter(text, ...)`!
+    - When tapping Card 1, followed quickly by Card 2, `cancel()` was invoked for Card 1 $\to$ Card 1's `onerror` fired $\to$ called OpenRouter to fetch audio for Card 1 in the background $\to$ Card 1's audio finished seconds later and played over Card 2.
+  - **Solutions Implemented**:
+    - **Audio Playback Engine (`language-view.tsx`)**:
+      - Added `currentPlayingKeyRef` to track currently active card and prevent stale asynchronous OpenRouter audio responses from ever playing.
+      - Stripped `onend` and `onerror` event listeners from `activeUtteranceRef` and `activeAudioRef` *before* calling `speechSynthesis.cancel()` or `audio.pause()`.
+      - Guarded `utterance.onerror` against `canceled` and `interrupted` errors (`if (event.error === "canceled" || event.error === "interrupted") return;`).
+      - On mobile browsers, enabled native speech synthesis directly via `utterance.lang = localeCode` (with optional `utterance.voice = nativeVoice` if resolved) without latency.
+      - Renamed engine state to `"fish"` and card badges to `"AI Voice"`.
+    - **Header & Dropdown UI (`language-view.tsx`)**:
+      - Replaced horizontal scrolling buttons with a responsive shadcn `<Select>` component displaying country flags, English names, and native scripts (e.g. 🇮🇳 Hindi (हिन्दी)).
+      - Defaulted state to `"Hindi"`.
+      - Removed the two cluttered header badges, giving a clean, spacious mobile and desktop layout.
+- **Task 131 (Country Guide — Universal Passport & Visa Snapshot & Auto-Scroll to Top)**:
+  - **Context & User Request**:
+    1. In Country Guide, the card was hardcoded as "Indian Passport Visa Snapshot" and mentioned "Indian passports must have at least 6 months validity..." regardless of which country was selected or what currency was set. User asked why it mentioned Indian, noted it wasn't tied to preferred currency, and requested removing that hardcoded text.
+    2. Whenever a user clicks on the "Global Emergency Quick Reference" or any quick reference country pill, the page should automatically scroll smoothly back to the top so the newly selected country's details can be viewed immediately.
+  - **Solutions Implemented**:
+    - **Universal Passport & Visa Snapshot (`country-guide-view.tsx` & `country-constants.ts`)**:
+      - Renamed card title to **"Passport & Visa Snapshot"**.
+      - Updated footer notice to universal travel requirement: `"Passports must have at least 6 months remaining validity from departure date."`
+      - Refactored `getIndianPassportVisaGuidance` to `getPassportVisaGuidance` (retaining alias) and updated country-specific notes (India, UAE, Thailand, Malaysia, Japan, France) to describe international entry prerequisites (e-Visas, exemptions, and Schengen rules) rather than assuming an Indian passport holder.
+    - **Smooth Auto-Scroll to Top (`country-guide-view.tsx`)**:
+      - In `handleSelectCountry`, added `window.scrollTo({ top: 0, behavior: "smooth" })` whenever a new country is selected from the bottom Global Emergency Quick Reference, top Quick Pick pills, autocomplete dropdown, or search bar.
+- **Task 132 (Travel Language — Device-Adaptive Voice Capability Detection & Intelligent Routing)**:
+  - **Context & User Request**:
+    - Listening command on laptop/desktop was mispronouncing non-Latin languages (e.g. Hindi, Japanese, Thai) because Windows default installations lack Hindi/Japanese speech synthesis voices and fallback to Microsoft David (English US). Meanwhile, mobile devices (Android/iOS) have native Google/Apple TTS engines for these languages.
+    - User requested inspecting device voice capability dynamically and choosing the appropriate model accordingly.
+  - **Solutions Implemented (`language-view.tsx`)**:
+    - Created `findCapableVoice(voices, localeCode)` which scans available system voices for exact (`hi-IN`) and prefix (`hi`, `hi-*`) matches.
+    - At the moment of click, dynamically queries `speechSynthesis.getVoices()` to verify if the client operating system possesses a genuine voice for the target language.
+    - **Dual-Tier Adaptive Routing**:
+      - **Tier 1 (Device has capable voice)**: If the client has an installed native voice (e.g. Android phone with Google Hindi/Japanese, iOS with Siri/Lekha, or desktop with language pack), it activates `window.speechSynthesis` using the exact `capableVoice` object with zero latency.
+      - **Tier 2 (Device lacks capable voice)**: If no matching voice is installed (e.g. standard Windows/Linux laptop without Hindi/Japanese/Thai language pack), it completely bypasses the English default voice and streams authentic native pronunciation directly from OpenRouter's Fish Audio model (`fish-audio/s2.1-pro-free:free`).
+      - **Tier 3 (Offline / Network Fallback)**: If OpenRouter is offline or unreachable, falls back to `playPhoneticBrowser` reading the Romanized English phonetic pronunciation.
+- **Task 133 (Travel Language — Active Voice Engine Dev Badges)**:
+  - **Context & User Request**:
+    - For development and diagnostic visibility, user requested rendering explicit badges when clicking on the listening controls so they can immediately verify whether playback is using the device's **Native Voice** or **OpenRouter Fish Audio**.
+  - **Solutions Implemented (`language-view.tsx`)**:
+    - **Phrase Cards & Translator Action Buttons**:
+      - When listening, replaces the generic label with dynamic badges:
+        - `Native Voice` (Emerald badge with animated green pulsing wave).
+        - `OpenRouter Fish` (Amber badge with animated orange pulsing wave).
+        - `OpenRouter Loading...` (Sky blue badge with spinner during network stream).
+    - **Header Live Status Indicator**:
+      - Added a sticky live status badge next to the Language select dropdown in the header that activates whenever speech is playing, indicating `Native Device Voice` or `OpenRouter Fish Audio` across the page.
+
+
+
+

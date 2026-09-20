@@ -34,6 +34,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   generateAiSpeechAction,
@@ -46,23 +53,55 @@ import { LANGUAGE_GUIDES } from "./language-data";
 const CATEGORIES = ["ALL", "Greetings", "Essentials", "Dining", "Transit", "Emergency", "Numbers"] as const;
 type CategoryType = (typeof CATEGORIES)[number];
 
+/**
+ * Accurately check whether the device has an installed speech voice capable of pronouncing the target language.
+ * E.g., mobile devices with Google TTS / Apple Siri have Hindi & Japanese installed;
+ * standard Windows laptops typically only have English unless explicit language packs are installed.
+ */
+function findCapableVoice(
+  voices: SpeechSynthesisVoice[],
+  localeCode: string
+): SpeechSynthesisVoice | null {
+  if (!localeCode || voices.length === 0) return null;
+  const targetPrefix = localeCode.split(/[-_]/)[0].toLowerCase();
+  const targetNorm = localeCode.toLowerCase().replace("_", "-");
+
+  // 1. Exact match (e.g. "hi-in" === "hi-IN" or "ja-jp" === "ja-JP")
+  const exact = voices.find((v) => {
+    if (!v.lang) return false;
+    const vNorm = v.lang.toLowerCase().replace("_", "-");
+    return vNorm === targetNorm;
+  });
+  if (exact) return exact;
+
+  // 2. Language-level match (e.g. "hi" or "hi-*" or "ja-*")
+  const prefixMatch = voices.find((v) => {
+    if (!v.lang) return false;
+    const vNorm = v.lang.toLowerCase().replace("_", "-");
+    return vNorm === targetPrefix || vNorm.startsWith(targetPrefix + "-");
+  });
+  if (prefixMatch) return prefixMatch;
+
+  return null;
+}
+
 export function LanguageView() {
   const [selectedLangName, setSelectedLangName] = useState<string>("Hindi");
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
-  const [audioEngine, setAudioEngine] = useState<"browser" | "flux" | "loading" | null>(null);
+  const [audioEngine, setAudioEngine] = useState<"browser" | "fish" | "loading" | null>(null);
   const [translateMode, setTranslateMode] = useState<"auto" | "to-english" | "to-target">("auto");
 
   // Browser voices registry
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [hasCheckedVoices, setHasCheckedVoices] = useState(false);
 
   // Audio & Utterance Refs
   const audioCacheRef = useRef<Map<string, string>>(new Map());
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const currentPlayingKeyRef = useRef<string | null>(null);
 
   // Preload and monitor browser voices
   useEffect(() => {
@@ -73,7 +112,6 @@ export function LanguageView() {
         const voices = window.speechSynthesis.getVoices();
         if (voices && voices.length > 0) {
           setBrowserVoices(voices);
-          setHasCheckedVoices(true);
         }
       } catch {}
     };
@@ -91,9 +129,17 @@ export function LanguageView() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      currentPlayingKeyRef.current = null;
       if (activeAudioRef.current) {
+        activeAudioRef.current.onended = null;
+        activeAudioRef.current.onerror = null;
         activeAudioRef.current.pause();
         activeAudioRef.current = null;
+      }
+      if (activeUtteranceRef.current) {
+        activeUtteranceRef.current.onend = null;
+        activeUtteranceRef.current.onerror = null;
+        activeUtteranceRef.current = null;
       }
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
@@ -113,17 +159,6 @@ export function LanguageView() {
     );
   }, [selectedLangName]);
 
-  // Check if browser has native voice for locale
-  const hasNativeVoice = useMemo(() => {
-    if (!currentGuide.localeCode) return false;
-    const langPrefix = currentGuide.localeCode.split("-")[0].toLowerCase();
-    return browserVoices.some(
-      (v) =>
-        v.lang.toLowerCase() === currentGuide.localeCode.toLowerCase() ||
-        v.lang.toLowerCase().startsWith(langPrefix)
-    );
-  }, [browserVoices, currentGuide.localeCode]);
-
   // Copy helper with visual feedback
   const handleCopy = (text: string, key: string) => {
     if (!text) return;
@@ -134,7 +169,10 @@ export function LanguageView() {
 
   // Phonetic fallback speech using browser default voice
   const playPhoneticBrowser = (phoneticText: string, key: string) => {
+    if (currentPlayingKeyRef.current !== key) return;
+
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      currentPlayingKeyRef.current = null;
       setPlayingKey(null);
       setAudioEngine(null);
       return;
@@ -146,13 +184,20 @@ export function LanguageView() {
     utterance.pitch = 1.0;
 
     utterance.onend = () => {
-      setPlayingKey(null);
-      setAudioEngine(null);
+      if (currentPlayingKeyRef.current === key) {
+        currentPlayingKeyRef.current = null;
+        setPlayingKey(null);
+        setAudioEngine(null);
+      }
       activeUtteranceRef.current = null;
     };
-    utterance.onerror = () => {
-      setPlayingKey(null);
-      setAudioEngine(null);
+    utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
+      if (event.error === "canceled" || event.error === "interrupted") return;
+      if (currentPlayingKeyRef.current === key) {
+        currentPlayingKeyRef.current = null;
+        setPlayingKey(null);
+        setAudioEngine(null);
+      }
       activeUtteranceRef.current = null;
     };
 
@@ -160,7 +205,7 @@ export function LanguageView() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // OpenRouter deepgram/flux-tts:free speech fallback
+  // OpenRouter fish-audio/s2.1-pro-free:free speech fallback
   const playViaOpenRouter = async (
     text: string,
     pronunciation: string | undefined,
@@ -168,6 +213,8 @@ export function LanguageView() {
     languageName: string,
     key: string
   ) => {
+    if (currentPlayingKeyRef.current !== key) return;
+
     const cacheKey = `${text.trim()}_${languageName}`;
     let audioDataUrl = audioCacheRef.current.get(cacheKey);
 
@@ -180,31 +227,40 @@ export function LanguageView() {
           languageName,
           localeCode
         );
+        if (currentPlayingKeyRef.current !== key) return;
+
         if (res.success && res.audioDataUrl) {
           audioDataUrl = res.audioDataUrl;
           audioCacheRef.current.set(cacheKey, audioDataUrl);
         }
       } catch (err) {
-        console.warn("[TTS] OpenRouter Flux TTS action error:", err);
+        console.warn("[TTS] OpenRouter Fish Audio action error:", err);
       }
     }
 
+    if (currentPlayingKeyRef.current !== key) return;
+
     if (audioDataUrl) {
-      setAudioEngine("flux");
+      setAudioEngine("fish");
       try {
         const audio = new Audio(audioDataUrl);
         activeAudioRef.current = audio;
 
         audio.onended = () => {
-          setPlayingKey(null);
-          setAudioEngine(null);
+          if (currentPlayingKeyRef.current === key) {
+            currentPlayingKeyRef.current = null;
+            setPlayingKey(null);
+            setAudioEngine(null);
+          }
           activeAudioRef.current = null;
         };
 
         audio.onerror = () => {
           console.warn("[TTS] HTML5 Audio error, falling back to phonetic browser speech");
           activeAudioRef.current = null;
-          playPhoneticBrowser(pronunciation || text, key);
+          if (currentPlayingKeyRef.current === key) {
+            playPhoneticBrowser(pronunciation || text, key);
+          }
         };
 
         await audio.play();
@@ -216,10 +272,12 @@ export function LanguageView() {
     }
 
     // Tier 3: If OpenRouter audio failed or network blocked, speak the phonetic pronunciation
-    playPhoneticBrowser(pronunciation || text, key);
+    if (currentPlayingKeyRef.current === key) {
+      playPhoneticBrowser(pronunciation || text, key);
+    }
   };
 
-  // Multi-tier Audio Player (Browser SpeechSynthesis -> OpenRouter Flux TTS -> Phonetic Romanized Browser)
+  // Multi-tier Audio Player (Browser SpeechSynthesis -> OpenRouter Fish Audio TTS -> Phonetic Romanized Browser)
   const handlePlaySpeech = async (
     text: string,
     pronunciation: string | undefined,
@@ -227,53 +285,76 @@ export function LanguageView() {
     languageName: string,
     key: string
   ) => {
-    // Cancel any active audio or utterance
+    // Unbind and stop any active audio
     if (activeAudioRef.current) {
+      activeAudioRef.current.onended = null;
+      activeAudioRef.current.onerror = null;
       activeAudioRef.current.pause();
       activeAudioRef.current = null;
+    }
+    // Unbind event handlers BEFORE cancel to prevent fired 'canceled' error events from triggering fallback TTS
+    if (activeUtteranceRef.current) {
+      activeUtteranceRef.current.onend = null;
+      activeUtteranceRef.current.onerror = null;
+      activeUtteranceRef.current = null;
     }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
 
-    if (playingKey === key) {
+    if (currentPlayingKeyRef.current === key && playingKey === key) {
+      currentPlayingKeyRef.current = null;
       setPlayingKey(null);
       setAudioEngine(null);
       return;
     }
 
+    currentPlayingKeyRef.current = key;
     setPlayingKey(key);
 
-    // Check if text is non-Latin script (Japanese, Hindi, Arabic, Thai, Korean, Chinese)
-    const isNonLatin = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\u0900-\u097f\u0600-\u06ff\u0e00-\u0e7f\uac00-\ud7af\u1100-\u11ff]/.test(text);
-    const langPrefix = (localeCode || "").split("-")[0].toLowerCase();
-    const nativeVoice = browserVoices.find(
-      (v) =>
-        v.lang.toLowerCase() === localeCode.toLowerCase() ||
-        v.lang.toLowerCase().startsWith(langPrefix)
-    );
+    // Dynamically retrieve all available voices from the browser/OS at the moment of click
+    const allVoices =
+      typeof window !== "undefined" && "speechSynthesis" in window
+        ? window.speechSynthesis.getVoices()
+        : [];
+    const effectiveVoices = allVoices.length > 0 ? allVoices : browserVoices;
+    if (allVoices.length > 0 && browserVoices.length === 0) {
+      setBrowserVoices(allVoices);
+    }
 
-    // Tier 1: If browser has a native voice installed for this language
-    if (typeof window !== "undefined" && "speechSynthesis" in window && nativeVoice) {
+    // Check whether the device actually has an installed voice capable of pronouncing this language
+    const capableVoice = findCapableVoice(effectiveVoices, localeCode);
+
+    // Tier 1: Device has a genuinely capable native voice installed for this language (e.g. mobile with Google/Apple TTS, or laptop with language pack)
+    if (capableVoice && typeof window !== "undefined" && "speechSynthesis" in window) {
       try {
         setAudioEngine("browser");
         const cleanSpeechText = text.replace(/\([^)]*\)/g, "").trim() || text;
         const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
-        utterance.lang = localeCode || "en-US";
-        utterance.voice = nativeVoice;
+        utterance.voice = capableVoice;
+        utterance.lang = capableVoice.lang || localeCode || "en-US";
         utterance.rate = 0.85;
         utterance.pitch = 1.0;
 
         utterance.onend = () => {
-          setPlayingKey(null);
-          setAudioEngine(null);
+          if (currentPlayingKeyRef.current === key) {
+            currentPlayingKeyRef.current = null;
+            setPlayingKey(null);
+            setAudioEngine(null);
+          }
           activeUtteranceRef.current = null;
         };
 
-        utterance.onerror = (event) => {
-          console.warn("[SpeechSynthesis] Browser voice failed, invoking OpenRouter fallback:", event);
+        utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
+          // If the speech was canceled or interrupted because user clicked another card, ignore!
+          if (event.error === "canceled" || event.error === "interrupted") {
+            return;
+          }
+          console.warn("[SpeechSynthesis] Native voice error, falling back to OpenRouter Fish Audio:", event.error);
           activeUtteranceRef.current = null;
-          playViaOpenRouter(text, pronunciation, localeCode, languageName, key);
+          if (currentPlayingKeyRef.current === key) {
+            playViaOpenRouter(text, pronunciation, localeCode, languageName, key);
+          }
         };
 
         activeUtteranceRef.current = utterance;
@@ -284,7 +365,8 @@ export function LanguageView() {
       }
     }
 
-    // Tier 2: No native browser voice installed (e.g. Japanese or Hindi on default Windows OS) -> OpenRouter deepgram/flux-tts:free
+    // Tier 2: Device does NOT have a native voice for this language (e.g. standard Windows laptop without Hindi/Japanese/Thai language pack)
+    // -> Use OpenRouter Fish Audio model (fish-audio/s2.1-pro-free:free) for authentic native pronunciation
     await playViaOpenRouter(text, pronunciation, localeCode, languageName, key);
   };
 
@@ -343,70 +425,76 @@ export function LanguageView() {
   return (
     <div className="space-y-6">
       {/* Header & Language Switcher */}
-      <div className="flex flex-col gap-3 pb-2 border-b border-border/80">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                <Languages className="w-4 h-4 text-violet-500" />
-                Travel Language Phrasebook & Voice Guide
-              </h2>
-              <Badge variant="secondary" className="text-[10px] font-mono px-2 py-0">
-                11 Languages • Native Audio
-              </Badge>
-              {hasCheckedVoices && (
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] font-mono px-2 py-0 flex items-center gap-1.5 ${
-                    hasNativeVoice
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                      : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      hasNativeVoice ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
-                    }`}
-                  />
-                  <span>
-                    {hasNativeVoice
-                      ? "Native Voice"
-                      : "OpenRouter Flux TTS"}
-                  </span>
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Polite travel phrases, ordering food, transit navigation, and emergency phrases with phonetic pronunciations and native voice.
-            </p>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/80">
+        <div>
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Languages className="w-4 h-4 text-violet-500" />
+            Travel Language Phrasebook & Voice Guide
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Polite travel phrases, ordering food, transit navigation, and emergency phrases with phonetic pronunciations and audio guide.
+          </p>
         </div>
 
-        {/* Language Selection Strip */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
-          {LANGUAGE_GUIDES.map((guide) => (
-            <button
-              key={guide.language}
-              type="button"
-              onClick={() => {
-                setSelectedLangName(guide.language);
-                setAiTranslation(null); // Reset custom translation on language switch
-              }}
-              className={`px-3 py-1.5 text-xs rounded-xl border font-medium transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                selectedLangName === guide.language
-                  ? "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/40 font-semibold shadow-xs"
-                  : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted"
+        {/* Language Select Dropdown & Active Voice Mode Badge */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {playingKey && audioEngine && (
+            <Badge
+              variant="outline"
+              className={`text-[10px] font-mono px-2 py-0.5 flex items-center gap-1.5 animate-in fade-in duration-150 ${
+                audioEngine === "browser"
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : audioEngine === "fish"
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300"
               }`}
             >
-              <span className="text-sm leading-none">{guide.flag}</span>
-              <span>{guide.language}</span>
-              {guide.nativeName && (
-                <span className="text-[10px] opacity-70 font-normal hidden sm:inline">
-                  ({guide.nativeName})
-                </span>
+              {audioEngine === "loading" ? (
+                <>
+                  <Loader2 className="w-3 h-3 text-sky-600 animate-spin" />
+                  <span>OpenRouter Loading...</span>
+                </>
+              ) : audioEngine === "fish" ? (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>OpenRouter Fish Audio</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Native Device Voice</span>
+                </>
               )}
-            </button>
-          ))}
+            </Badge>
+          )}
+
+          <label htmlFor="language-select" className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            Language:
+          </label>
+          <Select
+            value={selectedLangName}
+            onValueChange={(val) => {
+              setSelectedLangName(val);
+              setAiTranslation(null); // Reset custom translation on language switch
+            }}
+          >
+            <SelectTrigger id="language-select" className="w-[180px] sm:w-[210px] h-9 text-xs cursor-pointer bg-background">
+              <SelectValue placeholder="Select Language" />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGE_GUIDES.map((guide) => (
+                <SelectItem key={guide.language} value={guide.language} className="text-xs cursor-pointer">
+                  <span className="mr-2 text-sm">{guide.flag}</span>
+                  <span>{guide.language}</span>
+                  {guide.nativeName && (
+                    <span className="ml-1.5 text-[10px] text-muted-foreground">
+                      ({guide.nativeName})
+                    </span>
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -585,18 +673,24 @@ export function LanguageView() {
                   {playingKey === "custom_ai_translated" ? (
                     audioEngine === "loading" ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 text-amber-500 animate-spin" />
-                        <span>Generating Audio...</span>
+                        <Loader2 className="w-3.5 h-3.5 text-sky-500 animate-spin" />
+                        <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-sky-500/40 bg-sky-500/20 text-sky-700 dark:text-sky-300">
+                          OpenRouter Loading...
+                        </Badge>
                       </>
-                    ) : audioEngine === "flux" ? (
+                    ) : audioEngine === "fish" ? (
                       <>
                         <Radio className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                        <span>Playing Voice...</span>
+                        <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                          OpenRouter Fish
+                        </Badge>
                       </>
                     ) : (
                       <>
-                        <Radio className="w-3.5 h-3.5 text-violet-600 animate-pulse" />
-                        <span>Speaking...</span>
+                        <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                        <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                          Native Voice
+                        </Badge>
                       </>
                     )
                   ) : (
@@ -626,11 +720,34 @@ export function LanguageView() {
                     title="Pronounce original foreign text"
                   >
                     {playingKey === "custom_ai_original" ? (
-                      <Radio className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                      audioEngine === "loading" ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 text-sky-500 animate-spin" />
+                          <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-sky-500/40 bg-sky-500/20 text-sky-700 dark:text-sky-300">
+                            OpenRouter Loading...
+                          </Badge>
+                        </>
+                      ) : audioEngine === "fish" ? (
+                        <>
+                          <Radio className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                          <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                            OpenRouter Fish
+                          </Badge>
+                        </>
+                      ) : (
+                        <>
+                          <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                          <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                            Native Voice
+                          </Badge>
+                        </>
+                      )
                     ) : (
-                      <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
+                      <>
+                        <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Listen Original</span>
+                      </>
                     )}
-                    <span>Listen Original</span>
                   </Button>
                 )}
 
@@ -760,11 +877,11 @@ export function LanguageView() {
                       }
                       className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
                         isPlaying
-                          ? audioEngine === "flux"
-                            ? "bg-amber-500 text-white shadow-xs"
+                          ? audioEngine === "fish"
+                            ? "bg-amber-500/10 border border-amber-500/30 shadow-xs"
                             : audioEngine === "loading"
-                            ? "bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30"
-                            : "bg-violet-500 text-white shadow-xs"
+                            ? "bg-sky-500/10 border border-sky-500/30 shadow-xs"
+                            : "bg-emerald-500/10 border border-emerald-500/30 shadow-xs"
                           : "bg-muted/50 hover:bg-muted text-foreground border border-border/60"
                       }`}
                       title="Play pronunciation"
@@ -772,18 +889,24 @@ export function LanguageView() {
                       {isPlaying ? (
                         audioEngine === "loading" ? (
                           <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            <span>Loading AI...</span>
+                            <Loader2 className="w-3 h-3 text-sky-600 animate-spin" />
+                            <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-sky-500/40 bg-sky-500/20 text-sky-700 dark:text-sky-300">
+                              OpenRouter Loading...
+                            </Badge>
                           </>
-                        ) : audioEngine === "flux" ? (
+                        ) : audioEngine === "fish" ? (
                           <>
-                            <Radio className="w-3 h-3 animate-pulse" />
-                            <span>Flux AI</span>
+                            <Radio className="w-3 h-3 text-amber-600 animate-pulse" />
+                            <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-amber-500/40 bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                              OpenRouter Fish
+                            </Badge>
                           </>
                         ) : (
                           <>
-                            <Radio className="w-3 h-3 animate-pulse" />
-                            <span>Playing</span>
+                            <Radio className="w-3 h-3 text-emerald-600 animate-pulse" />
+                            <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                              Native Voice
+                            </Badge>
                           </>
                         )
                       ) : (

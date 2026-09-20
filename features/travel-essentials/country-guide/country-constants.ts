@@ -16,9 +16,9 @@ export const QUICK_PICK_COUNTRIES: QuickPickCountry[] = [
     flag: "🇮🇳",
     capital: "New Delhi",
     region: "Asia",
-    visaStatus: "Citizen",
-    visaDuration: "Unlimited",
-    visaNote: "Domestic national citizen. No visa or passport required for domestic travel.",
+    visaStatus: "eVisa",
+    visaDuration: "30 - 365 Days",
+    visaNote: "Digital e-Tourist Visa available online for most international travelers via the official portal.",
   },
   {
     name: "UAE",
@@ -28,7 +28,7 @@ export const QUICK_PICK_COUNTRIES: QuickPickCountry[] = [
     region: "Middle East",
     visaStatus: "Visa on Arrival",
     visaDuration: "14 - 30 Days",
-    visaNote: "VOA available for Indian passport holders with valid US/UK/EU visas; otherwise pre-arranged tourist eVisa.",
+    visaNote: "VOA available for select nationalities or travelers with valid US/UK/EU visas; otherwise pre-arranged tourist eVisa.",
   },
   {
     name: "Thailand",
@@ -38,7 +38,7 @@ export const QUICK_PICK_COUNTRIES: QuickPickCountry[] = [
     region: "Asia",
     visaStatus: "Visa Free",
     visaDuration: "60 Days",
-    visaNote: "Visa exemption for Indian tourists for up to 60 days. Return ticket & proof of funds required.",
+    visaNote: "Visa exemption or VOA available for eligible international tourists for up to 60 days. Return ticket & proof of funds required.",
   },
   {
     name: "Singapore",
@@ -58,7 +58,7 @@ export const QUICK_PICK_COUNTRIES: QuickPickCountry[] = [
     region: "Asia",
     visaStatus: "Visa Free",
     visaDuration: "30 Days",
-    visaNote: "Visa-free entry for Indian nationals. Complete digital Malaysia Arrival Card (MDAC) prior to travel.",
+    visaNote: "Visa-free entry or eVisa available for most international visitors. Complete digital Malaysia Arrival Card (MDAC) prior to travel.",
   },
   {
     name: "Indonesia",
@@ -98,7 +98,7 @@ export const QUICK_PICK_COUNTRIES: QuickPickCountry[] = [
     region: "Asia",
     visaStatus: "eVisa",
     visaDuration: "90 Days",
-    visaNote: "Single-entry short-term tourist eVisa available online for Indian nationals residing in India.",
+    visaNote: "Single-entry short-term tourist eVisa or visa exemption available depending on passport nationality.",
   },
   {
     name: "Switzerland",
@@ -118,7 +118,7 @@ export const QUICK_PICK_COUNTRIES: QuickPickCountry[] = [
     region: "Europe",
     visaStatus: "Visa Required",
     visaDuration: "Up to 90 Days",
-    visaNote: "Schengen Visa (Type C) required for Indian passport holders. Apply via France-Visas & VFS Global.",
+    visaNote: "Schengen Visa (Type C) required for non-exempt passport holders. Apply via France-Visas & VFS Global.",
   },
   {
     name: "United States",
@@ -193,9 +193,9 @@ export const QUICK_PICK_COUNTRIES: QuickPickCountry[] = [
 ];
 
 /**
- * Look up Indian passport visa guidance for any country
+ * Look up international passport and visa guidance for any country
  */
-export function getIndianPassportVisaGuidance(countryName: string, countryCode?: string): {
+export function getPassportVisaGuidance(countryName: string, countryCode?: string): {
   status: "Citizen" | "Visa Free" | "Visa on Arrival" | "eVisa" | "Visa Required";
   duration?: string;
   note: string;
@@ -215,21 +215,15 @@ export function getIndianPassportVisaGuidance(countryName: string, countryCode?:
     };
   }
 
-  // Fallback heuristic for unlisted countries
-  if (normName === "india" || normCode === "IN") {
-    return {
-      status: "Citizen",
-      duration: "Unlimited",
-      note: "Domestic national citizen. No visa or passport required.",
-    };
-  }
-
   return {
     status: "Visa Required",
     duration: "Varies",
-    note: "Consult official consulate or embassy portal for Indian passport entry requirements prior to departure.",
+    note: "Consult official consulate or embassy portal for nationality-specific passport entry requirements prior to departure.",
   };
 }
+
+// Retain backward-compatible alias
+export const getIndianPassportVisaGuidance = getPassportVisaGuidance;
 
 /**
  * Full expansion names for international alliances, intergovernmental organizations, and treaties

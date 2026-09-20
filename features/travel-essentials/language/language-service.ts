@@ -350,7 +350,7 @@ export async function generateAiSpeechAction(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "deepgram/flux-tts:free",
+        model: "fish-audio/s2.1-pro-free:free",
         input: speechInput,
         voice,
         response_format: "mp3",
@@ -362,7 +362,7 @@ export async function generateAiSpeechAction(
       const errText = await res.text().catch(() => "");
       return {
         success: false,
-        error: `OpenRouter Flux TTS HTTP ${res.status}: ${errText.slice(0, 150)}`,
+        error: `OpenRouter Fish Audio HTTP ${res.status}: ${errText.slice(0, 150)}`,
       };
     }
 
