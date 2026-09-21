@@ -118,7 +118,7 @@ export function OverviewSection({
                 title="Trips published to Community Templates"
               >
                 <div className="text-sm font-bold text-primary">
-                  {profile.publishedTemplates ?? 0}
+                  {profile.publishedTrips ?? 0}
                 </div>
                 <div className="text-[10px] font-medium text-muted-foreground">Trip Templates</div>
               </div>

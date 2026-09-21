@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { UpgradeDialog } from "./upgrade-dialog";
 import { UsageChart } from "./usage-chart";
 import { AccountUsageData } from "../actions";
+import { CreateTripDialog } from "@/features/trips/components/create-trip-dialog";
 
 interface UsageViewProps {
   initialUsage: AccountUsageData;
@@ -56,11 +57,10 @@ export function UsageView({ initialUsage }: UsageViewProps) {
             </h1>
             <Badge
               variant="secondary"
-              className={`text-xs font-semibold ${
-                isPro
-                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
-                  : "bg-muted text-foreground border-border"
-              }`}
+              className={`text-xs font-semibold ${isPro
+                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
+                : "bg-muted text-foreground border-border"
+                }`}
             >
               {usage.tierName}
             </Badge>
@@ -121,11 +121,11 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                 <div>
                   <CardTitle className="text-sm font-semibold text-foreground">AI Assistant Credits</CardTitle>
                   <CardDescription className="text-[11px] text-muted-foreground">
-                    Monthly Gemini AI interaction quota
+                    Monthly AI interaction quota
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-1.5 self-start sm:self-auto">
+              <div className="flex flex-row items-center sm:items-center gap-2 sm:gap-1.5 self-start sm:self-auto">
                 {isCreditsExhausted ? (
                   <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0.5 rounded-xs">
                     Limit Reached
@@ -147,13 +147,12 @@ export function UsageView({ initialUsage }: UsageViewProps) {
             <div className="space-y-1.5">
               <div className="h-2 w-full rounded-xs bg-muted overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-300 ${
-                    isCreditsExhausted
-                      ? "bg-rose-600"
-                      : aiPct > 75
+                  className={`h-full transition-all duration-300 ${isCreditsExhausted
+                    ? "bg-rose-600"
+                    : aiPct > 75
                       ? "bg-amber-500"
                       : "bg-primary"
-                  }`}
+                    }`}
                   style={{ width: `${aiPct}%` }}
                 />
               </div>
@@ -168,8 +167,9 @@ export function UsageView({ initialUsage }: UsageViewProps) {
             <div className="rounded-xs bg-muted/40 p-3 text-xs text-muted-foreground border border-border/60">
               <span className="text-[11px] leading-relaxed">
                 {isPro
-                  ? "Pro tier: 150 AI credits/month with priority Gemini models."
-                  : "Free Explorer: 30 AI assistant credits per month limit. Resets on 1st of next month."}
+                  ? "Pro tier: 150 AI credits/month. "
+                  : "Free Explorer: 30 AI credits/month. "}
+                Resets on the 1st of the month.
               </span>
             </div>
           </CardContent>
@@ -190,7 +190,7 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-1.5 self-start sm:self-auto">
+              <div className="flex flex-row items-center sm:items-center gap-2 sm:gap-1.5 self-start sm:self-auto">
                 <Badge variant="outline" className="text-[10px] font-medium border-border">
                   {usage.tripsRemaining} Slots Free
                 </Badge>
@@ -218,7 +218,7 @@ export function UsageView({ initialUsage }: UsageViewProps) {
 
             <div className="rounded-xs bg-muted/40 p-3 text-xs text-muted-foreground flex items-center justify-between border border-border/60">
               <span className="text-[11px]">Manage active & planned travel workspaces</span>
-              <Link href="/trips" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link href="/trips" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 whitespace-nowrap">
                 View My Trips <ChevronRight className="h-3 w-3" />
               </Link>
             </div>
@@ -314,11 +314,7 @@ export function UsageView({ initialUsage }: UsageViewProps) {
             <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
               Create your first travel workspace to start planning itineraries with the AI assistant.
             </p>
-            <Link href="/trips">
-              <Button size="sm" className="mt-2 text-xs rounded-xs h-8">
-                Create a Trip
-              </Button>
-            </Link>
+            <CreateTripDialog />
           </div>
         )}
       </div>
@@ -378,11 +374,10 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                   </td>
                   <td className="p-3 pr-4 text-right">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-semibold border ${
-                        item.status === "Active Cycle"
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : "bg-muted text-muted-foreground border-border"
-                      }`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-semibold border ${item.status === "Active Cycle"
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-muted text-muted-foreground border-border"
+                        }`}
                     >
                       {item.status}
                     </span>

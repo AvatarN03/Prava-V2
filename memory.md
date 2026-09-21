@@ -1814,3 +1814,15 @@
       - On touch devices and screens `< 640px`, this badge is prominently visible at the bottom-right corner of the avatar circle, signaling clickability.
       - On desktop viewports (`sm:` and larger), the badge is hidden, preserving the clean, sleek full-circle hover overlay.
       - Reorganized imports following the strict 6-tier import hierarchy.
+
+- **Task 143 (Fix Errors in Stories Page, Subscription Page & Related Components)**:
+  - **Root Cause Analysis**:
+    1. **Stories Page (`app/(app)/stories/page.tsx`)**: Missing imports for `getAllPublishedStories` (Server Action) and `StoryCard` component, causing runtime `ReferenceError` upon navigating to `/stories`. Also lacked explicit `export const dynamic = "force-dynamic"`.
+    2. **Subscription Page View (`features/pricing/components/account-usage-view.tsx`)**: Rendered `<CreditCard className="h-3.5 w-3.5 text-primary" />` in Quick Navigation, but `CreditCard` was omitted from `lucide-react` imports, triggering a runtime `ReferenceError: CreditCard is not defined` when loading `/subscription`.
+    3. **Pricing Upgrade Dialog (`features/pricing/components/upgrade-dialog.tsx`)**: Had unused import `PRICING_PLANS`.
+    4. **Usage View (`features/pricing/components/usage-view.tsx`)**: Had unreferenced imports `Calendar`, `Clock`, `ArrowUpRight`, `ExternalLink`, and `History`.
+    5. **Story Editor & Story Detail (`features/blog/components/blog-editor.tsx`, `app/(app)/stories/[slug]/page.tsx`, `app/(app)/stories/[slug]/edit/page.tsx`)**: Missing `FileText` icon import used on line 189 of `blog-editor.tsx` (`<FileText className="h-3.5 w-3.5 text-primary" /> Story Details`), and dynamic route pages lacked explicit `export const dynamic = "force-dynamic"`.
+    6. **Profile Overview (`features/profile/components/overview-section.tsx` & `features/profile/actions.ts`)**: Referenced `profile.publishedTemplates` which was missing on `ProfileWithStats`. Standardized to `profile.publishedTrips` and added optional `publishedTemplates` alias on `ProfileWithStats` for complete interface compatibility.
+  - **Verification**:
+    - Ran full `npx tsc --noEmit`: 0 errors.
+    - Ran full production build (`npm run build` -> `prisma generate && next build` via Turbopack): compiled all 31 routes including `/stories`, `/stories/[slug]`, `/stories/[slug]/edit`, `/stories/manage`, `/stories/new`, `/subscription`, `/pricing`, `/usage` cleanly with code 0.

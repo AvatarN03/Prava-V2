@@ -1,36 +1,45 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+
 import {
-  Sparkles,
-  Zap,
-  CheckCircle2,
-  ShieldCheck,
-  ChevronRight,
-  HelpCircle,
-  Compass,
-  Check,
   ArrowUpRight,
-  Loader2,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Compass,
+  CreditCard,
+  ExternalLink,
   Globe,
+  HelpCircle,
+  Loader2,
   Lock,
   RefreshCw,
-  ExternalLink,
+  ShieldCheck,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -38,16 +47,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+
 import {
-  AccountUsageData,
-  ConvertedPricingDTO,
-  getUserPricingCurrency,
   createPolarCheckoutSession,
   createPolarCustomerPortalSession,
+  getUserPricingCurrency,
   simulatePolarUpgrade,
 } from "../actions";
-import { PRICING_PLANS, PRICING_FAQS } from "../pricing-config";
 import { SUPPORTED_CURRENCIES } from "@/features/travel-essentials/currency/currency-service";
+
+import type { AccountUsageData, ConvertedPricingDTO } from "../actions";
+import { PRICING_FAQS, PRICING_PLANS } from "../pricing-config";
 
 interface AccountUsageViewProps {
   initialUsage: AccountUsageData;

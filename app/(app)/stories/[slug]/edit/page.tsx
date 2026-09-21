@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
+
+import { BlogEditor } from "@/features/blog/components/blog-editor";
+
 import { getBlogPostForEdit } from "@/features/blog/actions";
 import { getTrips } from "@/features/trips/actions";
-import { BlogEditor } from "@/features/blog/components/blog-editor";
+
+export const dynamic = "force-dynamic";
 
 interface EditStoryPageProps {
   params: Promise<{ slug: string }>;

@@ -1,8 +1,16 @@
 import Link from "next/link";
-import { Plus, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import type { Metadata } from "next";
 
-export const metadata = {
+import { Plus, Sparkles } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { StoryCard } from "@/features/blog/components/story-card";
+
+import { getAllPublishedStories } from "@/features/blog/actions";
+
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
   title: "Travel Stories & Guides",
   description: "Discover curated travel stories, destination deep dives, and expert itineraries written by the Prava creator community.",
 };

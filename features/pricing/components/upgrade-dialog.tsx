@@ -1,25 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Sparkles,
-  Check,
-  ShieldCheck,
-  CreditCard,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { Check, CreditCard, ShieldCheck, Sparkles } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { PRICING_PLANS } from "../pricing-config";
-import { getUserPricingCurrency, ConvertedPricingDTO } from "../actions";
+
+import { getUserPricingCurrency } from "../actions";
+
+import type { ConvertedPricingDTO } from "../actions";
 
 interface UpgradeDialogProps {
   open: boolean;

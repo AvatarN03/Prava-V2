@@ -19,6 +19,8 @@ import { StoryHeaderActions } from "@/features/blog/components/story-header-acti
 import { getPublishedStory } from "@/features/blog/actions";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 interface StoryPageProps {
   params: Promise<{ slug: string }>;
 }

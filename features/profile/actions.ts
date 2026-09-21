@@ -28,6 +28,7 @@ export interface ProfileWithStats {
   createdAt: string;
   totalTrips: number;
   publishedTrips: number;
+  publishedTemplates?: number;
   publishedStories: number;
   forumDiscussions: number;
   tier: "free" | "pro";
@@ -169,6 +170,7 @@ export async function getCurrentProfile(): Promise<{ success: boolean; profile?:
         createdAt: profile.createdAt.toISOString(),
         totalTrips: profile._count.trips,
         publishedTrips: profile.trips.length,
+        publishedTemplates: profile.trips.length,
         publishedStories: publishedStoriesCount,
         forumDiscussions: communityDiscussionsCount,
         tier,
