@@ -53,7 +53,7 @@ export function UsageView({ initialUsage }: UsageViewProps) {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              AI & Workspace Usage
+              Usage
             </h1>
             <Badge
               variant="secondary"

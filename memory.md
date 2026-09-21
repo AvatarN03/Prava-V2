@@ -1826,3 +1826,34 @@
   - **Verification**:
     - Ran full `npx tsc --noEmit`: 0 errors.
     - Ran full production build (`npm run build` -> `prisma generate && next build` via Turbopack): compiled all 31 routes including `/stories`, `/stories/[slug]`, `/stories/[slug]/edit`, `/stories/manage`, `/stories/new`, `/subscription`, `/pricing`, `/usage` cleanly with code 0.
+
+- **Task 144 (Sidebar & Usage Header Refinement — Remove AI Badge & Rename to Usage)**:
+  - **Context & User Request**:
+    - Remove the "AI" badge from the sidebar for the Usage navigation item.
+    - Rename the main component / page heading of the usage page to strictly "Usage".
+    - In the workspace header / TopBar, remove "Quotas" so it displays "Usage".
+  - **Solutions Implemented**:
+    - **Sidebar Navigation (`components/app-shell/nav-config.ts`)**: Removed `badge: "AI"` from the `/usage` entry in `accountNavItems`.
+    - **TopBar Header (`components/app-shell/top-bar.tsx`)**: Changed route header title from `Usage & Quotas` to `Usage`.
+    - **Usage View Component (`features/pricing/components/usage-view.tsx`)**: Replaced `AI & Workspace Usage` heading with `Usage`.
+    - **Usage Route Metadata (`app/(app)/usage/page.tsx`)**: Updated metadata title from `Usage & Quotas` to `Usage`.
+    - **Subscription Page Cross-Links (`features/pricing/components/account-usage-view.tsx`)**: Updated quick link button and navigation item text to `View Usage` and `Check AI Credit & Trip Usage`.
+  - **Verification**:
+    - Verified via `npx tsc --noEmit` — 0 errors.
+
+- **Task 145 (Mobile Responsive Header Optimization — Reduced Padding & Minimal Gaps)**:
+  - **Context & User Request**:
+    - In mobile responsive view, reduce the workspace header horizontal padding (`padding-x`).
+    - Shrink the gap between the mobile sidebar menu icon and the page title.
+    - Minimize the spacing on the right side between the weather component, theme toggle, notification bell icon, and user profile avatar.
+  - **Solutions Implemented**:
+    - **Header Container (`components/app-shell/top-bar.tsx`)**: Changed horizontal padding from `px-4 md:px-6` to `px-2 sm:px-4 md:px-6` (8px on mobile for maximum usable width).
+    - **Left Section (`components/app-shell/top-bar.tsx`)**: Reduced gap between mobile hamburger trigger button and page title wrapper from `gap-3 sm:gap-4` to `gap-1.5 sm:gap-4 min-w-0`.
+    - **Right Section (`components/app-shell/top-bar.tsx`)**:
+      - Reduced container gap between all right-side widgets from `gap-2 sm:gap-2.5` to `gap-0.5 sm:gap-2 md:gap-2.5 shrink-0`.
+      - Reduced theme toggle button size on mobile from `h-9 w-9` to `h-8 w-8 sm:h-9 sm:w-9`.
+      - Reduced notifications bell button size on mobile from `h-9 w-9` to `h-8 w-8 sm:h-9 sm:w-9`.
+      - Reduced user profile popover trigger padding & gap on mobile from `gap-2 pl-1 pr-1.5` to `gap-1 sm:gap-2 pl-0.5 sm:pl-1 pr-1 sm:pr-2.5`.
+    - **Weather Widget (`components/app-shell/top-bar-weather.tsx`)**: Reduced weather pill dimensions on mobile from `h-8.5 px-2 sm:px-2.5 gap-1.5` to `h-8 px-1.5 sm:px-2.5 gap-1 sm:gap-1.5`.
+  - **Verification**:
+    - Verified via `npx tsc --noEmit` — 0 errors.

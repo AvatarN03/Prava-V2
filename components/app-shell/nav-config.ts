@@ -64,7 +64,6 @@ export const accountNavItems: NavItem[] = [
     title: "Usage",
     href: "/usage",
     icon: Sparkles,
-    badge: "AI",
   },
   {
     title: "Subscription",

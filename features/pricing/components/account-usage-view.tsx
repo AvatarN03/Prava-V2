@@ -334,7 +334,7 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
             <Link href="/usage">
               <Button variant="outline" size="sm" className="h-8 text-xs rounded-sm gap-1.5 cursor-pointer">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                View AI & Quota Usage
+                View Usage
                 <ArrowUpRight className="h-3 w-3" />
               </Button>
             </Link>
@@ -594,7 +594,7 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
               >
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  <span className="font-medium text-foreground">Check AI Credit & Trip Quota Usage</span>
+                  <span className="font-medium text-foreground">Check AI Credit & Trip Usage</span>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
               </Link>

@@ -170,7 +170,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
       return { title: "Account & Settings", icon: User };
     }
     if (pathname.startsWith("/usage")) {
-      return { title: "Usage & Quotas", icon: Sparkles };
+      return { title: "Usage", icon: Sparkles };
     }
     if (pathname.startsWith("/subscription") || pathname.startsWith("/pricing")) {
       return { title: "Subscription & Plans", icon: CreditCard };
@@ -214,20 +214,20 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
 
   return (
     <TooltipProvider>
-      <header className="sticky top-0 z-30 shrink-0 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-md px-4 md:px-6 rounded-none md:rounded-tl-[24px] transition-colors">
+      <header className="sticky top-0 z-30 shrink-0 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-md px-2 sm:px-4 md:px-6 rounded-none md:rounded-tl-[24px] transition-colors">
         {/* Left: Mobile Trigger & Page Title */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-4 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer"
+            className="md:hidden h-8 w-8 shrink-0 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer"
             onClick={onMobileMenuOpen}
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="h-6 w-6" />
             <span className="sr-only">Open sidebar</span>
           </Button>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-xs bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs shrink-0">
               <PageIcon className="h-4 w-4" />
             </div>
@@ -238,7 +238,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
         </div>
 
         {/* Right: Weather Pill, Theme Toggle, Notifications & User Profile */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-0.5 sm:gap-2 md:gap-2.5 shrink-0">
           {/* Live Weather Header Widget */}
           <TopBarWeather />
 
@@ -250,7 +250,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
                 size="icon"
                 onClick={toggleTheme}
                 disabled={isTransitioning}
-                className="h-9 w-9 text-slate-500 dark:text-slate-400 hover:text-[#2D9BF0] hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                className="h-8 w-8 sm:h-9 sm:w-9 text-slate-500 dark:text-slate-400 hover:text-[#2D9BF0] hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                 aria-label="Toggle theme"
               >
                 {mounted ? (
@@ -282,7 +282,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 text-slate-500 dark:text-slate-400 hover:text-[#2D9BF0] hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="h-8 w-8 sm:h-9 sm:w-9 text-slate-500 dark:text-slate-400 hover:text-[#2D9BF0] hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer"
               >
                 <Bell className="h-4 w-4" />
                 <span className="sr-only">Notifications</span>
@@ -295,7 +295,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
 
           {/* User Profile (Avatar and Name collected in a single interactive Popover trigger) */}
           {loading ? (
-            <div className="flex items-center gap-2 pl-1 pr-1" aria-busy="true" aria-label="Loading profile">
+            <div className="flex items-center gap-1.5 sm:gap-2 pl-0.5 sm:pl-1 pr-1" aria-busy="true" aria-label="Loading profile">
               <Skeleton className="h-7 w-7 rounded-full bg-slate-200 dark:bg-slate-800" />
               <Skeleton className="h-3.5 w-16 rounded bg-slate-200 dark:bg-slate-800 hidden sm:block" />
             </div>
@@ -304,7 +304,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-md border border-transparent hover:border-slate-200/80 dark:hover:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2D9BF0]"
+                  className="flex items-center gap-1 sm:gap-2 pl-0.5 sm:pl-1 pr-1 sm:pr-2.5 py-1 rounded-md border border-transparent hover:border-slate-200/80 dark:hover:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#2D9BF0]"
                   aria-label="User profile overview"
                 >
                   <div className="relative shrink-0">

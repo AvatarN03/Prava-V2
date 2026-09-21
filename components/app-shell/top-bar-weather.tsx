@@ -144,7 +144,7 @@ export function TopBarWeather() {
         <button
           type="button"
           aria-label="View local weather"
-          className="h-8.5 px-2 sm:px-2.5 rounded-full border border-border/70 hover:border-primary/40 bg-card/70 hover:bg-muted/70 backdrop-blur-xs flex items-center gap-1.5 transition-all text-xs cursor-pointer select-none shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="h-8 px-1.5 sm:px-2.5 rounded-full border border-border/70 hover:border-primary/40 bg-card/70 hover:bg-muted/70 backdrop-blur-xs flex items-center gap-1 sm:gap-1.5 transition-all text-xs cursor-pointer select-none shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {/* Crisp Vector Weather Icon */}
           <WeatherIcon className={`w-4 h-4 ${iconMeta.color} shrink-0`} />
