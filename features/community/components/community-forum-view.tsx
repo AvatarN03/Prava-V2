@@ -228,9 +228,9 @@ export function CommunityForumView({
         </div>
       </div>
 
-      {/* Mobile Filter Controls: Category Select Dropdown + Separate Bookmark Button */}
-      <div className="flex sm:hidden items-center gap-2 w-full">
-        <div className="flex-1 min-w-0">
+      {/* Filter Controls: Category Select Dropdown + Separate Bookmark Button (Unified for Mobile & Desktop) */}
+      <div className="flex items-center gap-2 w-full">
+        <div className="w-full sm:w-64 min-w-0">
           <Select
             value={activeCategory}
             onValueChange={(val) => {
@@ -238,7 +238,7 @@ export function CommunityForumView({
               setShowBookmarkedOnly(false);
             }}
           >
-            <SelectTrigger className="h-9 text-xs bg-card border-border w-full flex items-center justify-between cursor-pointer">
+            <SelectTrigger className="h-9 text-xs bg-card border-border w-full flex items-center justify-between cursor-pointer rounded-sm shadow-xs">
               <div className="flex items-center gap-2 truncate">
                 {(() => {
                   const ActiveIcon = CATEGORY_ICON_MAP[activeCategory] || MessageSquare;
@@ -265,13 +265,13 @@ export function CommunityForumView({
           </Select>
         </div>
 
-        {/* Separate Bookmark Filter Button along the side of Category Selection */}
+        {/* Separate Bookmark Filter Button */}
         <Button
           type="button"
           variant={showBookmarkedOnly ? "default" : "outline"}
           size="sm"
           onClick={() => setShowBookmarkedOnly((prev) => !prev)}
-          className={`h-9 px-3 gap-1.5 text-xs shrink-0 cursor-pointer font-medium ${
+          className={`h-9 px-3 gap-1.5 text-xs shrink-0 cursor-pointer font-medium rounded-sm ${
             showBookmarkedOnly
               ? "bg-primary text-primary-foreground shadow-xs"
               : "bg-card hover:bg-muted text-muted-foreground hover:text-foreground border-border"
@@ -292,59 +292,6 @@ export function CommunityForumView({
             </span>
           )}
         </Button>
-      </div>
-
-      {/* Desktop Category Pills Strip & Quick Filters */}
-      <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {FORUM_CATEGORIES.map((cat) => {
-          const Icon = CATEGORY_ICON_MAP[cat.id] || MessageSquare;
-          const isActive = activeCategory === cat.id && !showBookmarkedOnly;
-
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => {
-                setActiveCategory(cat.id);
-                setShowBookmarkedOnly(false);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/40"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              <span>{cat.label}</span>
-            </button>
-          );
-        })}
-
-        {/* 1-Click Separate Bookmarked Filter Button */}
-        <button
-          type="button"
-          onClick={() => setShowBookmarkedOnly((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium transition-colors whitespace-nowrap cursor-pointer ml-auto sm:ml-0 ${
-            showBookmarkedOnly
-              ? "bg-primary text-primary-foreground shadow-xs"
-              : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/40"
-          }`}
-          title="Filter saved and bookmarked discussions"
-        >
-          <Bookmark className={`h-3.5 w-3.5 ${showBookmarkedOnly ? "fill-current" : ""}`} />
-          <span>Bookmarked</span>
-          {bookmarkedCount > 0 && (
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
-                showBookmarkedOnly
-                  ? "bg-primary-foreground/20 text-primary-foreground"
-                  : "bg-primary/10 text-primary"
-              }`}
-            >
-              {bookmarkedCount}
-            </span>
-          )}
-        </button>
       </div>
 
       {/* Results Meta */}

@@ -15,14 +15,21 @@ import {
   Globe,
   HelpCircle,
   Loader2,
-  Lock,
   RefreshCw,
   ShieldCheck,
   Sparkles,
   Zap,
 } from "lucide-react";
+import { ChevronDown, X } from "lucide";
+import { MorphIcon } from "morphicons/react";
 import { toast } from "sonner";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,13 +56,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 
+import { cn } from "@/lib/utils";
+import { SUPPORTED_CURRENCIES } from "@/features/travel-essentials/currency/currency-service";
+
 import {
   createPolarCheckoutSession,
   createPolarCustomerPortalSession,
   getUserPricingCurrency,
   simulatePolarUpgrade,
 } from "../actions";
-import { SUPPORTED_CURRENCIES } from "@/features/travel-essentials/currency/currency-service";
 
 import type { AccountUsageData, ConvertedPricingDTO } from "../actions";
 import { PRICING_FAQS, PRICING_PLANS } from "../pricing-config";
@@ -73,6 +82,7 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
   const [usage, setUsage] = useState<AccountUsageData>(initialUsage);
   const [pricing, setPricing] = useState<ConvertedPricingDTO | null>(initialPricing || null);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
+  const [openFaqItems, setOpenFaqItems] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
@@ -131,18 +141,38 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
   };
 
   const handleOpenCustomerPortal = async () => {
+    // Open a new tab immediately in the user click event loop to prevent browser popup blockers
+    const portalWindow = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+    if (portalWindow) {
+      try {
+        portalWindow.opener = null;
+      } catch {
+        // Safe fallback if setting opener throws
+      }
+    }
+
     setIsOpeningPortal(true);
     try {
       const res = await createPolarCustomerPortalSession();
       if (res.success && res.portalUrl) {
-        toast.info("Redirecting to Polar Customer Portal...");
-        window.location.href = res.portalUrl;
+        toast.info("Opening Polar Customer Portal in a new tab...");
+        if (portalWindow && !portalWindow.closed) {
+          portalWindow.location.href = res.portalUrl;
+        } else {
+          window.open(res.portalUrl, "_blank", "noopener,noreferrer");
+        }
       } else {
+        if (portalWindow && !portalWindow.closed) {
+          portalWindow.close();
+        }
         toast.error(res.error || "Failed to open customer billing portal.");
-        setIsOpeningPortal(false);
       }
     } catch {
+      if (portalWindow && !portalWindow.closed) {
+        portalWindow.close();
+      }
       toast.error("An unexpected error occurred contacting Polar.");
+    } finally {
       setIsOpeningPortal(false);
     }
   };
@@ -186,7 +216,7 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Currency Preference Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -233,27 +263,21 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
               Upgrade with Polar ({isAnnual ? `${proAnnualMonthlyDisplay}/mo` : `${proMonthlyDisplay}/mo`})
             </Button>
           ) : (
-            <div className="flex items-center gap-2">
-              <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-xs px-2.5 py-1 font-semibold dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-600 dark:text-emerald-400" />
-                Pro Active
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleOpenCustomerPortal}
-                disabled={isOpeningPortal}
-                className="h-8 text-xs rounded-sm font-semibold border-border gap-1.5 cursor-pointer hover:bg-muted"
-                title="Manage billing and payment methods on Polar"
-              >
-                {isOpeningPortal ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
-                )}
-                Manage Subscription
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenCustomerPortal}
+              disabled={isOpeningPortal}
+              className="h-8 text-xs rounded-sm font-semibold border-border gap-1.5 cursor-pointer hover:bg-muted"
+              title="Manage billing and payment methods on Polar (opens in a new tab)"
+            >
+              {isOpeningPortal ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ExternalLink className="h-3.5 w-3.5 text-primary" />
+              )}
+              Manage Subscription
+            </Button>
           )}
         </div>
       </div>
@@ -354,19 +378,19 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
             </p>
           </div>
 
-          {/* Glitch-Free Segmented Billing Switcher */}
-          <div className="inline-flex p-1 bg-muted rounded-xs border border-border text-xs select-none">
+          {/* Glitch-Free Segmented Billing Switcher (50/50 width on mobile responsive) */}
+          <div className="w-full sm:w-auto grid grid-cols-2 sm:inline-flex p-1 bg-muted rounded-xs border border-border text-xs select-none">
             <button
               type="button"
               onClick={() => setBillingCycle("annual")}
-              className={`py-1 px-3 rounded-xs font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer border ${
+              className={`py-1.5 px-2 sm:px-3 sm:py-1 rounded-xs font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border ${
                 isAnnual
                   ? "bg-card text-foreground shadow-2xs border-border/80"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               <span>Yearly</span>
-              <span className="text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded-xs">
+              <span className="text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded-xs shrink-0">
                 Save {savingsDisplay}
               </span>
             </button>
@@ -374,7 +398,7 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
             <button
               type="button"
               onClick={() => setBillingCycle("monthly")}
-              className={`py-1 px-3 rounded-xs font-semibold text-xs transition-colors cursor-pointer border ${
+              className={`py-1.5 px-2 sm:px-3 sm:py-1 rounded-xs font-semibold text-xs transition-colors flex items-center justify-center cursor-pointer border ${
                 !isAnnual
                   ? "bg-card text-foreground shadow-2xs border-border/80"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -475,6 +499,7 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
                         onClick={handleOpenCustomerPortal}
                         disabled={isOpeningPortal}
                         className="w-full h-8 text-xs rounded-sm font-semibold border-primary/30 text-primary hover:bg-primary/5 shadow-xs cursor-pointer gap-1.5"
+                        title="Manage billing and payment methods on Polar (opens in a new tab)"
                       >
                         {isOpeningPortal ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -519,38 +544,6 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
               </Card>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── Polar Trust & Security Badges ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3 rounded-sm border border-border bg-card/60 flex items-center gap-2.5">
-          <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-          <div className="text-[11px] leading-tight">
-            <span className="font-semibold text-foreground block">Merchant of Record</span>
-            <span className="text-muted-foreground text-[10px]">Polar.sh handles global tax & VAT</span>
-          </div>
-        </div>
-        <div className="p-3 rounded-sm border border-border bg-card/60 flex items-center gap-2.5">
-          <Lock className="h-4 w-4 text-emerald-500 shrink-0" />
-          <div className="text-[11px] leading-tight">
-            <span className="font-semibold text-foreground block">256-bit Encryption</span>
-            <span className="text-muted-foreground text-[10px]">Secure payment gateway</span>
-          </div>
-        </div>
-        <div className="p-3 rounded-sm border border-border bg-card/60 flex items-center gap-2.5">
-          <Zap className="h-4 w-4 text-amber-500 shrink-0" />
-          <div className="text-[11px] leading-tight">
-            <span className="font-semibold text-foreground block">Instant Activation</span>
-            <span className="text-muted-foreground text-[10px]">25 trips & 150 credits unlocked</span>
-          </div>
-        </div>
-        <div className="p-3 rounded-sm border border-border bg-card/60 flex items-center gap-2.5">
-          <RefreshCw className="h-4 w-4 text-sky-500 shrink-0" />
-          <div className="text-[11px] leading-tight">
-            <span className="font-semibold text-foreground block">Cancel Anytime</span>
-            <span className="text-muted-foreground text-[10px]">1-click self-service cancel</span>
-          </div>
         </div>
       </div>
 
@@ -620,14 +613,53 @@ export function AccountUsageView({ initialUsage, initialPricing }: AccountUsageV
           Subscription FAQ
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {PRICING_FAQS.map((faq, i) => (
-            <div key={i} className="rounded-sm border border-border bg-card p-4 space-y-1.5 shadow-xs">
-              <p className="text-xs font-semibold text-foreground">{faq.question}</p>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">{faq.answer}</p>
-            </div>
-          ))}
-        </div>
+        <Accordion
+          type="multiple"
+          value={openFaqItems}
+          onValueChange={setOpenFaqItems}
+          className="space-y-2.5"
+        >
+          {PRICING_FAQS.map((faq, i) => {
+            const itemKey = `faq-${i}`;
+            const isOpen = openFaqItems.includes(itemKey);
+
+            return (
+              <AccordionItem
+                key={i}
+                value={itemKey}
+                className="rounded-sm border border-border bg-card shadow-xs transition-colors duration-200 hover:border-border/90 data-[state=open]:border-primary/40 data-[state=open]:bg-muted/10 overflow-hidden"
+              >
+                <AccordionTrigger
+                  hideChevron
+                  className="py-3 px-4 text-xs font-semibold text-foreground hover:no-underline flex items-center justify-between gap-3 group cursor-pointer"
+                >
+                  <span className="text-left leading-relaxed">{faq.question}</span>
+                  <div
+                    className={cn(
+                      "p-1.5 rounded-xs transition-all duration-300 ease-out shrink-0 flex items-center justify-center",
+                      isOpen
+                        ? "bg-primary/10 text-primary rotate-90 scale-105"
+                        : "bg-muted/60 text-muted-foreground group-hover:bg-muted group-hover:text-foreground rotate-0 scale-100"
+                    )}
+                  >
+                    <MorphIcon
+                      icon={isOpen ? X : ChevronDown}
+                      size={15}
+                      strokeWidth={2.2}
+                      className="transition-colors duration-300"
+                      spring="smooth"
+                    />
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-3.5 pt-0 text-[12px] text-muted-foreground leading-relaxed">
+                  <div className="pt-2 border-t border-border/40">
+                    <p className="mt-1">{faq.answer}</p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
       </div>
 
       {/* ── Polar Checkout Simulation Modal ── */}

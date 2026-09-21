@@ -28,6 +28,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { createBlogPost, updateBlogPost } from "../actions";
@@ -347,19 +354,29 @@ export function BlogEditor({ mode, postId, initialData, userTrips = [] }: BlogEd
                   <label className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
                     <Link2 className="h-3 w-3 text-primary" /> Link Workspace Trip
                   </label>
-                  <select
-                    value={linkedTripId}
-                    onChange={(e) => setLinkedTripId(e.target.value)}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+                  <Select
+                    value={linkedTripId || "none"}
+                    onValueChange={(val) => setLinkedTripId(val === "none" ? "" : val)}
                   >
-                    <option value="">— No linked trip —</option>
-                    {userTrips.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.title}
-                        {t.destination ? ` · ${t.destination}` : ""}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs text-foreground cursor-pointer">
+                      <SelectValue placeholder="— No linked trip —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs cursor-pointer text-muted-foreground">
+                        — No linked trip —
+                      </SelectItem>
+                      {userTrips.map((t) => (
+                        <SelectItem key={t.id} value={t.id} className="text-xs cursor-pointer">
+                          <span className="font-medium text-foreground">{t.title}</span>
+                          {t.destination && (
+                            <span className="text-muted-foreground text-[11px] ml-1.5">
+                              · {t.destination}
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-[11px] text-muted-foreground">
                     Readers can 1-click clone this trip itinerary directly into their workspace.
                   </p>

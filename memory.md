@@ -1923,6 +1923,27 @@
       - Updated `filteredPosts` memo to strictly separate the two modes: when bookmark filter is active, only saved posts are shown; when inactive, public discussions matching the selected category are shown.
     - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).
 
+- **Task 154 (Forum Mobile Modal Width Expansion to 92vw and Template Creator "Your Template" Identification)**:
+  - **Context & User Request**:
+    - The forum creation modal on mobile had a width that felt too narrow (`w-[80vw]`); user requested more horizontal space while preserving 80% viewport height.
+    - On the templates page: if the user themselves is the creator of the trip template, it should clearly state that it is "Yours" / "Your Template" rather than saying "Already Cloned", distinguishing the user's template from other travelers' templates.
+  - **Solutions Implemented**:
+    - **Forum Mobile Dialog Width & Height Polish (`NewDiscussionDialog` & `EditDiscussionDialog`)**:
+      - Updated `DialogContent` to `w-[92vw] max-w-[92vw] sm:w-full sm:max-w-xl h-[80vh] max-h-[80vh] sm:h-auto sm:max-h-[85vh]` across both dialogs.
+      - Mobile travelers now enjoy comfortable 16px lateral padding and ample form space while remaining strictly bounded to 80% screen height with smooth internal scrolling.
+    - **Template Creator "Your Template" Recognition (`actions.ts`, `types.ts`, `TemplateCard`, `TemplatePreviewDialog`)**:
+      - Added `isOwn?: boolean;` to `TemplateTripItem`.
+      - In `getPublicTripTemplates`, computed `isOwn = Boolean(user && t.profile.id === user.id)`.
+      - In `TemplateCard`:
+        - Top-Right cover badge renders `<Badge>Yours</Badge>` with a User icon when `trip.isOwn` is true.
+        - Author attribution renders `<Badge>Your Template</Badge>` instead of the default creator badge.
+        - Action button displays a secondary disabled state with `<User /> Your Template` (styled in subtle Cerulean `bg-primary/10 text-primary border-primary/25`).
+        - Cloned templates from other travelers continue to display `<Check /> Already Cloned`.
+      - In `TemplatePreviewDialog`:
+        - Header displays a dedicated `<Badge><User /> Your Template</Badge>`.
+        - Action button displays `<User /> Your Template`.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).
+
 - **Task 153 (Template Card Author Username Placement, Inclusions Select Dropdown Filter & Disabled Cloned State)**:
   - **Context & User Request**:
     - Place the author `@username` below the full name in `TemplateCard`.
@@ -1985,4 +2006,51 @@
         2. **Sort Filter Select**: Placed right alongside the status select (`w-full flex-1`), maintaining 1-click sorting access.
         3. **View Mode Buttons**: Grid and Table toggle buttons neatly positioned at the end of the mobile toolbar.
       - Preserved the full status pill chips and desktop layout on screens `>= sm` (`hidden sm:flex`).
-  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).
+- **Task 153 (Subscription Page Polish: New Tab Manage Portal, 50/50 Mobile Toggle, Badge Removal, Trust Badges Removal & MorphIcon FAQ Accordion)**:
+  - **Context & User Request**:
+    1. On the subscription page (`/subscription`), clicking "Manage Subscription" for Pro members should open the Polar customer portal in a new tab instead of the current window.
+    2. On mobile responsive viewports, the Yearly and Monthly billing cycle switcher should take 50/50 equal width.
+    3. Remove the "Pro Active" badge to the left of the "Manage Subscription" button in the top header since the Active Tier card below already specifies membership status.
+    4. Remove all cards on the subscription page mentioning "Merchant of Record", "1-click self-service cancel", "256-bit Encryption", and "Instant Activation".
+    5. Convert the static Subscription FAQ grid into an interactive shadcn/ui Accordion with smooth MorphIcon animation (from bottom arrow to cross icon on toggle).
+  - **Solutions Implemented**:
+    - **Open Manage Subscription in New Tab (`handleOpenCustomerPortal`)**:
+      - Pre-opened a blank tab synchronously within the user click gesture (`window.open("about:blank", "_blank")`) with `opener = null` to safely prevent browser popup blockers.
+      - Upon receiving `portalUrl` from Polar API, navigates the newly opened tab (`portalWindow.location.href = res.portalUrl`). If an error occurs, closes the blank window cleanly and displays a toast.
+    - **50/50 Mobile Responsive Billing Toggle**:
+      - Updated segmented billing switcher container in `features/pricing/components/account-usage-view.tsx` to `w-full sm:w-auto grid grid-cols-2 sm:inline-flex`.
+      - Both buttons have `flex items-center justify-center` with `shrink-0` on the savings badge, taking exactly 50% width each on mobile screens while seamlessly preserving compact inline sizing on desktop.
+    - **Pro Active Header Badge Removal**:
+      - Removed the redundant `<Badge>Pro Active</Badge>` element from the top header action row.
+    - **Removed Trust Badges Block**:
+      - Completely removed the 4-card grid ("Merchant of Record", "256-bit Encryption", "Instant Activation", "Cancel Anytime") and cleaned up unused `Lock` icon import.
+    - **Interactive MorphIcon FAQ Accordion & Smooth Height/Icon Transitions**:
+      - Added missing `@keyframes accordion-down` and `@keyframes accordion-up` to `app/globals.css` with smooth cubic-bezier easing (`0.16, 1, 0.3, 1`) and Radix CSS height variables so expanding and collapsing the accordion has a silky smooth slide & opacity animation.
+      - Updated `MorphIcon` in `AccountUsageView` to use `spring="smooth"` instead of instantaneous `"snappy"`, and added a 300ms rotation & scale transition (`rotate-90 scale-105` vs `rotate-0 scale-100` with subtle background tinting) to the icon container for a fluid, tactile feel on every click.
+      - Skipped TypeScript build check per user instruction.
+
+- **Task 154 (Traveler Forum: Unified Category & Saved Toolbar and Minimalist Discussion Dialog Redesign)**:
+  - **Context & User Request**:
+    1. On the Forum page (`/community`), the mobile view had a category `<Select>` dropdown and separate `Saved` button, while desktop had a horizontal button pill strip. User requested unifying them so desktop uses the exact same component UI as mobile.
+    2. User requested redesigning `NewDiscussionDialog` (and `EditDiscussionDialog`), noting the modal was bulky and felt like "AI slop".
+    3. User requested moving the core "Details & Questions" field into the middle of the discussion dialog rather than relegated to the bottom, recognizing it as the most important part of starting a discussion.
+  - **Solutions Implemented**:
+    - **Unified Forum Filter Toolbar (`features/community/components/community-forum-view.tsx`)**:
+      - Replaced the desktop horizontal category pills strip with the same category `<Select>` dropdown and separate `Saved` bookmark `<Button>` as mobile.
+      - Maintains clean responsive alignment: `w-full` on mobile and `sm:w-64` on desktop, with discussion count aligned cleanly on the right.
+    - **Discussion Dialog Sleek Redesign & Details in Middle (`new-discussion-dialog.tsx` & `edit-discussion-dialog.tsx`)**:
+      - Reordered form elements to place the core discussion question ("Details & Questions" textarea) prominently in the middle directly after Title, Category, and Destination, and before optional attachments (Tags, Workspace Trip, Cover Photo).
+      - Replaced the bulky, empty dotted banner box with a sleek, low-profile `[Image] Add optional cover photo` trigger button that only expands the `ImageUpload` component when clicked or when an image exists.
+      - Stripped all artificial `<Sparkles />` icons and colored circular wrapper badges.
+      - Aligned modal geometry to crisp `rounded-sm sm:rounded-md` Linear/Notion styling with minimalist headers and footers.
+
+- **Task 155 (Story Creator & Editor: Shadcn Select Component for Linked Trip)**:
+  - **Context & User Request**:
+    - On the Story creation page (`/stories/new`) and editor (`/stories/[slug]/edit`), the "Link Workspace Trip" dropdown was using a native HTML `<select>` element.
+    - User requested replacing it with the official shadcn/ui `Select` component (`Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem`).
+  - **Solutions Implemented**:
+    - In `features/blog/components/blog-editor.tsx`, imported shadcn `Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, and `SelectItem` adhering to the strict 6-tier import structure.
+    - Replaced the native HTML `<select>` with shadcn `<Select>`:
+      - Bound value with sentinel fallback `linkedTripId || "none"`, updating state to `""` when `"none"` is selected to adhere to Radix UI constraints against empty string item values.
+      - Styled `SelectTrigger` with `h-9 w-full text-xs cursor-pointer` matching the application's clean design system.
+      - Rendered formatted `SelectItem` entries with trip title in bold and destination in muted secondary text, plus a default `— No linked trip —` option.
