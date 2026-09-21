@@ -123,7 +123,7 @@ export function EditDiscussionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[80vw] max-w-[80vw] sm:w-full sm:max-w-xl h-[80vh] max-h-[80vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl sm:rounded-lg border-border bg-card text-card-foreground shadow-xl">
+      <DialogContent className="w-[92vw] max-w-[92vw] sm:w-full sm:max-w-xl h-[80vh] max-h-[80vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl sm:rounded-lg border-border bg-card text-card-foreground shadow-xl">
         <DialogHeader className="p-4 sm:p-6 pb-3 sm:pb-4 pr-10 border-b border-border shrink-0 text-left bg-card space-y-1">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">

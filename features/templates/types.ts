@@ -50,6 +50,8 @@ export interface TemplateTripItem {
   durationDays: number;
   isTemplate: boolean;
   isPublic: boolean;
+  isCloned?: boolean;
+  isOwn?: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
   author: TemplateAuthor;

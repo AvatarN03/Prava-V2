@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   Calendar,
+  Check,
   CheckSquare,
   Clock,
   Compass,
@@ -12,6 +13,7 @@ import {
   Loader2,
   MapPin,
   Sparkles,
+  User,
   Wallet,
   Wand2,
 } from "lucide-react";
@@ -37,12 +39,14 @@ interface TemplatePreviewDialogProps {
   trip: TemplateTripItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCloned?: (tripId: string) => void;
 }
 
 export function TemplatePreviewDialog({
   trip,
   open,
   onOpenChange,
+  onCloned,
 }: TemplatePreviewDialogProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("itinerary");
@@ -73,6 +77,7 @@ export function TemplatePreviewDialog({
             ? `Tailored and cloned "${trip.title}" into your workspace!`
             : `Cloned "${trip.title}" into your workspace!`
         );
+        onCloned?.(trip.id);
         onOpenChange(false);
         router.push(`/trips/${res.newTripId}`);
       } else {
@@ -85,7 +90,7 @@ export function TemplatePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden rounded-sm sm:rounded-sm">
         {/* Modal Header */}
         <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20">
           <div className="flex items-center gap-2 flex-wrap mb-1.5">
@@ -93,6 +98,12 @@ export function TemplatePreviewDialog({
               <Clock className="w-3 h-3 mr-1" />
               {trip.durationDays} {trip.durationDays === 1 ? "Day" : "Days"}
             </Badge>
+
+            {trip.isOwn && (
+              <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs px-2 py-0.5">
+                <User className="w-3 h-3 mr-1" /> Your Template
+              </Badge>
+            )}
 
             {trip.destination && (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-medium">
@@ -122,18 +133,18 @@ export function TemplatePreviewDialog({
         {/* Modal Body with Tabs */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 h-9 mb-4">
-              <TabsTrigger value="itinerary" className="text-xs gap-1.5">
+            <TabsList className="grid grid-cols-3 h-9 mb-4 rounded-sm">
+              <TabsTrigger value="itinerary" className="text-xs gap-1.5 rounded-sm">
                 <Calendar className="h-3.5 w-3.5" />
                 <span>Itinerary ({trip.metrics.activityCount})</span>
               </TabsTrigger>
 
-              <TabsTrigger value="stays" className="text-xs gap-1.5">
+              <TabsTrigger value="stays" className="text-xs gap-1.5 rounded-sm">
                 <Compass className="h-3.5 w-3.5" />
                 <span>Stays ({trip.metrics.accommodationCount})</span>
               </TabsTrigger>
 
-              <TabsTrigger value="prep" className="text-xs gap-1.5">
+              <TabsTrigger value="prep" className="text-xs gap-1.5 rounded-sm">
                 <CheckSquare className="h-3.5 w-3.5" />
                 <span>Packing & Tips</span>
               </TabsTrigger>
@@ -149,7 +160,7 @@ export function TemplatePreviewDialog({
                 daysList.map((dayNum) => (
                   <div
                     key={dayNum}
-                    className="rounded-md border border-border bg-card p-3.5 space-y-2.5"
+                    className="rounded-sm border border-border bg-card p-3.5 space-y-2.5"
                   >
                     <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
                       <span className="text-xs font-bold text-primary uppercase tracking-wider">
@@ -216,7 +227,7 @@ export function TemplatePreviewDialog({
                 trip.accommodations.map((stay, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-md border border-border bg-card flex items-center justify-between gap-3 text-xs"
+                    className="p-3 rounded-sm border border-border bg-card flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1.5">
@@ -299,7 +310,7 @@ export function TemplatePreviewDialog({
           </Tabs>
 
           {/* Optional AI Tailor Accordion */}
-          <div className="rounded-md border border-primary/30 bg-primary/5 p-3.5 space-y-2">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-3.5 space-y-2">
             <div
               onClick={() => setShowAiCustomizer(!showAiCustomizer)}
               className="flex items-center justify-between cursor-pointer text-xs font-bold text-foreground hover:text-primary transition-colors"
@@ -345,21 +356,43 @@ export function TemplatePreviewDialog({
             Close
           </Button>
 
-          <Button
-            size="sm"
-            onClick={handleClone}
-            disabled={isCloning}
-            className="h-8 text-xs gap-1.5 shadow-xs cursor-pointer"
-          >
-            {isCloning ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            <span>
-              {aiPrompt.trim() ? "Tailor & Clone to Workspace" : "Clone to Workspace"}
-            </span>
-          </Button>
+          {trip.isOwn ? (
+            <Button
+              size="sm"
+              disabled={true}
+              variant="secondary"
+              className="h-8 text-xs gap-1.5 opacity-90 cursor-not-allowed bg-primary/10 text-primary border border-primary/25 font-semibold"
+            >
+              <User className="h-3.5 w-3.5 text-primary" />
+              <span>Your Template</span>
+            </Button>
+          ) : trip.isCloned ? (
+            <Button
+              size="sm"
+              disabled={true}
+              variant="secondary"
+              className="h-8 text-xs gap-1.5 opacity-90 cursor-not-allowed bg-muted text-muted-foreground border border-border"
+            >
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Already in Workspace</span>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={handleClone}
+              disabled={isCloning}
+              className="h-8 text-xs gap-1.5 shadow-xs cursor-pointer"
+            >
+              {isCloning ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              <span>
+                {aiPrompt.trim() ? "Tailor & Clone to Workspace" : "Clone to Workspace"}
+              </span>
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

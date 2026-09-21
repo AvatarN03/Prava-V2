@@ -1922,3 +1922,67 @@
       - Preserved the full category pills strip and separate bookmark button on desktop screens (`hidden sm:flex`).
       - Updated `filteredPosts` memo to strictly separate the two modes: when bookmark filter is active, only saved posts are shown; when inactive, public discussions matching the selected category are shown.
     - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).
+
+- **Task 153 (Template Card Author Username Placement, Inclusions Select Dropdown Filter & Disabled Cloned State)**:
+  - **Context & User Request**:
+    - Place the author `@username` below the full name in `TemplateCard`.
+    - Turn the Inclusions filter buttons into a dropdown `<Select>` filter on the toolbar.
+    - If the user has already cloned a template (or owns it), disable the clone button and display that it is already cloned.
+  - **Solutions Implemented**:
+    - **Stacked Creator Attribution (`TemplateCard`)**:
+      - Restructured author header into a clean vertical column: Full Name on top and mono `@username` stacked below it, beside an enlarged `h-7 w-7` avatar.
+    - **Inclusions Dropdown Filter (`TemplatesView`)**:
+      - Replaced horizontal inclusion button batches with a styled shadcn/ui `<Select>` dropdown with `Filter` icon ("All Inclusions", "Has Stays", "Has Budget", "Has Packing List", "Has Creator Story").
+      - Positioned Inclusions, Duration, and Sort selects side-by-side on the right side of the toolbar.
+    - **Cloned Detection & Disabled Clone Button (`actions.ts`, `TemplateCard`, `TemplatePreviewDialog`, `TemplatesView`)**:
+      - In `getPublicTripTemplates`, queried current user's trips and calculated `isCloned` per template (matching cloned template notes, title, or authorship).
+      - In `cloneTripTemplate`, added a `"ClonedTemplate"` system note recording `templateId` for tracking.
+      - In `TemplateCard`: when `trip.isCloned` is true, displays disabled secondary button with `<Check /> Already Cloned`.
+      - In `TemplatePreviewDialog`: when `trip.isCloned` is true, displays disabled secondary button with `<Check /> Already in Workspace`.
+      - Added optimistic `clonedIds` state in `TemplatesView` and `onCloned` callbacks so cloning immediately disables both buttons across the view without requiring a page reload.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).
+
+- **Task 152 (Templates Page Filter Border Removal, Duration Select Shift to Right, and Reduced Preview Dialog Corner Rounding)**:
+  - **Context & User Request**:
+    - On the templates exploration page (`/templates`):
+      1. Remove the outer border on the filter component.
+      2. Shift the duration / number of days tab batches ("All Durations", "Weekend", "Short Trip", "Extended", "Long Journey") into a `<Select>` dropdown on the right side of the toolbar (alongside the Sort dropdown).
+      3. When clicking a template card to preview it, the modal dialog corners should have reduced rounding (`rounded-sm`).
+  - **Solutions Implemented**:
+    - **Filter Border Removal & Toolbar Re-Architecture (`TemplatesView`)**:
+      - Eliminated `border border-border` and inner `border-t border-border/50` from the filter container in `features/templates/components/templates-view.tsx`.
+      - Rebuilt the filter into a clean, borderless responsive flex layout:
+        - **Left**: Inclusions filter pills (`Any`, `Has Stays`, `Has Budget`, `Has Packing List`, `Has Creator Story`) with active highlighting and icons.
+        - **Right**: Duration filter `<Select>` with `Clock` icon, Sort by `<Select>` with `ArrowUpDown` icon, and the Reset button.
+      - Pruned unused `SlidersHorizontal` icon import according to 6-tier import standards.
+    - **Template Preview Dialog & Card Corner Rounding Reduction**:
+      - In `features/templates/components/template-preview-dialog.tsx`:
+        - Updated `DialogContent` to add `rounded-sm sm:rounded-sm`, overriding default `rounded-xl` with crisp, subtle corners.
+        - Updated tabs list, day itinerary containers, stay cards, and AI tailor accordion to `rounded-sm`.
+      - In `features/templates/components/template-card.tsx`:
+        - Updated card container from `rounded-md` to `rounded-sm` for unified Linear/Notion geometry.
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).
+
+- **Task 151 (Create Trip Dark Theme Visibility, Itinerary Proposal Default to False, and Mobile Status Select Filter)**:
+  - **Context & User Request**:
+    - In `CreateTripDialog`, labels in dark theme were not visible.
+    - Default value for "Structured Itinerary Proposal" switch should be `false`.
+    - On the mobile trips page, status filter tabs (All, Active, Planning, Completed, Archived) should be converted into a select dropdown rendered alongside the existing sort filter.
+  - **Solutions Implemented**:
+    - **Dark Theme Labels & Icon Visibility (`CreateTripDialog`)**:
+      - Replaced all hardcoded `text-slate-800` on labels (`title`, `destination`, `startDate`, `endDate`, `status`, `cover photo`, `description`) with semantic `text-foreground`.
+      - Replaced `text-slate-400` on icons with `text-muted-foreground`.
+      - Updated icon container in DialogHeader from light `bg-sky-100 text-[#2D9BF0]` to semantic `bg-primary/10 text-primary`.
+      - Replaced `border-slate-200` on image choices with `border-border hover:border-primary/50`.
+      - Replaced `text-slate-500` on "Remove cover" and `text-slate-600` on "Refresh Images" with semantic tokens.
+      - Bounded `DialogContent` to `w-[80vw] max-w-[80vw] h-[80vh] max-h-[80vh]` on mobile to match the 80% responsive modal standard.
+    - **Structured Itinerary Proposal Defaulting to False**:
+      - Initialized `generateProposal` state to `false`.
+      - In `useEffect` on dialog open, ensured `setGenerateProposal(false)` runs so the switch is unchecked by default.
+    - **Mobile Trips Page Status Filter Select (`TripList`)**:
+      - Built a mobile control row (`flex sm:hidden items-center gap-2 w-full`):
+        1. **Status Filter Select**: Styled dropdown displaying the active status with icon, label, and dynamic count badge. Selecting any status immediately updates `statusFilter`.
+        2. **Sort Filter Select**: Placed right alongside the status select (`w-full flex-1`), maintaining 1-click sorting access.
+        3. **View Mode Buttons**: Grid and Table toggle buttons neatly positioned at the end of the mobile toolbar.
+      - Preserved the full status pill chips and desktop layout on screens `>= sm` (`hidden sm:flex`).
+  - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).

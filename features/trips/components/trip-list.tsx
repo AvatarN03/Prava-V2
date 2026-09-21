@@ -4,20 +4,21 @@ import * as React from "react";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
-  Compass,
-  Search,
-  Plus,
-  WifiOff,
-  HardDrive,
-  LayoutGrid,
-  List,
   ArrowUpDown,
-  Sparkles,
   Calendar,
   CheckCircle2,
   Clock,
+  Compass,
+  Filter,
+  HardDrive,
   Layers,
+  LayoutGrid,
   LayoutTemplate,
+  List,
+  Plus,
+  Search,
+  Sparkles,
+  WifiOff,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -295,8 +296,8 @@ export function TripList({ initialTrips, tripUsage }: TripListProps) {
                 />
               </div>
 
-              {/* Sort & View Mode Switcher */}
-              <div className="flex items-center gap-2 self-end sm:self-auto">
+              {/* Desktop Sort & View Mode Switcher */}
+              <div className="hidden sm:flex items-center gap-2 self-end sm:self-auto">
                 <Select
                   value={sortOption}
                   onValueChange={(val) => setSortOption(val as TripSortOption)}
@@ -343,8 +344,90 @@ export function TripList({ initialTrips, tripUsage }: TripListProps) {
               </div>
             </div>
 
-            {/* Status Filter Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            {/* Mobile Responsive Controls: Status Filter Select along the side of Sort Select + View Mode */}
+            <div className="flex sm:hidden items-center gap-2 w-full">
+              {/* Status Select */}
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(val) => setStatusFilter(val as TripStatus | "ALL")}
+                >
+                  <SelectTrigger className="h-9 text-xs w-full cursor-pointer">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">
+                        {statusOptions.find((o) => o.value === statusFilter)?.label || "Status"}
+                      </span>
+                      <span className="text-[10px] px-1 py-0.2 rounded-full bg-muted text-muted-foreground font-semibold shrink-0">
+                        {statusOptions.find((o) => o.value === statusFilter)?.count ?? 0}
+                      </span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(({ label, value, count }) => (
+                      <SelectItem key={value} value={value} className="text-xs cursor-pointer">
+                        <div className="flex items-center justify-between gap-3 w-full">
+                          <span>{label}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold">
+                            {count}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort Select */}
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={sortOption}
+                  onValueChange={(val) => setSortOption(val as TripSortOption)}
+                >
+                  <SelectTrigger className="h-9 text-xs w-full cursor-pointer">
+                    <ArrowUpDown className="h-3.5 w-3.5 mr-1 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Sort order" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="departure" className="text-xs cursor-pointer">Departure (Soonest)</SelectItem>
+                    <SelectItem value="recent_updated" className="text-xs cursor-pointer">Recently Updated</SelectItem>
+                    <SelectItem value="newest" className="text-xs cursor-pointer">Newest Created</SelectItem>
+                    <SelectItem value="alphabetical" className="text-xs cursor-pointer">Title (A–Z)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* View Mode Toggle Buttons */}
+              <div className="flex items-center rounded-md border border-border bg-card p-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("grid")}
+                  aria-label="Grid view"
+                  className={`flex h-7.5 w-7.5 items-center justify-center rounded-xs transition-colors cursor-pointer ${
+                    viewMode === "grid"
+                      ? "bg-primary text-primary-foreground shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("table")}
+                  aria-label="Table view"
+                  className={`flex h-7.5 w-7.5 items-center justify-center rounded-xs transition-colors cursor-pointer ${
+                    viewMode === "table"
+                      ? "bg-primary text-primary-foreground shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <List className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop Status Filter Chips */}
+            <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
               {statusOptions.map(({ label, value, count }) => {
                 const isActive = statusFilter === value;
                 return (

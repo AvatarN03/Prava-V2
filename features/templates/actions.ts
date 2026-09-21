@@ -16,37 +16,70 @@ import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
  */
 export async function getPublicTripTemplates(): Promise<TemplateTripItem[]> {
   try {
-    const publicDbTrips = await db.trip.findMany({
-      where: {
-        OR: [{ isPublic: true }, { isTemplate: true }],
-      },
-      include: {
-        profile: {
-          select: {
-            id: true,
-            fullName: true,
-            username: true,
-            avatarUrl: true,
-            bio: true,
-            isPublic: true,
-            defaultCurrency: true,
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const [publicDbTrips, userTrips] = await Promise.all([
+      db.trip.findMany({
+        where: {
+          OR: [{ isPublic: true }, { isTemplate: true }],
+        },
+        include: {
+          profile: {
+            select: {
+              id: true,
+              fullName: true,
+              username: true,
+              avatarUrl: true,
+              bio: true,
+              isPublic: true,
+              defaultCurrency: true,
+            },
+          },
+          itinerary: { orderBy: [{ dayNumber: "asc" }, { order: "asc" }] },
+          accommodations: true,
+          expenses: true,
+          checklistItems: true,
+          notes: true,
+          linkedBlogPosts: {
+            where: { status: "PUBLISHED" },
+            select: { slug: true, title: true },
+            take: 1,
           },
         },
-        itinerary: { orderBy: [{ dayNumber: "asc" }, { order: "asc" }] },
-        accommodations: true,
-        expenses: true,
-        checklistItems: true,
-        notes: true,
-        linkedBlogPosts: {
-          where: { status: "PUBLISHED" },
-          select: { slug: true, title: true },
-          take: 1,
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      }),
+      user
+        ? db.trip.findMany({
+            where: { profileId: user.id },
+            select: {
+              id: true,
+              title: true,
+              destination: true,
+              notes: {
+                where: { category: "ClonedTemplate" },
+                select: { content: true },
+              },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
 
     const mappedTemplates: TemplateTripItem[] = publicDbTrips.map((t) => {
+      // Check if current user owns this template (creator) or has cloned it
+      const isOwn = Boolean(user && t.profile.id === user.id);
+      const isCloned = user
+        ? isOwn ||
+          userTrips.some(
+            (ut) =>
+              ut.notes.some((n) => n.content === t.id) ||
+              ut.title.toLowerCase() === `${t.title} (plan)`.toLowerCase() ||
+              (ut.title.toLowerCase() === t.title.toLowerCase() &&
+                (ut.destination || "").toLowerCase() === (t.destination || "").toLowerCase())
+          )
+        : false;
       // Calculate authentic duration in days
       const days =
         t.startDate && t.endDate
@@ -85,6 +118,8 @@ export async function getPublicTripTemplates(): Promise<TemplateTripItem[]> {
         durationDays: days,
         isTemplate: t.isTemplate,
         isPublic: t.isPublic,
+        isCloned,
+        isOwn,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
         author: {
@@ -372,6 +407,17 @@ export async function cloneTripTemplate(
           })),
         });
       }
+
+      // Track template cloning source note for idempotency
+      await tx.note.create({
+        data: {
+          tripId: createdTrip.id,
+          title: "Cloned Template",
+          content: templateId,
+          category: "ClonedTemplate",
+          isPinned: false,
+        },
+      });
 
       return createdTrip;
     });

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Calendar,
+  Check,
   CheckSquare,
   Clock,
   Compass,
@@ -15,6 +16,7 @@ import {
   Loader2,
   MapPin,
   Sparkles,
+  User,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -35,12 +37,13 @@ import { TemplateTripItem } from "../types";
 interface TemplateCardProps {
   trip: TemplateTripItem;
   onPreview: (trip: TemplateTripItem) => void;
+  onCloned?: (tripId: string) => void;
 }
 
 const DEFAULT_TRIP_COVER =
   "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80";
 
-export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
+export function TemplateCard({ trip, onPreview, onCloned }: TemplateCardProps) {
   const router = useRouter();
   const [isCloning, startCloning] = useTransition();
 
@@ -49,6 +52,7 @@ export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
       const res = await cloneTripTemplate(trip.id);
       if (res.success && res.newTripId) {
         toast.success(`Cloned "${trip.title}" into your workspace!`);
+        onCloned?.(trip.id);
         router.push(`/trips/${res.newTripId}`);
       } else {
         toast.error(res.error || "Failed to clone template.");
@@ -62,7 +66,7 @@ export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
     .toUpperCase();
 
   return (
-    <Card className="group relative flex flex-col justify-between overflow-hidden border border-border bg-card hover:border-primary/50 transition-all duration-200 shadow-2xs hover:shadow-xs rounded-md">
+    <Card className="group relative flex flex-col justify-between overflow-hidden border border-border bg-card hover:border-primary/50 transition-all duration-200 shadow-2xs hover:shadow-xs rounded-sm">
       {/* Cover Image Header */}
       <div className="relative h-48 w-full overflow-hidden bg-muted border-b border-border/60">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -87,16 +91,22 @@ export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
           )}
         </div>
 
-        {/* Top-Right: Budget Badge */}
-        {trip.metrics.expenseTotal > 0 && (
-          <div className="absolute top-2.5 right-2.5">
+        {/* Top-Right: Your Template or Budget Badge */}
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+          {trip.isOwn && (
+            <Badge className="bg-primary text-primary-foreground border-0 text-[10px] font-bold uppercase tracking-wider shadow-xs gap-1">
+              <User className="w-3 h-3" /> Yours
+            </Badge>
+          )}
+
+          {trip.metrics.expenseTotal > 0 && (
             <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300 backdrop-blur-xs">
               <Wallet className="w-3 h-3" />
               ~{trip.metrics.expenseTotal.toLocaleString()}{" "}
               {trip.metrics.currency}
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Bottom Banner Title Overlay */}
         <div className="absolute bottom-2.5 left-3 right-3 text-white">
@@ -113,8 +123,8 @@ export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
       <CardHeader className="p-4 pb-2 space-y-2.5">
         {/* Creator Attribution */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Avatar className="h-6 w-6 border border-border">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar className="h-7 w-7 border border-border shrink-0">
               {trip.author.avatarUrl ? (
                 <AvatarImage src={trip.author.avatarUrl} alt={trip.author.fullName || ""} />
               ) : null}
@@ -123,17 +133,17 @@ export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex items-center gap-1.5 min-w-0 text-xs">
+            <div className="flex flex-col min-w-0 leading-tight">
               {trip.author.username && trip.author.isPublic ? (
                 <Link
                   href={`/u/${trip.author.username}`}
-                  className="font-semibold text-foreground hover:text-primary transition-colors truncate"
+                  className="text-xs font-semibold text-foreground hover:text-primary transition-colors truncate"
                 >
                   {trip.author.fullName || trip.author.username}
                 </Link>
               ) : (
-                <span className="font-semibold text-foreground truncate">
-                  {trip.author.fullName || "Prava Traveler"}
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {trip.author.fullName || trip.author.username || "Prava Traveler"}
                 </span>
               )}
               {trip.author.username && (
@@ -144,11 +154,15 @@ export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
             </div>
           </div>
 
-          {trip.author.isPublic && (
+          {trip.isOwn ? (
+            <Badge className="bg-primary/15 text-primary border border-primary/30 text-[9px] px-1.5 py-0 gap-1 shrink-0 font-bold">
+              <User className="h-2.5 w-2.5 text-primary" /> Your Template
+            </Badge>
+          ) : trip.author.isPublic ? (
             <Badge variant="secondary" className="text-[9px] px-1 py-0 gap-0.5 shrink-0">
               <Globe className="h-2.5 w-2.5 text-primary" /> Creator
             </Badge>
-          )}
+          ) : null}
         </div>
 
         {/* Description */}
@@ -229,19 +243,41 @@ export function TemplateCard({ trip, onPreview }: TemplateCardProps) {
           Preview Itinerary
         </Button>
 
-        <Button
-          size="sm"
-          onClick={handleQuickClone}
-          disabled={isCloning}
-          className="flex-1 h-8 text-xs gap-1.5 shadow-xs cursor-pointer"
-        >
-          {isCloning ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="h-3.5 w-3.5" />
-          )}
-          <span>Clone Plan</span>
-        </Button>
+        {trip.isOwn ? (
+          <Button
+            size="sm"
+            disabled={true}
+            variant="secondary"
+            className="flex-1 h-8 text-xs gap-1.5 opacity-90 cursor-not-allowed bg-primary/10 text-primary border border-primary/25 font-semibold"
+          >
+            <User className="h-3.5 w-3.5 text-primary" />
+            <span>Your Template</span>
+          </Button>
+        ) : trip.isCloned ? (
+          <Button
+            size="sm"
+            disabled={true}
+            variant="secondary"
+            className="flex-1 h-8 text-xs gap-1.5 opacity-90 cursor-not-allowed bg-muted text-muted-foreground border border-border"
+          >
+            <Check className="h-3.5 w-3.5 text-emerald-500" />
+            <span>Already Cloned</span>
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={handleQuickClone}
+            disabled={isCloning}
+            className="flex-1 h-8 text-xs gap-1.5 shadow-xs cursor-pointer"
+          >
+            {isCloning ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            <span>Clone Plan</span>
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
