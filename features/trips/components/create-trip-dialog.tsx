@@ -79,7 +79,7 @@ export function CreateTripDialog({
   const [imagePage, setImagePage] = useState(1);
 
   const [userAiAutoPropose, setUserAiAutoPropose] = useState<boolean>(true);
-  const [generateProposal, setGenerateProposal] = useState<boolean>(true);
+  const [generateProposal, setGenerateProposal] = useState<boolean>(false);
 
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -87,12 +87,12 @@ export function CreateTripDialog({
   const lastSearchedDest = React.useRef<string>("");
   const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Check user's account proposal preference when dialog opens
+  // Check user's account proposal preference when dialog opens (default proposal generation is false)
   useEffect(() => {
     if (isOpen) {
       getUserAiPreferences().then((pref) => {
         setUserAiAutoPropose(pref.aiAutoPropose);
-        setGenerateProposal(pref.aiAutoPropose);
+        setGenerateProposal(false);
       });
     }
   }, [isOpen]);
@@ -231,14 +231,14 @@ export function CreateTripDialog({
         </DialogTrigger>
       )}
 
-      <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-[560px] h-[75vh] max-h-[75vh] sm:h-auto sm:max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-border/80">
+      <DialogContent className="w-[80vw] max-w-[80vw] sm:w-full sm:max-w-[560px] h-[80vh] max-h-[80vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-border/80 bg-card">
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <DialogHeader className="p-4 sm:p-6 pb-3 sm:pb-4 pr-12 border-b border-border/60 shrink-0 text-left bg-card">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-[#2D9BF0] shrink-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
                 <Compass className="h-4.5 w-4.5" />
               </div>
-              <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight">Create New Trip</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl font-bold tracking-tight text-foreground">Create New Trip</DialogTitle>
             </div>
             <DialogDescription className="text-xs text-muted-foreground">
               Plan an itinerary, organize stays, and coordinate travel with AI-assisted proposals.
@@ -265,7 +265,7 @@ export function CreateTripDialog({
             <div className="space-y-4">
             {/* Title */}
             <div className="space-y-1.5">
-              <Label htmlFor="title" className="text-xs font-semibold text-slate-800">
+              <Label htmlFor="title" className="text-xs font-semibold text-foreground">
                 Trip Title <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -284,8 +284,8 @@ export function CreateTripDialog({
 
             {/* Destination */}
             <div className="space-y-1.5">
-              <Label htmlFor="destination" className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 text-slate-400" /> Destination
+              <Label htmlFor="destination" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> Destination
               </Label>
               <Input
                 id="destination"
@@ -310,8 +310,8 @@ export function CreateTripDialog({
             {/* Dates Grid with shadcn DatePicker */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="startDate" className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                  <CalendarIcon className="h-3.5 w-3.5 text-slate-400" /> Start Date
+                <Label htmlFor="startDate" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" /> Start Date
                 </Label>
                 <DatePicker
                   date={formData.startDate ? new Date(formData.startDate) : null}
@@ -325,8 +325,8 @@ export function CreateTripDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="endDate" className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                  <CalendarIcon className="h-3.5 w-3.5 text-slate-400" /> End Date
+                <Label htmlFor="endDate" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" /> End Date
                 </Label>
                 <DatePicker
                   date={formData.endDate ? new Date(formData.endDate) : null}
@@ -346,7 +346,7 @@ export function CreateTripDialog({
 
             {/* Status Select with shadcn/ui */}
             <div className="space-y-1.5">
-              <Label htmlFor="status" className="text-xs font-semibold text-slate-800">
+              <Label htmlFor="status" className="text-xs font-semibold text-foreground">
                 Initial Status
               </Label>
               <Select
@@ -369,7 +369,7 @@ export function CreateTripDialog({
             {/* Tour-Vibe & Destination Cover Image Selector */}
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                   <ImageIcon className="h-3.5 w-3.5 text-[#2D9BF0]" /> Choose Cover Photo
                   <span className="text-[11px] font-normal text-muted-foreground">(Optional)</span>
                 </Label>
@@ -380,7 +380,7 @@ export function CreateTripDialog({
                   size="sm"
                   onClick={handleRefreshImages}
                   disabled={imagesLoading || isPending}
-                  className="h-7 px-2 text-[11px] text-slate-600 hover:text-[#2D9BF0] hover:bg-sky-50 gap-1 cursor-pointer"
+                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/10 gap-1 cursor-pointer"
                 >
                   <RotateCw className={`h-3 w-3 ${imagesLoading ? "animate-spin" : ""}`} />
                   <span>Refresh Images</span>
@@ -415,7 +415,7 @@ export function CreateTripDialog({
                         className={`group relative h-20 sm:h-22 rounded-lg overflow-hidden cursor-pointer border transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2D9BF0] ${
                           isSelected
                             ? "border-[#2D9BF0] ring-2 ring-[#2D9BF0] ring-offset-1 shadow-sm scale-[1.02]"
-                            : "border-slate-200 hover:border-sky-300 hover:shadow-xs"
+                            : "border-border hover:border-primary/50 hover:shadow-xs"
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -451,13 +451,13 @@ export function CreateTripDialog({
 
               {selectedImageUrl && (
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
-                  <span className="text-emerald-600 font-medium flex items-center gap-1">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                     <Check className="h-3 w-3" /> Cover image selected
                   </span>
                   <button
                     type="button"
                     onClick={() => setSelectedImageUrl(null)}
-                    className="text-slate-500 hover:text-destructive hover:underline cursor-pointer"
+                    className="text-muted-foreground hover:text-destructive hover:underline cursor-pointer"
                   >
                     Remove cover
                   </button>
@@ -467,7 +467,7 @@ export function CreateTripDialog({
 
             {/* Description */}
             <div className="space-y-1.5">
-              <Label htmlFor="description" className="text-xs font-semibold text-slate-800">
+              <Label htmlFor="description" className="text-xs font-semibold text-foreground">
                 Notes & Highlights <span className="text-[11px] font-normal text-muted-foreground">(Optional)</span>
               </Label>
               <Textarea

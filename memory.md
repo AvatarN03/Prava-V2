@@ -1881,3 +1881,44 @@
     - `npx tsc --noEmit`: 0 errors.
     - `npm run build`: Turbopack production build succeeded with code 0 across all 31 routes.
 
+- **Task 148 (Mobile Responsiveness Fix for Trip-by-Trip AI Usage Card)**:
+  - **Context & User Request**:
+    - In mobile responsive view on `/usage`, the inner elements of the "Trip-by-Trip AI Usage Breakdown" card were not taking full width and had awkward spacing/shrinking.
+    - Fix the issue directly without running any TypeScript or build checks.
+  - **Solutions Implemented**:
+    - **Usage View (`features/pricing/components/usage-view.tsx`)**:
+      - Updated the trip identity row to take `w-full sm:w-auto` with `flex-1 sm:flex-initial` so the title and destination tag utilize all available horizontal space.
+      - Made the credit consumption indicator container take `w-full sm:w-auto` on mobile with `justify-between sm:justify-end gap-3 sm:gap-4` and a subtle top divider (`pt-2 sm:pt-0 border-t border-border/40 sm:border-0`).
+      - Allowed the credits progress bar to expand across the full width (`flex-1 sm:flex-initial min-w-0 sm:min-w-[140px]`), keeping the "Open" button neatly aligned on the right.
+
+- **Task 149 (Combine Billing Cycle & Plan Tier Table Columns)**:
+  - **Context & User Request**:
+    - In the Billing & Quota Cycles History table on `/usage`, combine the "Billing Cycle" and "Plan Tier" columns into a single column.
+    - Display the Plan Tier badge directly below the cycle date range.
+  - **Solutions Implemented**:
+    - **Usage View Table (`features/pricing/components/usage-view.tsx`)**:
+      - Removed the standalone `<th className="p-3">Plan Tier</th>` and separate `<td>` element.
+      - Restructured the first column (`Billing Cycle`) to contain:
+        1. Cycle name (e.g. `Sep 2026`)
+        2. Cycle period dates (e.g. `Aug 15 – Sep 14, 2026`)
+        3. Plan Tier badge directly below the date (`Pro Wanderer` in amber or `Free Explorer` in muted style).
+      - Table layout is now streamlined into 3 clean columns: **Billing Cycle**, **AI Credits**, and **Cycle Status**.
+
+- **Task 150 (Forum Mobile Responsiveness: 80% Modal Bounding, Separate Category Dropdown & Bookmark Filter)**:
+  - **Context & User Request**:
+    - Mobile forum creation modal was overflowing the viewport and pushing action buttons off-screen.
+    - User requested bounding the modal to 80% height and 80% width in mobile view.
+    - User requested a category selection dropdown to filter discussions, alongside a separate bookmark filter so travelers can isolate bookmarked forums or pick a category to see public forums.
+  - **Solutions Implemented**:
+    - **Modal Bounding (`NewDiscussionDialog` & `EditDiscussionDialog`)**:
+      - Bounded `DialogContent` to `w-[80vw] max-w-[80vw] sm:w-full sm:max-w-xl h-[80vh] max-h-[80vh] sm:h-auto sm:max-h-[85vh]` with `flex flex-col p-0 gap-0 overflow-hidden`.
+      - Pinned header (`shrink-0 border-b border-border p-4 sm:p-6 pb-3 sm:pb-4 pr-10`) with top title and close button clearance.
+      - Placed the form fields inside a dedicated scroll container (`flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4`), enabling smooth touch scrolling on all mobile screen heights.
+      - Pinned footer action buttons (`shrink-0 border-t border-border p-3 sm:px-6 sm:py-3 bg-muted/20 flex flex-row items-center justify-end gap-2`), guaranteeing Cancel and Post/Save buttons remain permanently visible and accessible.
+    - **Mobile Filter Toolbar with Separate Category & Bookmark Controls (`CommunityForumView`)**:
+      - Built a mobile responsive filter row (`flex sm:hidden items-center gap-2 w-full`):
+        1. **Category Select Dropdown**: A styled shadcn/ui `Select` with category icons for all topics ("All Discussions", "Route & Pacing", "Recommendations", "Packing & Gear", "Live Reports", "Trip Templates", "General Travel"). Selecting any category resets `showBookmarkedOnly` to `false` and displays public discussions in that category.
+        2. **Separate Bookmark Filter Button**: Placed right alongside the dropdown. Clicking it toggles `showBookmarkedOnly` on/off with an active Cerulean fill, bookmark count badge, and isolates the user's bookmarked discussions.
+      - Preserved the full category pills strip and separate bookmark button on desktop screens (`hidden sm:flex`).
+      - Updated `filteredPosts` memo to strictly separate the two modes: when bookmark filter is active, only saved posts are shown; when inactive, public discussions matching the selected category are shown.
+    - **Verification**: Verified with `npm run build` (Turbopack, exit code 0, 0 TypeScript errors across all 30 routes).

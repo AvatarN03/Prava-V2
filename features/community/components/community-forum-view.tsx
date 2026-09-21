@@ -26,6 +26,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { NewDiscussionDialog } from "@/features/community/components/new-discussion-dialog";
 import {
@@ -91,11 +98,13 @@ export function CommunityForumView({
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
-      if (showBookmarkedOnly && !post.hasSaved) {
-        return false;
+      if (showBookmarkedOnly) {
+        if (!post.hasSaved) return false;
+      } else {
+        const matchesCategory =
+          activeCategory === "ALL" || post.category === activeCategory;
+        if (!matchesCategory) return false;
       }
-      const matchesCategory =
-        activeCategory === "ALL" || post.category === activeCategory;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         !q ||
@@ -103,7 +112,7 @@ export function CommunityForumView({
         post.content.toLowerCase().includes(q) ||
         (post.tags && post.tags.some((t) => t.toLowerCase().includes(q))) ||
         (post.destination && post.destination.toLowerCase().includes(q));
-      return matchesCategory && matchesSearch;
+      return matchesSearch;
     });
   }, [posts, activeCategory, searchQuery, showBookmarkedOnly]);
 
@@ -213,13 +222,80 @@ export function CommunityForumView({
             className="h-9 gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs cursor-pointer shrink-0"
           >
             <Plus className="h-3.5 w-3.5" />
-            Start Discussion
+            <span className="hidden xs:inline">Start Discussion</span>
+            <span className="xs:hidden">New Topic</span>
           </Button>
         </div>
       </div>
 
-      {/* Category Pills Strip & Quick Filters */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      {/* Mobile Filter Controls: Category Select Dropdown + Separate Bookmark Button */}
+      <div className="flex sm:hidden items-center gap-2 w-full">
+        <div className="flex-1 min-w-0">
+          <Select
+            value={activeCategory}
+            onValueChange={(val) => {
+              setActiveCategory(val as ForumCategory);
+              setShowBookmarkedOnly(false);
+            }}
+          >
+            <SelectTrigger className="h-9 text-xs bg-card border-border w-full flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-2 truncate">
+                {(() => {
+                  const ActiveIcon = CATEGORY_ICON_MAP[activeCategory] || MessageSquare;
+                  return <ActiveIcon className="h-3.5 w-3.5 text-primary shrink-0" />;
+                })()}
+                <span className="truncate">
+                  {FORUM_CATEGORIES.find((c) => c.id === activeCategory)?.label || "Category"}
+                </span>
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              {FORUM_CATEGORIES.map((cat) => {
+                const Icon = CATEGORY_ICON_MAP[cat.id] || MessageSquare;
+                return (
+                  <SelectItem key={cat.id} value={cat.id} className="text-xs cursor-pointer">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{cat.label}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Separate Bookmark Filter Button along the side of Category Selection */}
+        <Button
+          type="button"
+          variant={showBookmarkedOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowBookmarkedOnly((prev) => !prev)}
+          className={`h-9 px-3 gap-1.5 text-xs shrink-0 cursor-pointer font-medium ${
+            showBookmarkedOnly
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-card hover:bg-muted text-muted-foreground hover:text-foreground border-border"
+          }`}
+          title="Filter saved and bookmarked discussions"
+        >
+          <Bookmark className={`h-3.5 w-3.5 ${showBookmarkedOnly ? "fill-current" : ""}`} />
+          <span>Saved</span>
+          {bookmarkedCount > 0 && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
+                showBookmarkedOnly
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-primary/10 text-primary"
+              }`}
+            >
+              {bookmarkedCount}
+            </span>
+          )}
+        </Button>
+      </div>
+
+      {/* Desktop Category Pills Strip & Quick Filters */}
+      <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {FORUM_CATEGORIES.map((cat) => {
           const Icon = CATEGORY_ICON_MAP[cat.id] || MessageSquare;
           const isActive = activeCategory === cat.id && !showBookmarkedOnly;
@@ -244,7 +320,7 @@ export function CommunityForumView({
           );
         })}
 
-        {/* 1-Click Bookmarked Filter Button */}
+        {/* 1-Click Separate Bookmarked Filter Button */}
         <button
           type="button"
           onClick={() => setShowBookmarkedOnly((prev) => !prev)}
@@ -274,8 +350,13 @@ export function CommunityForumView({
       {/* Results Meta */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          Showing <strong className="text-foreground">{filteredPosts.length}</strong> {filteredPosts.length === 1 ? "discussion" : "discussions"}
-          {showBookmarkedOnly && " (Bookmarked only)"}
+          Showing <strong className="text-foreground">{filteredPosts.length}</strong>{" "}
+          {filteredPosts.length === 1 ? "discussion" : "discussions"}
+          {showBookmarkedOnly
+            ? " (Bookmarked only)"
+            : activeCategory !== "ALL"
+            ? ` in ${FORUM_CATEGORIES.find((c) => c.id === activeCategory)?.label}`
+            : ""}
         </span>
         {(searchQuery || activeCategory !== "ALL" || showBookmarkedOnly) && (
           <Button

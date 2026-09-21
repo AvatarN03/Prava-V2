@@ -258,11 +258,11 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                 key={trip.id}
                 className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 hover:bg-muted/30 transition-colors gap-3"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-primary border border-primary/20 font-bold text-xs">
                     <Compass className="h-4 w-4" />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1 sm:flex-initial">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-semibold text-foreground truncate">
                         {trip.title}
@@ -279,13 +279,18 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0 sm:justify-end">
+                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t border-border/40 sm:border-0">
                   {/* Credits Consumed Indicator */}
-                  <div className="text-right space-y-1 min-w-[120px]">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Sparkles className="h-3 w-3 text-primary shrink-0" />
-                      <span className="text-xs font-mono font-bold text-foreground">
-                        {trip.creditsUsed} credits
+                  <div className="flex-1 sm:flex-initial sm:text-right space-y-1 min-w-0 sm:min-w-[140px]">
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                        <span className="text-xs font-mono font-bold text-foreground">
+                          {trip.creditsUsed} credits
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-medium sm:hidden">
+                        {trip.percentageOfQuota}% of quota
                       </span>
                     </div>
                     <div className="h-1.5 w-full bg-muted rounded-xs overflow-hidden">
@@ -294,12 +299,12 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                         style={{ width: `${trip.percentageOfQuota}%` }}
                       />
                     </div>
-                    <span className="text-[10px] text-muted-foreground block font-medium">
+                    <span className="text-[10px] text-muted-foreground hidden sm:block font-medium">
                       {trip.percentageOfQuota}% of monthly quota
                     </span>
                   </div>
 
-                  <Link href={`/trips/${trip.id}`}>
+                  <Link href={`/trips/${trip.id}`} className="shrink-0">
                     <Button variant="ghost" size="sm" className="h-8 text-xs rounded-xs gap-1 cursor-pointer">
                       <span>Open</span>
                       <ExternalLink className="h-3 w-3" />
@@ -342,7 +347,6 @@ export function UsageView({ initialUsage }: UsageViewProps) {
             <thead>
               <tr className="border-b border-border bg-muted/40 text-muted-foreground font-semibold">
                 <th className="p-3 pl-4">Billing Cycle</th>
-                <th className="p-3">Plan Tier</th>
                 <th className="p-3 text-center">AI Credits</th>
                 <th className="p-3 pr-4 text-right">Cycle Status</th>
               </tr>
@@ -357,24 +361,26 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                 return (
                   <tr key={item.id} className="hover:bg-muted/20 transition-colors">
                     <td className="p-3 pl-4 font-medium text-foreground">
-                      <div>
-                        <span>{item.month}</span>
-                        <span className="text-[10px] text-muted-foreground block font-normal">
-                          {item.period}
-                        </span>
+                      <div className="space-y-1">
+                        <div>
+                          <span className="font-semibold text-foreground">{item.month}</span>
+                          <span className="text-[10px] text-muted-foreground block font-normal">
+                            {item.period}
+                          </span>
+                        </div>
+                        <div>
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] px-1.5 py-0 h-4 font-medium border-border ${
+                              isProCycle
+                                ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 font-semibold"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {item.plan}
+                          </Badge>
+                        </div>
                       </div>
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] font-normal border-border ${
-                          isProCycle
-                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
-                            : ""
-                        }`}
-                      >
-                        {item.plan}
-                      </Badge>
                     </td>
                     <td className="p-3 text-center">
                       <div className="inline-flex flex-col items-center gap-1">

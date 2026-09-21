@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { Compass, Edit3, Loader2, MapPin, Tag } from "lucide-react";
+import { Compass, Edit3, Loader2, MapPin, Sparkles, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -123,13 +123,13 @@ export function EditDiscussionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl p-6 rounded-lg border-border bg-card text-card-foreground shadow-lg">
-        <DialogHeader className="space-y-1 pb-2">
+      <DialogContent className="w-[80vw] max-w-[80vw] sm:w-full sm:max-w-xl h-[80vh] max-h-[80vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl sm:rounded-lg border-border bg-card text-card-foreground shadow-xl">
+        <DialogHeader className="p-4 sm:p-6 pb-3 sm:pb-4 pr-10 border-b border-border shrink-0 text-left bg-card space-y-1">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
               <Edit3 className="h-4 w-4" />
             </span>
-            <DialogTitle className="text-lg font-bold text-foreground">
+            <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
               Edit Discussion
             </DialogTitle>
           </div>
@@ -138,145 +138,150 @@ export function EditDiscussionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-          {/* Title */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">
-              Title <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="text-xs h-9 bg-background border-border"
-              disabled={isPending}
-              required
-            />
-          </div>
-
-          {/* Category & Destination Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 space-y-4">
+            {/* Title */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">
-                Category
-              </Label>
-              <Select
-                value={category}
-                onValueChange={(val) => setCategory(val as ForumCategory)}
-                disabled={isPending}
-              >
-                <SelectTrigger className="text-xs h-9 bg-background border-border">
-                  <SelectValue placeholder="Select topic" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  {selectableCategories.map((c) => (
-                    <SelectItem key={c.id} value={c.id} className="text-xs cursor-pointer">
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                <MapPin className="h-3 w-3 text-muted-foreground" />
-                Destination
+                Title <span className="text-destructive">*</span>
               </Label>
               <Input
-                placeholder="e.g., Tokyo, Japan"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="text-xs h-9 bg-background border-border"
+                disabled={isPending}
+                required
+              />
+            </div>
+
+            {/* Category & Destination Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  Category
+                </Label>
+                <Select
+                  value={category}
+                  onValueChange={(val) => setCategory(val as ForumCategory)}
+                  disabled={isPending}
+                >
+                  <SelectTrigger className="text-xs h-9 bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {selectableCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.id} className="text-xs cursor-pointer">
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                  Destination
+                </Label>
+                <Input
+                  placeholder="e.g., Kyoto, Japan"
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  className="text-xs h-9 bg-background border-border"
+                  disabled={isPending}
+                />
+              </div>
+            </div>
+
+            {/* Attach Workspace Trip (Real Data) */}
+            {userTrips.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Compass className="h-3.5 w-3.5 text-primary" />
+                  Attached Trip Workspace
+                </Label>
+                <Select
+                  value={selectedTripId}
+                  onValueChange={setSelectedTripId}
+                  disabled={isPending}
+                >
+                  <SelectTrigger className="text-xs h-9 bg-background border-border">
+                    <SelectValue placeholder="Choose a trip to link" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="NONE" className="text-xs text-muted-foreground cursor-pointer">
+                      No linked trip
+                    </SelectItem>
+                    {userTrips.map((trip) => (
+                      <SelectItem key={trip.id} value={trip.id} className="text-xs cursor-pointer">
+                        {trip.title} {trip.destination ? `(${trip.destination})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Tags */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                <Tag className="h-3 w-3 text-muted-foreground" />
+                Tags (Comma-separated)
+              </Label>
+              <Input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
                 className="text-xs h-9 bg-background border-border"
                 disabled={isPending}
               />
             </div>
-          </div>
 
-          {/* Attach Workspace Trip */}
-          {userTrips.length > 0 && (
+            {/* Visual Upload */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Compass className="h-3.5 w-3.5 text-primary" />
-                Attached Workspace Trip
-              </Label>
-              <Select
-                value={selectedTripId}
-                onValueChange={setSelectedTripId}
-                disabled={isPending}
-              >
-                <SelectTrigger className="text-xs h-9 bg-background border-border">
-                  <SelectValue placeholder="Choose a trip" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  <SelectItem value="NONE" className="text-xs text-muted-foreground cursor-pointer">
-                    Do not attach a trip
-                  </SelectItem>
-                  {userTrips.map((trip) => (
-                    <SelectItem key={trip.id} value={trip.id} className="text-xs cursor-pointer">
-                      {trip.title} {trip.destination ? `(${trip.destination})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Tags */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
-              <Tag className="h-3 w-3 text-muted-foreground" />
-              Tags (Comma-separated)
-            </Label>
-            <Input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              className="text-xs h-9 bg-background border-border"
-              disabled={isPending}
-            />
-          </div>
-
-          {/* Dedicated Community Image Upload (1 Image Limit) */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
-              <span>Discussion Visual (Optional — 1 Image)</span>
-              {imageUrl && (
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  Image attached
+              <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                  Cover / Visual
                 </span>
-              )}
-            </Label>
-            <ImageUpload
-              folder="community"
-              aspectRatio="banner"
-              currentImageUrl={imageUrl || null}
-              onUploaded={(url) => setImageUrl(url)}
-              onRemoved={() => setImageUrl("")}
-              className="w-full"
-            />
+                {imageUrl && (
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    Attached
+                  </span>
+                )}
+              </Label>
+              <ImageUpload
+                folder="community"
+                aspectRatio="banner"
+                currentImageUrl={imageUrl || null}
+                onUploaded={(url) => setImageUrl(url)}
+                onRemoved={() => setImageUrl("")}
+                className="w-full"
+              />
+            </div>
+
+            {/* Content Description */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">
+                Details & Questions <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                rows={4}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="text-xs resize-none bg-background border-border focus-visible:ring-primary"
+                disabled={isPending}
+                required
+              />
+            </div>
           </div>
 
-          {/* Content Description */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">
-              Details & Questions <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              rows={4}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="text-xs resize-none bg-background border-border focus-visible:ring-primary"
-              disabled={isPending}
-              required
-            />
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-border">
+          <DialogFooter className="p-3 sm:px-6 sm:py-3 border-t border-border shrink-0 bg-muted/20 flex flex-row items-center justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="text-xs"
+              className="text-xs cursor-pointer"
               disabled={isPending}
             >
               Cancel
@@ -285,7 +290,7 @@ export function EditDiscussionDialog({
               type="submit"
               size="sm"
               disabled={isPending}
-              className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold shadow-xs"
+              className="text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs cursor-pointer"
             >
               {isPending ? (
                 <>
