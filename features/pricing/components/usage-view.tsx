@@ -169,7 +169,9 @@ export function UsageView({ initialUsage }: UsageViewProps) {
                 {isPro
                   ? "Pro tier: 150 AI credits/month. "
                   : "Free Explorer: 30 AI credits/month. "}
-                Resets on the 1st of the month.
+                {usage.nextRenewalDate
+                  ? `Renews on ${usage.nextRenewalDate}.`
+                  : "Resets monthly on cycle renewal."}
               </span>
             </div>
           </CardContent>
@@ -341,49 +343,80 @@ export function UsageView({ initialUsage }: UsageViewProps) {
               <tr className="border-b border-border bg-muted/40 text-muted-foreground font-semibold">
                 <th className="p-3 pl-4">Billing Cycle</th>
                 <th className="p-3">Plan Tier</th>
-                <th className="p-3 text-center">Trips Created</th>
-                <th className="p-3 text-center">AI Credits Used</th>
-                <th className="p-3 text-center">Remaining</th>
+                <th className="p-3 text-center">AI Credits</th>
                 <th className="p-3 pr-4 text-right">Cycle Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {usage.monthlyHistory.map((item) => (
-                <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="p-3 pl-4 font-medium text-foreground">
-                    <div>
-                      <span>{item.month}</span>
-                      <span className="text-[10px] text-muted-foreground block font-normal">
-                        {item.period}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-3 text-muted-foreground">
-                    <Badge variant="outline" className="text-[10px] font-normal border-border">
-                      {item.plan}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-center font-mono font-medium text-foreground">
-                    {item.tripsCreated}
-                  </td>
-                  <td className="p-3 text-center font-mono font-bold text-foreground">
-                    {item.aiCreditsUsed} <span className="text-muted-foreground font-normal text-[10px]">/ {item.aiCreditsQuota}</span>
-                  </td>
-                  <td className="p-3 text-center font-mono text-muted-foreground">
-                    {item.aiCreditsRemaining}
-                  </td>
-                  <td className="p-3 pr-4 text-right">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-semibold border ${item.status === "Active Cycle"
-                        ? "bg-primary/10 text-primary border-primary/20"
-                        : "bg-muted text-muted-foreground border-border"
+              {usage.monthlyHistory.map((item) => {
+                const creditsPct = Math.min(
+                  100,
+                  Math.round((item.aiCreditsUsed / item.aiCreditsQuota) * 100)
+                );
+                const isProCycle = item.plan.toLowerCase().includes("pro");
+                return (
+                  <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="p-3 pl-4 font-medium text-foreground">
+                      <div>
+                        <span>{item.month}</span>
+                        <span className="text-[10px] text-muted-foreground block font-normal">
+                          {item.period}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-normal border-border ${
+                          isProCycle
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                            : ""
                         }`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                      >
+                        {item.plan}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="inline-flex flex-col items-center gap-1">
+                        <span className="font-mono font-bold text-foreground text-xs">
+                          {item.aiCreditsUsed}{" "}
+                          <span className="text-muted-foreground font-normal text-[11px]">
+                            / {item.aiCreditsQuota} Credits
+                          </span>
+                        </span>
+                        <div className="flex items-center gap-1.5 w-24">
+                          <div className="h-1.5 w-full rounded-xs bg-muted overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                creditsPct >= 100
+                                  ? "bg-rose-600"
+                                  : creditsPct > 75
+                                    ? "bg-amber-500"
+                                    : "bg-primary"
+                              }`}
+                              style={{ width: `${creditsPct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {creditsPct}%
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3 pr-4 text-right">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-semibold border ${
+                          item.status === "Active Cycle"
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -405,7 +438,9 @@ export function UsageView({ initialUsage }: UsageViewProps) {
               <Clock className="h-4 w-4 text-primary shrink-0" />
               <div>
                 <span className="text-[10px] uppercase font-bold text-muted-foreground block">Quota Renewal</span>
-                <span className="font-semibold text-foreground">1st of next month ({daysUntilRenewal} days)</span>
+                <span className="font-semibold text-foreground">
+                  {usage.nextRenewalDate || "Next billing cycle"} ({usage.daysUntilRenewal ?? daysUntilRenewal} days)
+                </span>
               </div>
             </div>
           </div>

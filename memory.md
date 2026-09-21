@@ -1841,19 +1841,43 @@
   - **Verification**:
     - Verified via `npx tsc --noEmit` — 0 errors.
 
-- **Task 145 (Mobile Responsive Header Optimization — Reduced Padding & Minimal Gaps)**:
+- **Task 146 (Subscription-Aware Quota Cycles & Usage Table Modernization)**:
   - **Context & User Request**:
-    - In mobile responsive view, reduce the workspace header horizontal padding (`padding-x`).
-    - Shrink the gap between the mobile sidebar menu icon and the page title.
-    - Minimize the spacing on the right side between the weather component, theme toggle, notification bell icon, and user profile avatar.
+    - If a user was a Pro member for one month, the previous billing cycles history erroneously labeled them as Pro for all past cycles.
+    - Check database subscription records (`Subscription` model) to determine which specific months/intervals the user actually had an active subscription.
+    - When a user subscribes in the middle of a month (e.g. 15th), their cycle should renew on that day of the month (e.g. 15th to 14th of next month) instead of arbitrarily defaulting to the 1st of every calendar month.
+    - Completely remove the "Trips Created" column from the billing cycles history table on `/usage`.
+    - Change the AI credits column name to "AI Credits" and display how much out of how much quota was spent (`X / Y Credits`) with an inline utilization progress indicator.
   - **Solutions Implemented**:
-    - **Header Container (`components/app-shell/top-bar.tsx`)**: Changed horizontal padding from `px-4 md:px-6` to `px-2 sm:px-4 md:px-6` (8px on mobile for maximum usable width).
-    - **Left Section (`components/app-shell/top-bar.tsx`)**: Reduced gap between mobile hamburger trigger button and page title wrapper from `gap-3 sm:gap-4` to `gap-1.5 sm:gap-4 min-w-0`.
-    - **Right Section (`components/app-shell/top-bar.tsx`)**:
-      - Reduced container gap between all right-side widgets from `gap-2 sm:gap-2.5` to `gap-0.5 sm:gap-2 md:gap-2.5 shrink-0`.
-      - Reduced theme toggle button size on mobile from `h-9 w-9` to `h-8 w-8 sm:h-9 sm:w-9`.
-      - Reduced notifications bell button size on mobile from `h-9 w-9` to `h-8 w-8 sm:h-9 sm:w-9`.
-      - Reduced user profile popover trigger padding & gap on mobile from `gap-2 pl-1 pr-1.5` to `gap-1 sm:gap-2 pl-0.5 sm:pl-1 pr-1 sm:pr-2.5`.
-    - **Weather Widget (`components/app-shell/top-bar-weather.tsx`)**: Reduced weather pill dimensions on mobile from `h-8.5 px-2 sm:px-2.5 gap-1.5` to `h-8 px-1.5 sm:px-2.5 gap-1 sm:gap-1.5`.
+    - **Dynamic Cycle & Subscription Verification (`features/pricing/actions.ts`)**:
+      - Retrieved user subscriptions (`db.subscription.findMany`) and identified cycle anchor day (`currentPeriodStart` or `createdAt` date, defaulting to 1st for Free users).
+      - Calculated dynamic rolling cycle windows (`[cycleStart, cycleEnd]`) starting from anchor day (e.g., Aug 15 – Sep 14).
+      - Built `wasProDuringCycle(cStart, cEnd)` to check if the user had an active/trialing/canceled Pro subscription interval overlapping that specific cycle window.
+      - For past cycles, accurately set `plan` ("Pro Wanderer" vs "Free Explorer") and `aiCreditsQuota` (150 vs 30) based on historical entitlement.
+      - Accurately counted user AI messages created strictly within `[cycleStart, cycleEnd]`.
+      - Added dynamic `nextRenewalDate` and `daysUntilRenewal` calculation to `AccountUsageData`.
+    - **Usage View Table Modernization (`features/pricing/components/usage-view.tsx`)**:
+      - Completely removed `<th className="p-3 text-center">Trips Created</th>` and corresponding `<td>{item.tripsCreated}</td>`.
+      - Unified AI Credits column under `<th className="p-3 text-center">AI Credits</th>`.
+      - Formatted cells with `${item.aiCreditsUsed} / ${item.aiCreditsQuota} Credits` and an inline utilization progress bar with percentage.
+      - Updated Quota Renewal card and information banners to display the dynamic renewal date (e.g., `Oct 15, 2026 (24 days)`) instead of static "1st of next month".
+- **Task 147 (Usage Chart Visual Redesign — Compact 6-Month Discrete Bar Representation)**:
+  - **Context & User Request**:
+    - The previous usage graph was oversized and visually distorted (using an unconstrained `w-full h-auto` SVG viewBox that stretched into a giant, zoomed-in wave chart on desktop).
+    - Replace it with a well-proportioned, modern chart representation where the user can clearly see their credit expense for each month across the 6-month window without excessive zoom or visual bloat.
+  - **Solutions Implemented**:
+    - **Compact 6-Month Column Chart (`features/pricing/components/usage-chart.tsx`)**:
+      - Replaced the oversized, stretched SVG wave with a sleek, discrete 6-column vertical bar chart.
+      - Strictly constrained height to a compact `h-40 sm:h-44` container (max ~176px), eliminating all zoomed-in appearance.
+      - Each column clearly visualizes:
+        - Exact credits spent at the top (`${used} / ${cycleQuota}`).
+        - Vertical rounded pill track with responsive fill showing cycle capacity.
+        - Grounded baseline for months with 0 usage.
+        - Dynamic color progression (brand cerulean, amber >75%, rose at limit).
+        - Short month label (`Apr`, `May`, `Jun`, `Jul`, `Aug`, `Sep`) with an active pulse indicator under the current billing cycle.
+      - Added interactive hover cards displaying full cycle period, tier held (`Pro` vs `Free`), exact credits used/quota, and percentage utilization.
+      - Added KPI header badges showing 6-month aggregate credit expense and monthly average consumption.
   - **Verification**:
-    - Verified via `npx tsc --noEmit` — 0 errors.
+    - `npx tsc --noEmit`: 0 errors.
+    - `npm run build`: Turbopack production build succeeded with code 0 across all 31 routes.
+

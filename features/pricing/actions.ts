@@ -50,6 +50,8 @@ export interface AccountUsageData {
   totalExpensesLogged: number;
   billingCycleStart: string;
   billingCycleEnd: string;
+  nextRenewalDate?: string;
+  daysUntilRenewal?: number;
   currentMonthName: string;
   monthlyHistory: MonthlyHistoryItem[];
   tripUsage: TripAiUsageItem[];
@@ -77,26 +79,120 @@ export async function getAccountUsage(): Promise<{
     }
 
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
-    const endOfCurrentMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
 
     // Determine tier and quotas strictly through the database entitlement authority
     const { isPro, tier, tierName, tripsQuota, aiCreditsQuota, subscription } =
       await getUserTierAndQuotas(user.id);
+
+    // Query all subscriptions for user to evaluate historical Pro intervals
+    const userSubscriptions = await db.subscription.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const userMetadata = user.user_metadata || {};
+    const metaProSince = userMetadata.pro_since ? new Date(userMetadata.pro_since) : null;
+    const isMetaPro = userMetadata.tier === "pro" || userMetadata.is_pro === true;
+
+    // Determine cycle anchor day
+    // If subscription has a currentPeriodStart or createdAt, use that day of the month (e.g. 15th).
+    // Otherwise, default to 1 (1st of the month).
+    let anchorDay = 1;
+    if (subscription?.currentPeriodStart) {
+      anchorDay = new Date(subscription.currentPeriodStart).getDate();
+    } else if (subscription?.createdAt) {
+      anchorDay = new Date(subscription.createdAt).getDate();
+    } else if (userSubscriptions.length > 0 && userSubscriptions[0].currentPeriodStart) {
+      anchorDay = new Date(userSubscriptions[0].currentPeriodStart).getDate();
+    } else if (userSubscriptions.length > 0 && userSubscriptions[0].createdAt) {
+      anchorDay = new Date(userSubscriptions[0].createdAt).getDate();
+    } else if (metaProSince) {
+      anchorDay = metaProSince.getDate();
+    }
+
+    // Helper to calculate cycle start, end, and renewal dates
+    let baseYear = now.getFullYear();
+    let baseMonth = now.getMonth();
+    if (anchorDay > 1 && now.getDate() < anchorDay) {
+      baseMonth -= 1;
+    }
+
+    const getCycleWindow = (i: number) => {
+      const cycleStartYear = baseYear;
+      const cycleStartMonth = baseMonth - i;
+
+      if (anchorDay === 1) {
+        const start = new Date(cycleStartYear, cycleStartMonth, 1, 0, 0, 0, 0);
+        const end = new Date(cycleStartYear, cycleStartMonth + 1, 0, 23, 59, 59, 999);
+        const nextRenewal = new Date(cycleStartYear, cycleStartMonth + 1, 1);
+        return { start, end, nextRenewal };
+      } else {
+        const daysInStartMonth = new Date(cycleStartYear, cycleStartMonth + 1, 0).getDate();
+        const clampedStartDay = Math.min(anchorDay, daysInStartMonth);
+        const start = new Date(cycleStartYear, cycleStartMonth, clampedStartDay, 0, 0, 0, 0);
+
+        const daysInEndMonth = new Date(cycleStartYear, cycleStartMonth + 2, 0).getDate();
+        const clampedEndDay = Math.min(anchorDay - 1, daysInEndMonth);
+        const end = new Date(cycleStartYear, cycleStartMonth + 1, clampedEndDay, 23, 59, 59, 999);
+
+        const clampedRenewalDay = Math.min(anchorDay, daysInEndMonth);
+        const nextRenewal = new Date(cycleStartYear, cycleStartMonth + 1, clampedRenewalDay);
+        return { start, end, nextRenewal };
+      }
+    };
+
+    const activeCycle = getCycleWindow(0);
+
+    // Function to check if user held Pro entitlement during a cycle window
+    const wasProDuringCycle = (cStart: Date, cEnd: Date): boolean => {
+      // 1. Check database subscriptions
+      for (const sub of userSubscriptions) {
+        const subStatus = sub.status.toLowerCase();
+        const subStart = sub.currentPeriodStart
+          ? new Date(sub.currentPeriodStart)
+          : new Date(sub.createdAt);
+
+        let subEnd: Date;
+        if (["active", "trialing"].includes(subStatus)) {
+          subEnd = sub.currentPeriodEnd
+            ? new Date(sub.currentPeriodEnd)
+            : new Date(8640000000000000);
+        } else {
+          subEnd = sub.currentPeriodEnd
+            ? new Date(sub.currentPeriodEnd)
+            : new Date(sub.updatedAt);
+        }
+
+        if (cStart <= subEnd && cEnd >= subStart) {
+          return true;
+        }
+      }
+
+      // 2. Check metadata fallback (simulation / metadata tier)
+      if (isMetaPro && metaProSince) {
+        if (cEnd >= metaProSince) {
+          return true;
+        }
+      } else if (isMetaPro && isPro) {
+        if (cEnd >= activeCycle.start) {
+          return true;
+        }
+      }
+
+      return false;
+    };
 
     // Real-time trip count (active workspaces)
     const tripsUsed = await db.trip.count({
       where: { profileId: user.id },
     });
 
-    // Real-time AI user messages in current month
+    // Real-time AI user messages in active billing cycle
     const rawAiCredits = await db.aiMessage.count({
       where: {
         role: "user",
         conversation: { profileId: user.id },
-        createdAt: { gte: startOfCurrentMonth, lte: endOfCurrentMonth },
+        createdAt: { gte: activeCycle.start, lte: activeCycle.end },
       },
     });
 
@@ -115,18 +211,16 @@ export async function getAccountUsage(): Promise<{
     const tripsRemaining = Math.max(0, tripsQuota - tripsUsed);
     const aiCreditsRemaining = Math.max(0, aiCreditsQuota - aiCreditsUsed);
 
-    // Generate monthly history logs for the last 6 months with REAL database counts
+    // Generate monthly history logs for the last 6 cycles with REAL database counts and accurate tiers
     const monthlyHistory: MonthlyHistoryItem[] = [];
-    const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
-    ];
 
     for (let i = 0; i < 6; i++) {
-      const targetDate = new Date(currentYear, currentMonth - i, 1);
-      const targetMonthYear = `${monthNames[targetDate.getMonth()]} ${targetDate.getFullYear()}`;
-      const mStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-      const mEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59);
+      const cycle = getCycleWindow(i);
+      const isCyclePro = i === 0 ? isPro : wasProDuringCycle(cycle.start, cycle.end);
+      const cycleTierName: "Free Explorer" | "Pro Wanderer" = isCyclePro
+        ? "Pro Wanderer"
+        : "Free Explorer";
+      const cycleQuota = isCyclePro ? 150 : 30;
 
       let mAiUsed = 0;
       let mTripsCreated = 0;
@@ -136,7 +230,7 @@ export async function getAccountUsage(): Promise<{
         mTripsCreated = await db.trip.count({
           where: {
             profileId: user.id,
-            createdAt: { gte: mStart, lte: mEnd },
+            createdAt: { gte: cycle.start, lte: cycle.end },
           },
         });
       } else {
@@ -145,15 +239,15 @@ export async function getAccountUsage(): Promise<{
             where: {
               role: "user",
               conversation: { profileId: user.id },
-              createdAt: { gte: mStart, lte: mEnd },
+              createdAt: { gte: cycle.start, lte: cycle.end },
             },
           });
-          mAiUsed = Math.min(aiCreditsQuota, rawPastAi);
+          mAiUsed = Math.min(cycleQuota, rawPastAi);
 
           mTripsCreated = await db.trip.count({
             where: {
               profileId: user.id,
-              createdAt: { gte: mStart, lte: mEnd },
+              createdAt: { gte: cycle.start, lte: cycle.end },
             },
           });
         } catch {
@@ -162,17 +256,39 @@ export async function getAccountUsage(): Promise<{
         }
       }
 
+      const monthLabel =
+        anchorDay === 1
+          ? cycle.start.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+          : `${cycle.start.toLocaleDateString("en-US", {
+              month: "short",
+            })} – ${cycle.end.toLocaleDateString("en-US", {
+              month: "short",
+              year: "numeric",
+            })}`;
+
+      const periodLabel = `${cycle.start.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })} – ${cycle.end.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year:
+          cycle.start.getFullYear() !== cycle.end.getFullYear()
+            ? "numeric"
+            : undefined,
+      })}`;
+
       monthlyHistory.push({
-        id: `month-${targetDate.getFullYear()}-${targetDate.getMonth()}`,
-        month: targetMonthYear,
-        period: `${monthNames[targetDate.getMonth()].slice(0, 3)} 1 - ${monthNames[targetDate.getMonth()].slice(0, 3)} ${mEnd.getDate()}`,
-        plan: tierName,
+        id: `cycle-${cycle.start.getFullYear()}-${cycle.start.getMonth()}-${cycle.start.getDate()}`,
+        month: monthLabel,
+        period: periodLabel,
+        plan: cycleTierName,
         tripsCreated: mTripsCreated,
         tripsUsed: mTripsCreated,
-        tripsQuota,
+        tripsQuota: isCyclePro ? 25 : 10,
         aiCreditsUsed: mAiUsed,
-        aiCreditsQuota,
-        aiCreditsRemaining: Math.max(0, aiCreditsQuota - mAiUsed),
+        aiCreditsQuota: cycleQuota,
+        aiCreditsRemaining: Math.max(0, cycleQuota - mAiUsed),
         status: i === 0 ? "Active Cycle" : "Completed",
       });
     }
@@ -222,9 +338,29 @@ export async function getAccountUsage(): Promise<{
       };
     });
 
-    const currentMonthName = `${monthNames[currentMonth]} ${currentYear}`;
-    const billingCycleStart = `${monthNames[currentMonth]} 1, ${currentYear}`;
-    const billingCycleEnd = `${monthNames[currentMonth]} ${endOfCurrentMonth.getDate()}, ${currentYear}`;
+    const billingCycleStart = activeCycle.start.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const billingCycleEnd = activeCycle.end.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const nextRenewalDate = activeCycle.nextRenewal.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const daysUntilRenewal = Math.max(
+      1,
+      Math.ceil((activeCycle.nextRenewal.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    );
+    const currentMonthName = activeCycle.start.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
 
     return {
       success: true,
@@ -241,6 +377,8 @@ export async function getAccountUsage(): Promise<{
         totalExpensesLogged,
         billingCycleStart,
         billingCycleEnd,
+        nextRenewalDate,
+        daysUntilRenewal,
         currentMonthName,
         monthlyHistory,
         tripUsage,

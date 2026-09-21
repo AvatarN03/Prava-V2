@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Sparkles, Info } from "lucide-react";
+
+import { BarChart3, Info } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+
 import { MonthlyHistoryItem } from "../actions";
 
 interface UsageChartProps {
@@ -18,373 +22,213 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
     return [...history].reverse();
   }, [history]);
 
-  // Chart dimensions & layout math
-  const width = 640;
-  const height = 240;
-  const padding = { top: 35, right: 35, bottom: 45, left: 45 };
-  const chartW = width - padding.left - padding.right;
-  const chartH = height - padding.top - padding.bottom;
-
-  // Max scale calculation based on highest actual credits or quota
-  const maxCredits = useMemo(() => {
-    const highestCredit = Math.max(...chronologicalData.map((d) => d.aiCreditsUsed), quota);
-    return Math.ceil(highestCredit * 1.15);
-  }, [chronologicalData, quota]);
-
-  // Scale function
-  const getYForCredits = (credits: number) => {
-    const ratio = Math.min(1, credits / maxCredits);
-    return padding.top + chartH - ratio * chartH;
-  };
-
-  const quotaY = getYForCredits(quota);
-  const numItems = chronologicalData.length;
-
-  // Calculate points for line & scatter plot
-  const points = useMemo(() => {
-    return chronologicalData.map((item, idx) => {
-      const x =
-        numItems <= 1
-          ? padding.left + chartW / 2
-          : padding.left + (idx * chartW) / (numItems - 1);
-      const y = getYForCredits(item.aiCreditsUsed);
-      return {
-        x,
-        y,
-        item,
-        idx,
-      };
-    });
-  }, [chronologicalData, numItems, chartW, maxCredits]);
-
-  // SVG Line Path
-  const linePath = useMemo(() => {
-    if (points.length === 0) return "";
-    return points
-      .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-      .join(" ");
-  }, [points]);
-
-  // SVG Gradient Area Path
-  const areaPath = useMemo(() => {
-    if (points.length === 0) return "";
-    const bottomY = padding.top + chartH;
-    return `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${bottomY} L ${points[0].x.toFixed(1)} ${bottomY} Z`;
-  }, [linePath, points, chartH, padding.top]);
-
-  const hoveredPoint = hoveredIdx !== null ? points[hoveredIdx] : null;
+  // Aggregate stats across the 6-month window
+  const stats = useMemo(() => {
+    const totalCredits = chronologicalData.reduce(
+      (sum, d) => sum + (d.aiCreditsUsed || 0),
+      0
+    );
+    const avgCredits = Math.round(totalCredits / (chronologicalData.length || 1));
+    return { totalCredits, avgCredits };
+  }, [chronologicalData]);
 
   return (
     <div className="rounded-sm border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
-      {/* Header & Legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ── Header & KPI Summaries ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-xs bg-primary/10 text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
+              <BarChart3 className="h-3.5 w-3.5" />
             </span>
             <h3 className="text-sm font-semibold text-foreground">
-              AI Credits Usage Trend
+              AI Credit Expense (6 Months)
             </h3>
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Monthly AI assistant credits consumed across recent billing cycles
+            Credit consumption and quota utilization across your recent 6 billing cycles
           </p>
         </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-[11px] font-medium text-muted-foreground select-none">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#2D9BF0] ring-2 ring-[#2D9BF0]/30" />
-            <span>AI Credits Used</span>
+        {/* Aggregate KPI Badges */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xs bg-muted/60 border border-border text-muted-foreground">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">6-Mo Total:</span>
+            <span className="font-mono font-bold text-foreground">
+              {stats.totalCredits} Credits
+            </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-0.5 w-3.5 border-t border-dashed border-rose-500/80" />
-            <span className="text-rose-600 dark:text-rose-400 font-semibold">{quota} Quota Cap</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xs bg-muted/60 border border-border text-muted-foreground">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground">Monthly Avg:</span>
+            <span className="font-mono font-bold text-foreground">
+              {stats.avgCredits} / mo
+            </span>
           </div>
         </div>
       </div>
 
-      {/* SVG Chart Surface */}
-      <div className="relative w-full overflow-hidden">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-auto overflow-visible select-none"
-        >
-          <defs>
-            <linearGradient id="creditsAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2D9BF0" stopOpacity="0.25" />
-              <stop offset="80%" stopColor="#2D9BF0" stopOpacity="0.04" />
-              <stop offset="100%" stopColor="#2D9BF0" stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
+      {/* ── 6-Month Discrete Bar Chart ── */}
+      <div className="relative pt-2 pb-1">
+        <div className="grid grid-cols-6 gap-2 sm:gap-4 items-end h-40 sm:h-44 px-1 sm:px-3">
+          {chronologicalData.map((item, idx) => {
+            const isHovered = hoveredIdx === idx;
+            const isCurrentCycle = item.status === "Active Cycle";
+            const isProCycle = item.plan.toLowerCase().includes("pro");
+            const used = item.aiCreditsUsed;
+            const cycleQuota = item.aiCreditsQuota || 30;
+            const pct = Math.min(100, Math.round((used / cycleQuota) * 100));
 
-          {/* Horizontal Grid Lines */}
-          <line
-            x1={padding.left}
-            y1={padding.top}
-            x2={width - padding.right}
-            y2={padding.top}
-            stroke="currentColor"
-            strokeOpacity={0.08}
-          />
-          <line
-            x1={padding.left}
-            y1={padding.top + chartH / 2}
-            x2={width - padding.right}
-            y2={padding.top + chartH / 2}
-            stroke="currentColor"
-            strokeOpacity={0.08}
-          />
-          <line
-            x1={padding.left}
-            y1={padding.top + chartH}
-            x2={width - padding.right}
-            y2={padding.top + chartH}
-            stroke="currentColor"
-            strokeOpacity={0.15}
-          />
+            // Extract readable short month: e.g. "Sep" from "Sep 2026" or "Sep 15"
+            const shortMonth = item.month.split(" ")[0].slice(0, 3);
 
-          {/* Quota Limit Dashed Line */}
-          <line
-            x1={padding.left}
-            y1={quotaY}
-            x2={width - padding.right}
-            y2={quotaY}
-            stroke="#f43f5e"
-            strokeWidth={1.2}
-            strokeDasharray="4 4"
-            strokeOpacity={0.75}
-          />
-          <text
-            x={width - padding.right}
-            y={quotaY - 5}
-            fill="#f43f5e"
-            fontSize="9"
-            fontWeight="bold"
-            textAnchor="end"
-          >
-            {quota} Quota Cap
-          </text>
-
-          {/* Y-Axis Labels (Left: AI Credits) */}
-          <text
-            x={padding.left - 8}
-            y={padding.top + 3}
-            fill="currentColor"
-            fontSize="9"
-            opacity={0.5}
-            textAnchor="end"
-          >
-            {maxCredits}
-          </text>
-          <text
-            x={padding.left - 8}
-            y={padding.top + chartH / 2 + 3}
-            fill="currentColor"
-            fontSize="9"
-            opacity={0.5}
-            textAnchor="end"
-          >
-            {Math.round(maxCredits / 2)}
-          </text>
-          <text
-            x={padding.left - 8}
-            y={padding.top + chartH + 3}
-            fill="currentColor"
-            fontSize="9"
-            opacity={0.5}
-            textAnchor="end"
-          >
-            0
-          </text>
-
-          {/* Area Fill */}
-          {areaPath && (
-            <path
-              d={areaPath}
-              fill="url(#creditsAreaGradient)"
-              className="transition-all duration-300 pointer-events-none"
-            />
-          )}
-
-          {/* Connected Line */}
-          {linePath && (
-            <path
-              d={linePath}
-              fill="none"
-              stroke="#2D9BF0"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="transition-all duration-300 pointer-events-none"
-            />
-          )}
-
-          {/* Hover Vertical Guide */}
-          {hoveredPoint && (
-            <line
-              x1={hoveredPoint.x}
-              y1={padding.top}
-              x2={hoveredPoint.x}
-              y2={padding.top + chartH}
-              stroke="#2D9BF0"
-              strokeWidth={1}
-              strokeDasharray="3 3"
-              strokeOpacity={0.5}
-              className="pointer-events-none transition-all"
-            />
-          )}
-
-          {/* Scatter Plot Data Points & Interaction Nodes */}
-          {points.map((p) => {
-            const isCurrentMonth = p.idx === points.length - 1;
-            const isHovered = hoveredIdx === p.idx;
-            const isAtQuota = p.item.aiCreditsUsed >= quota;
-            const shortMonth = p.item.month.split(" ")[0].slice(0, 3);
+            // Bar fill height (minimum 3% or 4px so 0 credits still shows a clean grounded baseline indicator)
+            const fillHeightPct = used === 0 ? 0 : Math.max(8, pct);
 
             return (
-              <g
-                key={p.item.id}
-                onMouseEnter={() => setHoveredIdx(p.idx)}
+              <div
+                key={item.id}
+                className="flex flex-col items-center h-full justify-end group cursor-pointer relative"
+                onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
-                className="cursor-pointer"
               >
-                {/* Generous invisible hover hit area */}
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={18}
-                  fill="transparent"
-                />
-
-                {/* Outer Glow Halo on Hover */}
-                {isHovered && (
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={10}
-                    fill={isAtQuota ? "#f43f5e" : "#2D9BF0"}
-                    opacity={0.25}
-                    className="transition-all duration-150 animate-pulse"
-                  />
-                )}
-
-                {/* Primary Scatter Node */}
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={isHovered ? 6 : 4.5}
-                  fill={isAtQuota ? "#f43f5e" : "#2D9BF0"}
-                  stroke="white"
-                  strokeWidth={2}
-                  className="transition-all duration-150 shadow-sm"
-                />
-
-                {/* Value Label above scatter node */}
-                {p.item.aiCreditsUsed > 0 && (
-                  <text
-                    x={p.x}
-                    y={p.y - 9}
-                    fill="currentColor"
-                    fontSize="9.5"
-                    fontWeight={isHovered ? "bold" : "600"}
-                    opacity={isHovered ? 1 : 0.75}
-                    textAnchor="middle"
-                    className="transition-opacity"
+                {/* Value Label above Bar */}
+                <div className="mb-1.5 text-center">
+                  <span
+                    className={`font-mono text-xs transition-colors ${
+                      isHovered
+                        ? "font-bold text-primary"
+                        : isCurrentCycle
+                          ? "font-bold text-foreground"
+                          : "font-medium text-muted-foreground"
+                    }`}
                   >
-                    {p.item.aiCreditsUsed}
-                  </text>
-                )}
+                    {used}
+                  </span>
+                  <span className="hidden sm:inline text-[10px] text-muted-foreground/60 block -mt-0.5">
+                    / {cycleQuota}
+                  </span>
+                </div>
 
-                {/* X-Axis Month Label */}
-                <text
-                  x={p.x}
-                  y={padding.top + chartH + 18}
-                  fill="currentColor"
-                  fontSize="10"
-                  fontWeight={isCurrentMonth || isHovered ? "bold" : "normal"}
-                  opacity={isCurrentMonth || isHovered ? 1 : 0.6}
-                  textAnchor="middle"
+                {/* Vertical Bar Track Container */}
+                <div
+                  className={`w-full max-w-[38px] sm:max-w-[48px] h-24 sm:h-28 rounded-xs bg-muted/40 border transition-all duration-200 relative overflow-hidden flex flex-col justify-end ${
+                    isHovered
+                      ? "border-primary/60 bg-muted/70 ring-2 ring-primary/20 shadow-xs"
+                      : isCurrentCycle
+                        ? "border-primary/40 bg-muted/50"
+                        : "border-border/60 hover:border-border"
+                  }`}
                 >
-                  {shortMonth}
-                </text>
+                  {/* Quota Reference Line (at 100% capacity) */}
+                  <div className="absolute top-0 inset-x-0 h-px bg-border/80 border-t border-dashed border-border" />
 
-                {/* Active month dot */}
-                {isCurrentMonth && (
-                  <circle
-                    cx={p.x}
-                    cy={padding.top + chartH + 28}
-                    r={2}
-                    fill="#2D9BF0"
+                  {/* Dynamic Progress Bar Fill */}
+                  <div
+                    className={`w-full transition-all duration-300 rounded-t-2xs ${
+                      used === 0
+                        ? "h-1 bg-muted-foreground/20"
+                        : pct >= 100
+                          ? "bg-rose-600"
+                          : pct > 75
+                            ? "bg-amber-500"
+                            : isCurrentCycle
+                              ? "bg-primary"
+                              : "bg-primary/80 dark:bg-primary/70"
+                    } ${isHovered ? "brightness-110" : ""}`}
+                    style={{ height: used === 0 ? "3px" : `${fillHeightPct}%` }}
                   />
+                </div>
+
+                {/* Month Label & Active Indicator */}
+                <div className="mt-2 text-center flex flex-col items-center gap-0.5">
+                  <span
+                    className={`text-[11px] transition-colors ${
+                      isCurrentCycle
+                        ? "font-bold text-foreground"
+                        : isHovered
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {shortMonth}
+                  </span>
+                  {isCurrentCycle ? (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-primary uppercase tracking-wider">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      Active
+                    </span>
+                  ) : (
+                    <span className="text-[9px] text-muted-foreground/60 hidden sm:inline">
+                      {isProCycle ? "Pro" : "Free"}
+                    </span>
+                  )}
+                </div>
+
+                {/* Floating Tooltip on Hover */}
+                {isHovered && (
+                  <div className="absolute -top-16 z-30 pointer-events-none rounded-xs border border-border bg-popover/98 p-2 text-xs text-popover-foreground shadow-lg backdrop-blur-xs whitespace-nowrap min-w-[140px] text-left animate-in fade-in-50 zoom-in-95">
+                    <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-1 mb-1">
+                      <span className="font-bold text-[11px] text-foreground">
+                        {item.month}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] px-1 py-0 h-4 ${
+                          isProCycle
+                            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 font-semibold"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {isProCycle ? "Pro" : "Free"}
+                      </Badge>
+                    </div>
+                    <div className="space-y-0.5 text-[10px]">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Period:</span>
+                        <span className="font-medium text-foreground">{item.period}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Credits Used:</span>
+                        <span className="font-mono font-bold text-foreground">
+                          {used} / {cycleQuota} ({pct}%)
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Remaining:</span>
+                        <span className="font-mono font-medium text-foreground">
+                          {item.aiCreditsRemaining}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </g>
+              </div>
             );
           })}
-        </svg>
-
-        {/* Hover Tooltip Overlay */}
-        {hoveredPoint && (
-          <div
-            className="absolute z-20 pointer-events-none rounded-xs border border-border bg-popover/95 p-2.5 text-xs text-popover-foreground shadow-md backdrop-blur-xs space-y-1.5 transition-all"
-            style={{
-              left: `${Math.min(
-                80,
-                Math.max(
-                  20,
-                  (hoveredPoint.x / width) * 100
-                )
-              )}%`,
-              top: "10px",
-              transform: "translateX(-50%)",
-            }}
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-1">
-              <span className="font-bold text-foreground text-[11px]">{hoveredPoint.item.month}</span>
-              <span
-                className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-xs border ${
-                  hoveredPoint.item.status === "Active Cycle"
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : "bg-muted text-muted-foreground border-border"
-                }`}
-              >
-                {hoveredPoint.item.status}
-              </span>
-            </div>
-
-            <div className="space-y-1 text-[11px]">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-primary" />
-                  AI Credits Used:
-                </span>
-                <span className="font-mono font-bold text-foreground">
-                  {hoveredPoint.item.aiCreditsUsed} / {quota}
-                  {hoveredPoint.item.aiCreditsUsed >= quota && (
-                    <span className="ml-1 text-rose-500 font-semibold">(Limit reached)</span>
-                  )}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Cycle Utilization:</span>
-                <span className="font-mono font-semibold text-foreground">
-                  {Math.min(100, Math.round((hoveredPoint.item.aiCreditsUsed / quota) * 100))}%
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Footer Insight */}
-      <div className="flex items-center gap-2 rounded-xs bg-muted/40 p-2.5 text-[11px] text-muted-foreground border border-border/50">
-        <Info className="h-3.5 w-3.5 text-primary shrink-0" />
-        <span>
-          AI credits recharge automatically on the 1st of every month ({tierName}). Each trip workspace consumes
-          credits when generating daily schedules, proposing itinerary updates, and recommending activities.
-        </span>
+      {/* ── Footer Insight & Legend ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xs bg-muted/40 p-2.5 text-[11px] text-muted-foreground border border-border/50">
+        <div className="flex items-center gap-1.5">
+          <Info className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span>
+            Discrete AI credit expenses across recent 6 monthly cycles. Current tier:{" "}
+            <strong className="text-foreground">{tierName}</strong> ({quota} credits/mo).
+          </span>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-3 self-end sm:self-auto shrink-0 select-none text-[10px]">
+          <div className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-2xs bg-primary" />
+            <span>Used</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-2xs bg-muted-foreground/30 border border-border" />
+            <span>Capacity</span>
+          </div>
+        </div>
       </div>
     </div>
   );
