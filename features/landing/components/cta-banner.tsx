@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 import { ArrowRight } from "lucide-react";
@@ -12,28 +14,45 @@ interface CtaBannerProps {
 
 export function CtaBanner({ user }: CtaBannerProps) {
   return (
-    <section className="py-16 md:py-20 transition-colors">
-      <div className="mx-auto max-w-5xl px-6 sm:px-8">
-        <div className="rounded-2xl border border-sky-100 dark:border-slate-800 bg-gradient-to-br from-sky-50/70 via-white to-sky-50/50 dark:from-slate-900/90 dark:via-slate-900/60 dark:to-slate-950 p-8 sm:p-14 text-center space-y-4 shadow-sm">
-          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Ready to take control of your travels?
-          </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed">
-            No credit card required. Free instant access with a full 7-tab
-            workspace ready in seconds.
-          </p>
-          <div className="pt-3">
+    <section className="py-24 sm:py-32 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 text-center transition-colors">
+      <div className="mx-auto max-w-4xl px-6 sm:px-10 space-y-6">
+        <span className="font-mono text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">
+          Get Started
+        </span>
+
+        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.12]">
+          Make space{" "}
+          <span className="font-serif italic font-normal text-zinc-900 dark:text-zinc-100">
+            for the journey.
+          </span>
+        </h2>
+
+        <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed max-w-md mx-auto">
+          Plan less chaotically. Travel more intentionally.
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+          <Button
+            asChild
+            className="bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white text-xs font-medium px-6 h-11 rounded-sm gap-2 cursor-pointer shadow-none transition-all"
+          >
             <Link href={user ? "/dashboard" : "/auth?tab=signup"}>
-              <Button
-                size="lg"
-                className="gap-2 px-8 h-12 text-sm font-semibold bg-gradient-to-r from-[#2D9BF0] to-[#1279CE] hover:from-[#1D8BE0] hover:to-[#0D6AB9] text-white shadow-md shadow-[#2D9BF0]/30 transition-all cursor-pointer"
-              >
-                <span>{user ? "Open Your Workspace" : "Get Started Free"}</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              <span>Start Planning</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-          </div>
+          </Button>
+
+          <a
+            href="#workspace"
+            className="text-xs font-medium text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer px-4 py-2.5"
+          >
+            Explore Prava
+          </a>
         </div>
+
+        <p className="text-xs font-mono text-zinc-400 dark:text-zinc-500 pt-4">
+          Available on Web, iOS & iPadOS · Free during Version 2 exploration
+        </p>
       </div>
     </section>
   );

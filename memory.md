@@ -348,6 +348,26 @@
     - In **Dark Mode**: Sidebar and wrapping background are unified Clean Light Slate (`dark:bg-slate-100`), while the floating main canvas is Deep Dark Navy (`dark:bg-[#0A0F1D]`, `dark:text-slate-100`).
   - **Left-Side Rounded Corners Only**: Main content canvas features `rounded-none md:rounded-tl-[24px] md:rounded-bl-[24px] md:my-2 md:ml-2 md:mr-0` with `overflow-hidden`, creating the distinct docked sheet aesthetic with the outer background wrapping the top, left, and bottom, while the right edge remains flush.
   - **TopBar Header Enhancement**: Re-architected TopBar to match the reference layout: Page Title, Quick Search input with `Ctrl K` keyboard shortcut badge, Today date chip, Live Workspace pulsing indicator, and User Profile badge with avatar and role chip.
+
+- **Task 49 (Editorial Design Language & Workspace-First Landing Page Overhaul)**:
+  - **Visual Design Reference & Typography System**:
+    - Integrated Google Font `Newsreader` (`next/font/google`) alongside `Sora` in `app/layout.tsx` and mapped `--font-serif` in Tailwind v4 `@theme inline` in `app/globals.css`.
+    - Implemented high-contrast editorial typography pairing modern sans headings with italic serif accents (`font-serif italic font-normal`) and monospace uppercase category kickers across all landing sections.
+    - Adopted the clean Black/White/Prava-Blue color palette with warm linen/alabaster canvas (`#FAFAF9`), crisp cards, subtle borders, and Cerulean `#2D9BF0` accents for active indicators and live data.
+  - **Replaced Fictional Dashboard with Real Prava Architecture**:
+    - **LandingHeader (`landing-header.tsx`)**: Minimalist topbar with brand logo, "Workspace", "Community", "Travel Tools", "Pricing", and auth-aware CTAs.
+    - **HeroSection (`hero-section.tsx`)**: Asymmetric layout with "Your journey, in one place.", 3 micro-pillars (01. Route, 02. Stay & Docs, 03. Essentials), and Archival Tokyo Workspace Preview Frame (real itinerary times, budget progress in blue, and checklist status).
+    - **ThesisSection (`thesis-section.tsx`)**: Left metadata marker ("Section 01 / The Problem of Fragmentation") + editorial thesis ("Travel planning gets complicated when everything lives somewhere else.") + 3-pillar anchor (*Workspace First · AI Second · Human Intent*).
+    - **ScatteredVsUnified (`scattered-vs-unified.tsx`)**: Interactive toggle comparing 8 disconnected surfaces (browser tabs, quick notes, flight emails, map pins, expense spreadsheets, saved reels, weather apps, group chats) with the 1 unified Prava workspace.
+    - **WorkspaceShowcase (`workspace-showcase.tsx`)**: Interactive 7-tab simulation allowing visitors to click and inspect Prava's real modules: **Overview**, **Itinerary**, **Accommodation**, **Expenses**, **Notes**, **Checklist**, and **Links & Saves**.
+    - **ItinerarySection (`itinerary-section.tsx`)**: Daily chronological structure with morning ritual, urban walk, and culinary stops, transit badges, and location tags.
+    - **ExpensesSection (`expenses-section.tsx`)**: 3 budget KPI cards (Trip Budget, Logged to Date, Remaining Headroom in `#2D9BF0`) and multi-currency expense ledger table (JPY / USD spot exchange).
+    - **TravelEssentialsSection (`travel-essentials-section.tsx`)**: 3 contextual utility cards for Weather (19° Clear & Crisp, 5-day mini forecast, weather alert), Currency Converter (interactive JPY to USD), and Country Brief (Japan IC cards, tipping, emergency numbers).
+    - **AiAssistanceSection (`ai-assistance-section.tsx`)**: Interactive simulation of Prava's real `AiProposalCard` with user prompt, expandable Gemini reasoning process, re-sequenced schedule diff table, and "Apply to Day 02" transaction button.
+    - **CommunityStoriesSection (`community-stories-section.tsx`)**: Curated itineraries (Kyoto, Lisbon, Seoul) with author avatars, stops count, and 1-click clone mechanics.
+    - **LandscapeBanner (`landscape-banner.tsx`)**: Full-bleed scenic mountain highway banner ("The journey is yours.") with exploration CTA.
+    - **CorePhilosophySection (`core-philosophy-section.tsx`)**: 3 principles breakdown (01 PLAN, 02 ORGANIZE, 03 ASSIST).
+    - **CtaBanner (`cta-banner.tsx`) & LandingFooter (`landing-footer.tsx`)**: "Make space for the journey." with monochrome buttons and minimal footer.
   - **Preserved Authentic Travel Dashboard**: Reverted `app/(app)/dashboard/page.tsx` and `DashboardMetrics` back to Prava AI's core travel workspace entities (Total Trips, Total Budget Spent, Scheduled Activities, Pending Tasks, Upcoming Trip, Quick Essentials, Recent Trips, and Urgent Checklist), avoiding unnecessary domain deviations.
   - **Strict Import Standards**: Adhered to the 6-tier import hierarchy formalized in `.agents/skills/format-imports-and-clean`.
 

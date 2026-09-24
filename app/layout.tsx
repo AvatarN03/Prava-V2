@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sora } from "next/font/google";
+import { Newsreader, Sora } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 
@@ -10,6 +10,12 @@ import "./globals.css";
 const sora = Sora({
   variable: "--font-sora",
   subsets: ["latin"],
+});
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -32,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sora.variable} h-full antialiased`}
+      className={`${sora.variable} ${newsreader.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body

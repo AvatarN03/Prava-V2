@@ -123,6 +123,8 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius: var(--radius);
+
+  --font-serif: var(--font-newsreader), Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
 /* =========================================================

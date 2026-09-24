@@ -1,7 +1,14 @@
 export { LandingHeader } from "./components/landing-header";
 export { HeroSection } from "./components/hero-section";
-export { InteractiveMockup } from "./components/interactive-mockup";
-export { FeatureHighlights } from "./components/feature-highlights";
-export { WorkflowSection } from "./components/workflow-section";
+export { ThesisSection } from "./components/thesis-section";
+export { ScatteredVsUnified } from "./components/scattered-vs-unified";
+export { WorkspaceShowcase } from "./components/workspace-showcase";
+export { ItinerarySection } from "./components/itinerary-section";
+export { ExpensesSection } from "./components/expenses-section";
+export { TravelEssentialsSection } from "./components/travel-essentials-section";
+export { AiAssistanceSection } from "./components/ai-assistance-section";
+export { CommunityStoriesSection } from "./components/community-stories-section";
+export { LandscapeBanner } from "./components/landscape-banner";
+export { CorePhilosophySection } from "./components/core-philosophy-section";
 export { CtaBanner } from "./components/cta-banner";
 export { LandingFooter } from "./components/landing-footer";
