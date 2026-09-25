@@ -2216,3 +2216,115 @@
       - Verified text against the actual database schema and `ExpenseTracker` features: multi-currency spot conversions (ECB / Frankfurter API), real categories (`Accommodation`, `Transport`, `Activities`, `Food & Dining`), budget allocation & headroom meters, split attribution (`paidBy`), IndexedDB offline logging, and CSV export.
     - **Typography & Font Cleanliness**:
       - Eradicated all `font-mono` / Consolas instances, replacing them with `font-sans` (Sora) and `tabular-nums`.
+
+- **Task 164 (Landing Page Alternating Theme Cadence & Verified Section Polish)**:
+  - **Context & User Request**:
+    - The user mandated an alternating theme cadence across the entire landing page ("one support and next not").
+    - Explicitly commanded that *Contextual Utilities* (`TravelEssentialsSection`) must have **no dark theme** (pure light only), followed by dual-theme and light-only alternating sections.
+    - Enforce the explicit headline break (`block mt-1 sm:mt-2`) between Sora and Newsreader italics across all sections.
+    - Verify all text content and UI against real project scope with zero fake features.
+  - **Solutions Implemented**:
+    - **Systematic Alternating Cadence Across All 13 Sections**:
+      1. *HeroSection*: Pure Light Theme only (no dark theme).
+      2. *ThesisSection*: Dual Theme (supports dark & light).
+      3. *ScatteredVsUnified*: Pure Light Theme only (no dark theme).
+      4. *WorkspaceShowcase*: Dual Theme (supports dark & light).
+      5. *ItinerarySection* (Temporal Structure): Pure White/Light Theme only (no dark theme).
+      6. *ExpensesSection* (Financial Clarity): Dual Theme (supports dark & light).
+      7. *TravelEssentialsSection* (Contextual Utilities): Pure White/Light Theme only (no dark theme).
+      8. *AiAssistanceSection* (Intelligent Accelerant): Dual Theme (supports dark & light).
+      9. *CommunityStoriesSection* (Shared Journeys): Pure White/Light Theme only (no dark theme).
+      10. *LandscapeBanner* (Where Next?): Full scenic photographic banner with editorial typography.
+      11. *CorePhilosophySection* (Three Principles): Pure Light Theme only (no dark theme).
+      12. *PricingSection* (Transparent Membership): Dual Theme (supports dark & light).
+      13. *CtaBanner* (Make Space): Pure White/Light Theme only (no dark theme).
+    - **Complete Eradication of Monospace & Strict Headline Line Breaks**:
+      - Eradicated all `font-mono` / Consolas classes across all landing components in favor of `font-sans` (Sora) with `tabular-nums`.
+      - Enforced permanent line breaks on all editorial headlines between Sora and Newsreader italics via `block mt-1 sm:mt-2`.
+    - **Verified Project Scope Copy**:
+      - Aligned copy with real features: OpenWeather forecasts, ECB currency conversions, REST Countries guide, emergency helplines, Gemini 2.5 Flash proposal cards, 1-click community cloning, and Polar subscription tiers.
+
+- **Task 165 (Refinement of AI Avatars, Community Renaming, Pricing Rates, Fluid CTA Canvas & Equal-Width Footer)**:
+  - **Context & User Request**:
+    1. Remove all Gemini model names completely from the UI.
+    2. Replace user initials with a default user avatar icon and replace AI assistant circle with an AI icon avatar in `AiAssistanceSection`. Enrich the UI with travel cues (route reasoning, waypoints, pacing badges).
+    3. In `CommunityStoriesSection`, remove the word "Indian" ("Shared Journeys"), remove the shuffle button, and round the corners of place filter buttons.
+    4. In `PricingSection`, add robust dark theme support to the annual switcher tab, update prices to ₹200/mo and ₹167/mo (annual), and remove Gemini references.
+    5. In `CtaBanner` ("Get Started"), add an animated fluid canvas background.
+    6. In `LandingFooter`, remove privacy and terms links, and layout in equal-width 3-column grid.
+  - **Solutions Implemented**:
+    - **`AiAssistanceSection`**: Removed "Gemini 2.5 Flash Proposal" (changed to "Structured Route Proposal"), replaced "YOU" circle with `<User />` avatar icon, replaced "P" circle with `<Sparkles />` avatar icon, and added travel waypoints, pacing tags (`Pacing: Heat-Optimized`), and route reasoning header.
+    - **`CommunityStoriesSection`**: Renamed badge to "Shared Journeys", removed "Indian", removed the "Shuffle Stories" button, and converted category filter buttons to `rounded-md`.
+    - **`PricingSection`**: Standardized the billing switcher so both Monthly and Annual have identical high-contrast dark theme styling (`dark:bg-zinc-800 dark:text-zinc-50 dark:border-zinc-700`). Updated pricing to ₹200/mo and ₹167/mo (billed annually as ₹2,004/year · Save 16.5%). Replaced Gemini references with "AI Workspace Credits".
+    - **`CtaBanner` & `CtaBackgroundPattern`**: Built an animated HTML5 `<canvas>` component rendering harmonic fluid sine waves, ambient radial glow, and floating particles in soft cerulean and slate behind the Get Started call to action.
+    - **`LandingFooter`**: Removed privacy and terms links. Converted layout to an equal 3-column grid (`grid grid-cols-1 md:grid-cols-3`): Brand (Left 1/3), Centered Nav Links (Center 1/3), Copyright (Right 1/3).
+
+- **Task 166 (Public Avatars, Green Badge Removal, Itinerary Spacing & Interactive Yes/No Choices)**:
+  - **Context & User Request**:
+    1. In the Intelligent Assistant section (`AiAssistanceSection`), use real public folder images for both the AI (`/avatars/ichinose.png`) and the user (`/avatars/default-avatar.jpg`).
+    2. Remove the green badge (`Pacing: Heat-Optimized`) from the top header bar of the AI proposal card.
+    3. Add generous space and padding to each stop in the resequenced itinerary proposal.
+    4. Provide an interactive option to choose each stop based on **"Yes"** or **"No"** toggles.
+  - **Solutions Implemented**:
+    - **Public Avatars Integration**:
+      - Replaced SVG icon placeholders with official image assets: `/avatars/default-avatar.jpg` for user prompts and `/avatars/ichinose.png` for Prava Assistant proposals with sleek circular framing and subtle border styling.
+    - **Header Green Badge Removal**:
+      - Completely removed the `Pacing: Heat-Optimized` emerald badge from the proposal card top header, keeping a clean, focused status line with live context and category details.
+    - **Generous Spacing & Padding**:
+      - Expanded stop container padding to `p-4 sm:p-5 sm:px-6` with increased responsive flex gaps (`gap-3 sm:gap-4`) and comfortable text spacing.
+    - **Interactive Yes/No Per-Stop Selection**:
+      - Added high-contrast segmented `[Yes / No]` toggle pills for each waypoint.
+      - Integrated dynamic acceptance state: deselecting a stop ("No") strikes out the title, dims the stop row (`opacity-50`), and updates the atomic transaction counter (`{selectedCount} of 4 Included`, `Atomic transaction: {selectedCount} of 4 stops selected to update in your workspace`, and `Accept {selectedCount} Stops` button).
+
+- **Task 167 (Unified ThemeToggle Component & Complete ThemeChanger Removal)**:
+  - **Context & User Request**:
+    1. Extract a unified, reusable theme toggle component combining `next-themes` and `MorphIcon` (Sun <-> Moon icon morphing transition).
+    2. Import this common theme component into `LandingHeader` directly beside the Dashboard / CTA button.
+    3. Use the common theme component in `TopBar` (workspace shell header), eliminating redundant duplicated state logic.
+    4. Delete/neutralize `components/app-shell/theme-changer.tsx` completely.
+  - **Solutions Implemented**:
+    - **`ThemeToggle` Component (`components/app-shell/theme-toggle.tsx`)**:
+      - Built a clean, self-contained `ThemeToggle` component consuming `useTheme` from `next-themes` and `MorphIcon` with vanilla `lucide` `Sun` and `Moon` SVG definitions.
+      - Includes smooth animation delay (`setTimeout` sequence) ensuring the icon morph completes before theme switching, wrapped in Radix `TooltipProvider` and `Tooltip`.
+    - **`LandingHeader` Integration (`features/landing/components/landing-header.tsx`)**:
+      - Replaced `ThemeChanger` with `<ThemeToggle />` positioned directly beside the `Dashboard` button (for authenticated users) and beside `Sign In` / `Start Planning` (for guests).
+    - **`TopBar` Refactor (`components/app-shell/top-bar.tsx`)**:
+      - Replaced redundant inline state (`isCurrentDark`, `displayDark`, `isTransitioning`, `toggleTheme`) and duplicate `MorphIcon` JSX with `<ThemeToggle className="text-slate-500 dark:text-slate-400 hover:text-[#2D9BF0] dark:hover:text-[#2D9BF0] hover:bg-sky-50 dark:hover:bg-slate-800" iconSize={20} />`.
+    - **`ThemeChanger` Neutralization (`components/app-shell/theme-changer.tsx`)**:
+      - Replaced obsolete `ThemeChanger` file with a 1-line dead-code stub `export {};` adhering to Rule 11.
+
+- **Task 168 (Landing Nav Smooth Scroll to Top & Mid-Scroll Dynamic Theme Color Switching)**:
+  - **Context & User Request**:
+    1. Clicking the Prava brand logo in the landing navigation bar must trigger a smooth scroll animation back to the top of the page (`window.scrollTo({ top: 0, behavior: 'smooth' })`).
+    2. As the user scrolls through the landing page, the sticky navbar text, brand logo, nav links, and CTA button colors must change dynamically between dark and light based on the theme characteristics of the section underneath it (handling the alternating cadence between dual-theme dark sections and light-only white sections).
+  - **Solutions Implemented**:
+    - **Global Smooth Scrolling (`app/globals.css`)**:
+      - Added `html { scroll-behavior: smooth; }` rule ensuring all in-page navigation animates fluidly.
+    - **Logo Smooth Scroll (`features/landing/components/landing-header.tsx`)**:
+      - Attached `handleLogoClick` with `e.preventDefault()`, `window.scrollTo({ top: 0, behavior: "smooth" })`, and clean history state management.
+      - Attached `handleNavClick` with offset calculation (`headerOffset: 64px`) for `#workspace`, `#travel-tools`, `#community`, and `#pricing`.
+    - **Semantic Section Tagging**:
+      - Tagged all 13 landing page sections with deterministic `data-nav-theme="dark"` (dual-theme sections that turn dark in dark mode, or `LandscapeBanner` with dark photographic overlay) vs `data-nav-theme="light"` (pure light sections that remain white even in dark mode).
+      - Added `data-always-dark="true"` to `LandscapeBanner`.
+    - **Mid-Scroll Dynamic Navbar Color Transition**:
+      - Built a high-performance `requestAnimationFrame` scroll listener in `LandingHeader` that reads the section intersecting the navbar's lower midpoint (`navTriggerY = 56px`).
+      - In dark mode:
+        - When passing over dual-theme sections (`ThesisSection`, `WorkspaceShowcase`, `ExpensesSection`, `AiAssistanceSection`, `PricingSection`, `LandscapeBanner`), the navbar shifts to translucent dark glass (`bg-zinc-950/75 border-zinc-800/80`), light brand text (`text-zinc-50`), light nav links (`text-zinc-400 hover:text-white`), and inverted CTA buttons (`bg-zinc-100 text-zinc-950`).
+        - When passing over light-only sections (`HeroSection`, `ScatteredVsUnified`, `ItinerarySection`, `TravelEssentialsSection`, `CommunityStoriesSection`, `CorePhilosophySection`, `CtaBanner`), the navbar automatically inverts to crisp translucent white glass (`bg-white/80 border-zinc-200/60`), dark brand text (`text-zinc-950`), dark nav links (`text-zinc-600 hover:text-zinc-950`), and dark CTA buttons (`bg-zinc-950 text-white`), eliminating any low-contrast or washed-out text over white sections.
+      - Applied `transition-all duration-300` and `transition-colors duration-300` across all navbar elements for seamless, fluid cross-fading during scrolling.
+
+- **Task 169 (Thesis Section Typography Scale Normalization)**:
+  - **Context & User Request**:
+    - The text in the *Thesis* section (`ThesisSection`) was oversized compared to the rest of the landing page.
+    - Reduce the headline text and paragraph description text to match the uniform typography scale used across all other landing page sections.
+  - **Solutions Implemented**:
+    - **Headline Normalization (`features/landing/components/thesis-section.tsx`)**:
+      - Scaled down `h2` from `text-3xl sm:text-5xl lg:text-6xl` to `text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-[1.15] break-words [text-wrap:balance]`, precisely matching the standard heading scale of `ScatteredVsUnified`, `WorkspaceShowcase`, `ItinerarySection`, `ExpensesSection`, `TravelEssentialsSection`, `AiAssistanceSection`, and `PricingSection`.
+      - Kept the strict editorial headline break between Sora and Newsreader italics (`block mt-1 sm:mt-2`).
+    - **Paragraph Normalization**:
+      - Scaled down the statement paragraph from `text-base sm:text-lg lg:text-xl` to `text-sm sm:text-base text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed max-w-3xl pt-1 [text-wrap:balance]`.
+    - **Visual Harmony**:
+      - Adjusted top margin and line gaps (`space-y-3 sm:space-y-4`) to produce a calm, balanced editorial layout with zero oversized text.
+
+
+

@@ -44,6 +44,7 @@ export function WorkspaceShowcase() {
   return (
     <section
       id="workspace"
+      data-nav-theme="dark"
       className="py-16 sm:py-24 lg:py-28 bg-[#FAFAF9] dark:bg-zinc-950 transition-colors"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-10 lg:px-16 space-y-10">

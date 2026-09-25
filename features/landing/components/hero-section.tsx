@@ -260,7 +260,7 @@ export function HeroSection({ user }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-28 bg-[#FAFAF9] text-zinc-950">
+    <section data-nav-theme="light" className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-28 bg-[#FAFAF9] text-zinc-950">
       {/* Topographic & Cartographic Background Pattern */}
       <HeroBackgroundPattern />
 

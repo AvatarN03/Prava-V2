@@ -41,6 +41,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useWorkspaceAi } from "@/features/trip-workspace/context/workspace-ai-context";
 
 import { createTrip, getDestinationCoverImages, getUserAiPreferences } from "../actions";
+import { TripStatus } from "../types";
 import type { UnsplashImage } from "@/services/unsplash/types";
 
 interface CreateTripDialogProps {

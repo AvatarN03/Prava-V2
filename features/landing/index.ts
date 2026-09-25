@@ -15,3 +15,4 @@ export { CtaBanner } from "./components/cta-banner";
 export { LandingFooter } from "./components/landing-footer";
 export { TravelNetworkBackground } from "./components/travel-network-background";
 export { HeroBackgroundPattern } from "./components/hero-background-pattern";
+export { CtaBackgroundPattern } from "./components/cta-background-pattern";

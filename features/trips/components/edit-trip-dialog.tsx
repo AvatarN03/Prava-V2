@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ImageUpload } from "@/components/storage/image-upload";
 import { updateTrip, getDestinationCoverImages } from "../actions";
+import { Trip, TripStatus } from "../types";
 import type { UnsplashImage } from "@/services/unsplash/types";
 
 interface EditTripDialogProps {

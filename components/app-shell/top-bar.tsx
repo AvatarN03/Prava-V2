@@ -1,10 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
-
 import {
   ArrowRight,
   Bell,
@@ -22,8 +21,6 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
-import { Moon, Sun } from "lucide";
-import { MorphIcon } from "morphicons/react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,12 +37,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
-
+import { ThemeToggle } from "./theme-toggle";
 import { TopBarWeather } from "./top-bar-weather";
 
 import { getTopBarUserInfo, type TopBarUserInfo } from "@/features/profile/actions";
+import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface TopBarProps {
   onMobileMenuOpen: () => void;
@@ -58,7 +55,6 @@ let cachedUserInfo: TopBarUserInfo | null = null;
 export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
   const pathname = usePathname();
   const supabase = createClient();
-  const { theme, setTheme, resolvedTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
   const [userInfo, setUserInfo] = useState<TopBarUserInfo>(() => {
@@ -181,37 +177,6 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
   const pageInfo = getPageInfo();
   const PageIcon = pageInfo.icon;
 
-  const isCurrentDark = mounted && (resolvedTheme === "dark" || theme === "dark");
-  const [displayDark, setDisplayDark] = useState<boolean | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
-  const activeDark = displayDark !== null ? displayDark : isCurrentDark;
-
-  useEffect(() => {
-    if (mounted && displayDark === null) {
-      setDisplayDark(isCurrentDark);
-    }
-  }, [isCurrentDark, mounted, displayDark]);
-
-  const toggleTheme = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-
-    const nextIsDark = !activeDark;
-    const nextTheme = nextIsDark ? "dark" : "light";
-
-    // Start morph animation first
-    setDisplayDark(nextIsDark);
-
-    // Delay the actual application theme switch so the morph plays smoothly first
-    setTimeout(() => {
-      setTheme(nextTheme);
-      setTimeout(() => {
-        setIsTransitioning(false);
-      }, 150);
-    }, 240);
-  };
-
   return (
     <TooltipProvider>
       <header className="sticky top-0 z-30 shrink-0 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-md px-2 sm:px-4 md:px-6 rounded-none md:rounded-tl-[24px] transition-colors">
@@ -243,38 +208,10 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
           <TopBarWeather />
 
           {/* Theme Toggle Button with MorphIcons Transition (Sun <-> Moon) */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                disabled={isTransitioning}
-                className="h-8 w-8 sm:h-9 sm:w-9 text-slate-500 dark:text-slate-400 hover:text-[#2D9BF0] hover:bg-sky-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-                aria-label="Toggle theme"
-              >
-                {mounted ? (
-                  <MorphIcon
-                    icon={activeDark ? Sun : Moon}
-                    size={20}
-                    strokeWidth={2.2}
-                    className={cn(
-                      "transition-colors duration-300 text-slate-600 dark:text-slate-300"
-                    )}
-                    spring="snappy"
-                  />
-                ) : (
-                  <div className="h-5 w-5" />
-                )}
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">
-                {activeDark ? "Switch to Light mode" : "Switch to Dark mode"}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+          <ThemeToggle
+            className="text-slate-500 dark:text-slate-400 hover:text-[#2D9BF0] dark:hover:text-[#2D9BF0] hover:bg-sky-50 dark:hover:bg-slate-800"
+            iconSize={20}
+          />
 
           {/* Notifications Tooltip */}
           <Tooltip>

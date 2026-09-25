@@ -19,22 +19,21 @@ export function PricingSection({ user }: PricingSectionProps) {
   return (
     <section
       id="pricing"
+      data-nav-theme="dark"
       className="py-20 sm:py-28 lg:py-32 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-950/60 backdrop-blur-xs transition-colors"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-10 lg:px-16 space-y-12 sm:space-y-16">
         
         {/* Section Header with Responsive Typography */}
         <div className="text-center max-w-2xl mx-auto space-y-4">
-          <span className="font-mono text-[11px] font-semibold tracking-widest text-[#2D9BF0] uppercase">
+          <span className="text-[11px] font-semibold tracking-widest text-[#2D9BF0] uppercase">
             Transparent Membership
           </span>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.15] break-words [text-wrap:balance]">
             Simple, transparent
-            <span className="block sm:inline sm:ml-2">
-              <span className="font-serif italic font-normal text-zinc-900 dark:text-zinc-100">
-                pricing for every journey.
-              </span>
+            <span className="block font-serif italic font-normal text-zinc-800 dark:text-zinc-200 mt-1 sm:mt-2">
+              pricing for every journey.
             </span>
           </h2>
 
@@ -43,16 +42,16 @@ export function PricingSection({ user }: PricingSectionProps) {
             and deeper AI reasoning for complex itineraries.
           </p>
 
-          {/* Billing Switcher */}
+          {/* Billing Switcher with Full Dark Theme Support */}
           <div className="pt-2 flex items-center justify-center">
             <div className="inline-flex items-center rounded-sm p-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => setBillingCycle("monthly")}
-                className={`px-3 py-1.5 text-xs font-mono rounded-xs transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs rounded-xs transition-all cursor-pointer font-medium ${
                   billingCycle === "monthly"
-                    ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 shadow-xs font-semibold"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 shadow-xs border border-zinc-200/60 dark:border-zinc-700 font-semibold"
+                    : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 }`}
               >
                 Monthly
@@ -60,15 +59,15 @@ export function PricingSection({ user }: PricingSectionProps) {
               <button
                 type="button"
                 onClick={() => setBillingCycle("annual")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-xs transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs rounded-xs transition-all cursor-pointer font-medium ${
                   billingCycle === "annual"
-                    ? "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs font-semibold"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-50 shadow-xs border border-zinc-200/60 dark:border-zinc-700 font-semibold"
+                    : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 }`}
               >
                 <span>Annual</span>
-                <span className="bg-[#2D9BF0] text-white text-[10px] px-1.5 py-0.2 rounded-xs font-medium">
-                  Save 20%
+                <span className="bg-[#2D9BF0] text-white text-[10px] px-1.5 py-0.5 rounded-xs font-semibold">
+                  Save 16.5%
                 </span>
               </button>
             </div>
@@ -90,19 +89,19 @@ export function PricingSection({ user }: PricingSectionProps) {
                     For solo travelers and occasional explorers.
                   </p>
                 </div>
-                <span className="font-mono text-xs uppercase px-2 py-0.5 rounded-xs bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                <span className="text-xs uppercase px-2 py-0.5 rounded-xs bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium">
                   Starter
                 </span>
               </div>
 
               <div className="pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-light font-mono text-zinc-950 dark:text-zinc-50">
+                  <span className="text-4xl font-light text-zinc-950 dark:text-zinc-50 tabular-nums">
                     ₹0
                   </span>
-                  <span className="text-xs text-zinc-500 font-mono">/ forever</span>
+                  <span className="text-xs text-zinc-500">/ forever</span>
                 </div>
-                <p className="text-[11px] font-mono text-zinc-400 mt-1">
+                <p className="text-[11px] text-zinc-500 mt-1">
                   No credit card required. Free tier forever.
                 </p>
               </div>
@@ -118,7 +117,7 @@ export function PricingSection({ user }: PricingSectionProps) {
                 <li className="flex items-start gap-2.5">
                   <Check className="h-4 w-4 text-[#2D9BF0] shrink-0 mt-0.5" />
                   <span>
-                    <strong>30 AI Credits</strong> per month (Gemini Flash)
+                    <strong>30 AI Workspace Credits</strong> per month (Proposal Actions)
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
@@ -139,7 +138,7 @@ export function PricingSection({ user }: PricingSectionProps) {
             <Button
               asChild
               variant="outline"
-              className="w-full text-xs font-mono h-10 rounded-sm border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer shadow-none"
+              className="w-full text-xs h-10 rounded-sm border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer shadow-none font-medium"
             >
               <Link href={user ? "/dashboard" : "/auth?tab=signup"}>
                 <span>{user ? "Open Dashboard" : "Start Planning Free"}</span>
@@ -150,7 +149,7 @@ export function PricingSection({ user }: PricingSectionProps) {
           {/* Plan 2: Pro Wanderer (Featured) */}
           <div className="relative rounded-sm border-2 border-[#2D9BF0] bg-white dark:bg-zinc-900 p-6 sm:p-8 flex flex-col justify-between space-y-8 shadow-xl shadow-[#2D9BF0]/5">
             {/* Popular Badge */}
-            <div className="absolute -top-3 right-6 bg-[#2D9BF0] text-white text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-xs shadow-xs flex items-center gap-1">
+            <div className="absolute -top-3 right-6 bg-[#2D9BF0] text-white text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-xs shadow-xs flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
               <span>Recommended</span>
             </div>
@@ -169,16 +168,16 @@ export function PricingSection({ user }: PricingSectionProps) {
 
               <div className="pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-light font-mono text-zinc-950 dark:text-zinc-50">
-                    {billingCycle === "annual" ? "₹399" : "₹499"}
+                  <span className="text-4xl font-light text-zinc-950 dark:text-zinc-50 tabular-nums">
+                    {billingCycle === "annual" ? "₹167" : "₹200"}
                   </span>
-                  <span className="text-xs text-zinc-500 font-mono">
+                  <span className="text-xs text-zinc-500">
                     / mo {billingCycle === "annual" ? "(billed annually)" : ""}
                   </span>
                 </div>
-                <p className="text-[11px] font-mono text-zinc-400 mt-1">
+                <p className="text-[11px] text-zinc-500 mt-1">
                   {billingCycle === "annual"
-                    ? "₹4,788 billed once per year · Save ₹1,200"
+                    ? "₹2,004 billed once per year · Save ₹396"
                     : "Cancel or pause subscription anytime"}
                 </p>
               </div>
@@ -194,7 +193,7 @@ export function PricingSection({ user }: PricingSectionProps) {
                 <li className="flex items-start gap-2.5">
                   <Check className="h-4 w-4 text-[#2D9BF0] shrink-0 mt-0.5" />
                   <span>
-                    <strong>150 AI Reasoning Credits</strong> per month (5x capacity)
+                    <strong>150 AI Workspace Credits</strong> per month (5x capacity)
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
@@ -218,7 +217,7 @@ export function PricingSection({ user }: PricingSectionProps) {
 
             <Button
               asChild
-              className="w-full text-xs font-mono h-10 rounded-sm bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white cursor-pointer shadow-none transition-all"
+              className="w-full text-xs h-10 rounded-sm bg-zinc-950 hover:bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white cursor-pointer shadow-none transition-all font-medium"
             >
               <Link href={user ? "/subscription" : "/auth?tab=signup"}>
                 <span>{user ? "Manage Subscription" : "Upgrade to Pro"}</span>
@@ -228,16 +227,16 @@ export function PricingSection({ user }: PricingSectionProps) {
         </div>
 
         {/* Guarantee Banner */}
-        <div className="max-w-2xl mx-auto rounded-sm border border-zinc-200/80 dark:border-zinc-800/80 bg-[#FAFAF9]/80 dark:bg-zinc-900/60 p-4 flex flex-wrap items-center justify-around gap-4 text-xs font-mono text-zinc-500">
-          <div className="flex items-center gap-1.5">
+        <div className="max-w-2xl mx-auto rounded-sm border border-zinc-200/80 dark:border-zinc-800/80 bg-[#FAFAF9]/80 dark:bg-zinc-900/60 p-4 flex flex-wrap items-center justify-around gap-4 text-xs text-zinc-500">
+          <div className="flex items-center gap-1.5 font-medium">
             <ShieldCheck className="h-4 w-4 text-[#2D9BF0]" />
             <span>Encrypted Payments</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 font-medium">
             <Zap className="h-4 w-4 text-[#2D9BF0]" />
             <span>Instant Activation</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 font-medium">
             <Check className="h-4 w-4 text-[#2D9BF0]" />
             <span>Cancel Anytime</span>
           </div>

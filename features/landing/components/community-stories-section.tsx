@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { ArrowUpRight, Compass, RefreshCw } from "lucide-react";
+import { ArrowUpRight, Compass } from "lucide-react";
 
 interface Story {
   id: string;
@@ -16,7 +16,7 @@ interface Story {
   href: string;
 }
 
-const ALL_INDIAN_STORIES: Story[] = [
+const ALL_STORIES: Story[] = [
   {
     id: "ladakh",
     category: "himalayas",
@@ -101,34 +101,19 @@ export function CommunityStoriesSection() {
   const [activeCategory, setActiveCategory] = useState<
     "all" | "himalayas" | "heritage" | "south" | "east"
   >("all");
-  const [pageOffset, setPageOffset] = useState<number>(0);
 
   const filteredStories = useMemo(() => {
     if (activeCategory === "all") {
-      return ALL_INDIAN_STORIES;
+      return ALL_STORIES.slice(0, 3);
     }
-    return ALL_INDIAN_STORIES.filter((s) => s.category === activeCategory);
+    return ALL_STORIES.filter((s) => s.category === activeCategory).slice(0, 3);
   }, [activeCategory]);
-
-  // Rotate/paginate display of 3 cards from available set
-  const displayedStories = useMemo(() => {
-    if (filteredStories.length <= 3) return filteredStories;
-    const start = pageOffset % filteredStories.length;
-    const result: Story[] = [];
-    for (let i = 0; i < 3; i++) {
-      result.push(filteredStories[(start + i) % filteredStories.length]);
-    }
-    return result;
-  }, [filteredStories, pageOffset]);
-
-  const handleShuffle = () => {
-    setPageOffset((prev) => prev + 1);
-  };
 
   return (
     <section
       id="community"
-      className="py-16 sm:py-24 lg:py-28 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-950/60 backdrop-blur-xs transition-colors"
+      data-nav-theme="light"
+      className="py-16 sm:py-24 lg:py-28 border-t border-zinc-200/80 bg-white"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-10 lg:px-16 space-y-10 sm:space-y-12">
         {/* Editorial Split Header with Responsive Typography */}
@@ -136,87 +121,69 @@ export function CommunityStoriesSection() {
           <div className="lg:col-span-6 space-y-3">
             <div className="flex items-center gap-2">
               <Compass className="h-3.5 w-3.5 text-[#2D9BF0]" />
-              <span className="font-mono text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">
-                Shared Indian Journeys
+              <span className="text-[11px] font-semibold tracking-widest text-[#2D9BF0] uppercase">
+                Shared Journeys
               </span>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.15] break-words [text-wrap:balance]">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight text-zinc-950 leading-[1.15] break-words [text-wrap:balance]">
               Before you go,
-              <span className="block sm:inline sm:ml-2">
-                <span className="font-serif italic font-normal text-zinc-900 dark:text-zinc-100">
-                  see how others travelled.
-                </span>
+              <span className="block font-serif italic font-normal text-zinc-800 mt-1 sm:mt-2">
+                see how others travelled.
               </span>
             </h2>
           </div>
 
           <div className="lg:col-span-6 space-y-4">
-            <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed break-words [text-wrap:balance]">
-              Authentic travel itineraries across India shared by creators, writers,
+            <p className="text-sm sm:text-base text-zinc-600 font-normal leading-relaxed break-words [text-wrap:balance]">
+              Authentic travel itineraries shared by creators, writers,
               and explorers. Clone verified stops, palace stays, and mountain passes
-              straight into your own Prava workspace.
+              straight into your own Prava workspace with 1 click.
             </p>
 
-            {/* Filter and Shuffle Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                {[
-                  { id: "all", label: "All Journeys" },
-                  { id: "himalayas", label: "Himalayas" },
-                  { id: "heritage", label: "Royal Heritage" },
-                  { id: "south", label: "Coastal & South" },
-                  { id: "east", label: "Ancient & East" },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveCategory(cat.id as any);
-                      setPageOffset(0);
-                    }}
-                    className={`text-xs px-2.5 py-1 rounded-xs font-mono transition-all cursor-pointer ${
-                      activeCategory === cat.id
-                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-medium"
-                        : "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
-              {filteredStories.length > 3 && (
+            {/* Filter Controls with Little Rounded Corners */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {[
+                { id: "all", label: "All Journeys" },
+                { id: "himalayas", label: "Himalayas" },
+                { id: "heritage", label: "Royal Heritage" },
+                { id: "south", label: "Coastal & South" },
+                { id: "east", label: "Ancient & East" },
+              ].map((cat) => (
                 <button
+                  key={cat.id}
                   type="button"
-                  onClick={handleShuffle}
-                  className="flex items-center gap-1.5 text-xs font-mono text-[#2D9BF0] hover:text-[#1E88E5] transition-colors cursor-pointer py-1"
+                  onClick={() => setActiveCategory(cat.id as any)}
+                  className={`text-xs px-3.5 py-1.5 rounded-md transition-all cursor-pointer font-medium ${
+                    activeCategory === cat.id
+                      ? "bg-zinc-950 text-white shadow-xs"
+                      : "bg-zinc-100 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200"
+                  }`}
                 >
-                  <RefreshCw className="h-3 w-3" />
-                  <span>Shuffle Stories</span>
+                  {cat.label}
                 </button>
-              )}
+              ))}
             </div>
           </div>
         </div>
 
-        {/* 3 Dynamic Editorial Story Cards */}
+        {/* 3 Dynamic Editorial Story Cards in Pure Crisp Light Theme */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {displayedStories.map((story) => (
+          {filteredStories.map((story) => (
             <div
               key={story.id}
-              className="group flex flex-col justify-between rounded-sm border border-zinc-200 dark:border-zinc-800/90 bg-[#FAFAF9]/90 dark:bg-zinc-900/80 backdrop-blur-xs overflow-hidden hover:border-zinc-400 dark:hover:border-zinc-600 transition-all cursor-pointer shadow-xs"
+              className="group flex flex-col justify-between rounded-sm border border-zinc-200/90 bg-[#FAFAF9]/90 overflow-hidden hover:border-zinc-300 transition-all cursor-pointer shadow-xs"
             >
               <div>
                 {/* Cover Image with Archival Destination Tag */}
-                <div className="relative h-60 w-full overflow-hidden bg-zinc-200 dark:bg-zinc-800">
+                <div className="relative h-60 w-full overflow-hidden bg-zinc-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={story.imageUrl}
                     alt={story.title}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-103 grayscale-[8%]"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-103"
                   />
-                  <div className="absolute top-3 left-3 bg-black/75 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-white backdrop-blur-xs">
+                  <div className="absolute top-3 left-3 bg-black/75 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-white backdrop-blur-xs font-medium rounded-xs">
                     {story.destination}
                   </div>
                 </div>
@@ -224,21 +191,21 @@ export function CommunityStoriesSection() {
                 {/* Content */}
                 <div className="p-5 space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-base text-zinc-950 dark:text-zinc-50 leading-snug group-hover:text-[#2D9BF0] transition-colors break-words">
+                    <h3 className="font-semibold text-base text-zinc-950 leading-snug group-hover:text-[#2D9BF0] transition-colors break-words">
                       {story.title}
                     </h3>
                     <ArrowUpRight className="h-4 w-4 text-zinc-400 group-hover:text-[#2D9BF0] transition-colors shrink-0 mt-0.5" />
                   </div>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed font-sans line-clamp-3 break-words">
+                  <p className="text-xs text-zinc-600 leading-relaxed font-sans line-clamp-3 break-words">
                     {story.excerpt}
                   </p>
                 </div>
               </div>
 
               {/* Card Footer */}
-              <div className="p-5 pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between text-[11px] font-mono text-zinc-500">
-                <span className="truncate max-w-[60%]">By {story.author}</span>
-                <span className="shrink-0">{story.meta}</span>
+              <div className="p-5 pt-3 border-t border-zinc-200/80 flex items-center justify-between text-[11px] text-zinc-500">
+                <span className="truncate max-w-[60%] font-medium">By {story.author}</span>
+                <span className="shrink-0 tabular-nums">{story.meta}</span>
               </div>
             </div>
           ))}

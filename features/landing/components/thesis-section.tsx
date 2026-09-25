@@ -34,7 +34,7 @@ export function ThesisSection() {
   ];
 
   return (
-    <section className="relative border-y border-zinc-200/80 dark:border-zinc-800/80 bg-[#FAFAF9] dark:bg-[#070B12] text-zinc-950 dark:text-zinc-50 py-16 sm:py-24 lg:py-28 transition-colors">
+    <section data-nav-theme="dark" className="relative border-y border-zinc-200/80 dark:border-zinc-800/80 bg-[#FAFAF9] dark:bg-[#070B12] text-zinc-950 dark:text-zinc-50 py-16 sm:py-24 lg:py-28 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-10 lg:px-16 space-y-12 sm:space-y-16">
         
         {/* Top Editorial Row */}
@@ -53,16 +53,16 @@ export function ThesisSection() {
           </div>
 
           {/* Right Statement Column */}
-          <div className="lg:col-span-9 space-y-4 sm:space-y-5">
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-light tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.15] break-words">
+          <div className="lg:col-span-9 space-y-3 sm:space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.15] break-words [text-wrap:balance]">
               Travel planning gets complicated
               <br />
-              <span className="block font-serif italic font-normal text-zinc-900 dark:text-zinc-100 mt-1.5 sm:mt-2.5">
+              <span className="block font-serif italic font-normal text-zinc-900 dark:text-zinc-100 mt-1 sm:mt-2">
                 when everything lives somewhere else.
               </span>
             </h2>
 
-            <p className="text-base sm:text-lg lg:text-xl text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed max-w-3xl pt-1">
+            <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed max-w-3xl pt-1 [text-wrap:balance]">
               From hotel reservations and train tickets to daily routes, group budgets, and packing lists.
               Prava brings every part of your trip into one clear, reliable workspace built specifically for travel.
             </p>
