@@ -2326,5 +2326,63 @@
     - **Visual Harmony**:
       - Adjusted top margin and line gaps (`space-y-3 sm:space-y-4`) to produce a calm, balanced editorial layout with zero oversized text.
 
+- **Task 170 (Landing Intro Loader Animation with Motion & Full Mobile Responsiveness for AI Assistant)**:
+  - **Context & User Request**:
+    1. Built a dark-themed entrance / intro loader animation using Motion (Framer Motion v13) that triggers on initial landing page load and refreshes.
+    2. Showcases the brand logo and `PRAVA` name, followed by "TRAVEL WORKSPACE" sliding in from center to right with a radiant horizontal accent line, holds briefly, and dissolves smoothly out (`opacity: 0, scale: 1.025, blur: 8px`).
+    3. Un-blurs and reveals the landing page with high-end spring physics.
+    4. The user reported that the Intelligent Accelerant section (`AiAssistanceSection`) was not mobile responsive. Resolve all mobile layout, padding, and flex blowout issues.
+  - **Solutions Implemented**:
+    - **Installed `motion` v13 (`npm i motion`)**:
+      - Integrated modern Motion v13 with native React 19 support (`motion/react`).
+    - **`LandingIntroLoader` (`features/landing/components/landing-intro-loader.tsx`)**:
+      - Full-screen dark `#070B12` cinematic overlay with ambient cerulean radial glow and cartographic background grid lines.
+      - Animates `/logo.png` and brand name `PRAVA` (Cinzel) at the center.
+      - "Travel Workspace" slides horizontally from center to right with a gradient cerulean trail.
+      - Features a minimalist progress timeline bar and smooth dissolve exit.
+    - **`LandingContentWrapper` (`features/landing/components/landing-content-wrapper.tsx`)**:
+      - Coordinates the intro loader exit with a smooth un-blur and scale reveal of the landing page, 100% SEO-friendly with zero hydration layout shift.
+    - **Mobile Responsiveness in `AiAssistanceSection` (`features/landing/components/ai-assistance-section.tsx`)**:
+      - Guarded all flex containers with `min-w-0` to prevent child text truncation from blowing out mobile viewport width.
+      - Adjusted outer padding to `p-4 sm:p-6 lg:p-8`.
+      - Waypoint stop rows now gracefully adapt on small screens with responsive flex layouts (`flex-col sm:flex-row`), line wrapping, and full-width mobile `Include? [Yes / No]` toggles.
+      - Converted the primary `Accept Stops` action button to `w-full sm:w-auto` for high mobile touch affordance.
+      - Changed prompt suggestion buttons to responsive flex with word-wrapping (`break-words`) instead of overflowing horizontal bounds.
+    - **Clean Production Verification**:
+      - Ran `npm run build` with zero TypeScript errors and successful static route generation across all endpoints.- **Task 56 (Subsystem Streamlining: Standardization of `lib/polar`, `lib/storage`, and Bloat Removal in `lib/offline`)**:
+  - **`lib/polar`**:
+    - Shifted the Polar SDK singleton client directly into `lib/polar/index.ts` and deleted redundant `polar-client.ts`.
+    - Updated callers in `features/pricing/actions.ts` to import cleanly from `@/lib/polar`.
+  - **`lib/storage`**:
+    - Consolidated all Supabase storage operations (MIME normalization, bucket verification, upload, and deletion) directly into `lib/storage/index.ts`.
+    - Deleted redundant `supabase-storage.ts`.
+  - **`lib/offline` (Bloat Removal & 8-to-2 File Architecture)**:
+    - Reduced 8 fragmented files (~800 lines of boilerplate) down to 2 lean, cohesive files:
+      - `lib/offline/actions.ts` (`"use server"`): Targeted Server Action fetching only user-owned `PLANNING` and `ACTIVE` trips. Eliminated unneeded server-side joins across 5 unused database tables.
+      - `lib/offline/index.tsx` (`"use client"`): Consolidated IndexedDB persistence engine (`prava-offline-db`), `useOnlineStatus` hook, `OfflineSyncProvider`, `useOfflineSyncContext`, and `OfflineBanner`.
+    - Deleted obsolete files: `offline-banner.tsx`, `offline-db.ts`, `offline-sync-action.ts`, `offline-sync-provider.tsx`, `offline-sync.ts`, `use-offline-sync.ts`, `use-online-status.ts`.
+    - 100% backwards-compatible: preserved all public APIs (`useOfflineSyncContext`, `OfflineSyncProvider`, `getOfflineTrips`, `OfflineBanner`, `clearOfflineDb`).
 
+- **Task 171 (Hero Canvas Projectile Removal & SSR-Safe Full-Screen Landing Intro Loader)**:
+  - **Context & User Request**:
+    1. In the Hero section background canvas (`features/landing/components/hero-background-pattern.tsx`), remove the animated projectile motion/flight arc while preserving all other canvas patterns (coordinate grid, crosshairs, mountain contour waves, waypoints with concentric rings, compass rose).
+    2. Eliminate the Hero section flash on page reload/refresh and prevent scrollbars from appearing during the loading screen. Previously, client-side mounting gates caused the Hero section to render in SSR HTML, scrollbars to show, and users to scroll into lower sections before the loader dismissed.
+    3. Ensure the intro loading screen takes over the entire viewport immediately from byte 0 with a pure dark theme (`#070B12`), zero scrollbars, and strict scroll lock at `(0, 0)`.
+    4. Keep the code minified, clean, properly structured, without dead code or bloat.
+  - **Solutions Implemented**:
+    - **Projectile Motion Removal (`features/landing/components/hero-background-pattern.tsx`)**:
+      - Completely removed the Bezier flight arc curve and animated traveling projectile pulse dot (`pulseProgress`).
+      - Cleanly renumbered sections (Grid, Mountain Contours, Waypoints, Compass Rose) and maintained high performance.
+    - **SSR Critical Lock & Pure React State Coordination (`features/landing/components/landing-content-wrapper.tsx`)**:
+      - Eliminated raw hoisted `<style>` tags and manual `document.getElementById(...).remove()` calls that caused React reconciler collision (`Runtime NotFoundError: Failed to execute 'removeChild' on 'Node'`).
+      - Managed pre-dissolve state purely via React state and CSS classes: `#prava-landing-root` initializes with `max-h-screen overflow-hidden opacity-0 scale-[0.99] filter blur-xs pointer-events-none invisible` in the SSR HTML stream, completely preventing Hero flash and preventing the page height from generating scrollbars.
+      - Removed the artificial `mounted` state barrier so `<LandingIntroLoader>` is rendered in the initial HTML stream from byte 0.
+      - Enforced `history.scrollRestoration = "manual"` and `window.scrollTo(0, 0)` upon mount.
+    - **Cross-Dissolve Coordination (`features/landing/components/landing-intro-loader.tsx`)**:
+      - Integrated `onDissolve` and `onComplete` lifecycle callbacks.
+      - At 1.4s, `onDissolve` triggers `#prava-landing-root` to transition to `min-h-screen opacity-100 scale-100 filter-none pointer-events-auto visible` over 700ms while the intro overlay dissolves out with `blur(6px)` over 500ms.
+      - Upon `onExitComplete` (at ~1.9s), the loader is unmounted from DOM, and scrollbars are safely unlocked for natural user exploration.
+      - Added `touch-none` and full pointer event trapping to block any inadvertent touch swiping during the intro sequence.
+    - **Verification**:
+      - Ran `npm run build` with Turbopack (Next.js 16.3.3) and verified clean build with exit code 0 and zero TypeScript or hydration regressions.
 

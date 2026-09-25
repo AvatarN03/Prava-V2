@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
-import { getPolarClient } from "@/lib/polar/polar-client";
+import { getPolarClient } from "@/lib/polar";
 import {
   getUserTierAndQuotas,
   getUserSubscription,

@@ -50,13 +50,10 @@ export function HeroBackgroundPattern() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Pulse wave progress for traveling flight arcs
-    let pulseProgress = 0;
     let waveTime = 0;
 
     const render = () => {
       waveTime += 0.012;
-      pulseProgress = (pulseProgress + 0.004) % 1;
 
       ctx.clearRect(0, 0, width, height);
 
@@ -200,55 +197,7 @@ export function HeroBackgroundPattern() {
       });
 
       // -----------------------------------------------------------
-      // 3. Sweeping Navigational Flight Arc & Traveling Pulse
-      // -----------------------------------------------------------
-      const p1 = { x: width * 0.12, y: height * 0.62 };
-      const cp1 = { x: width * 0.35, y: height * 0.12 };
-      const cp2 = { x: width * 0.70, y: height * 0.18 };
-      const p2 = { x: width * 0.92, y: height * 0.52 };
-
-      // Great circle flight arc
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p2.x, p2.y);
-      ctx.strokeStyle = "rgba(45, 155, 240, 0.45)";
-      ctx.lineWidth = 2.0;
-      ctx.setLineDash([6, 6]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Calculate traveling pulse head using cubic bezier
-      const t = pulseProgress;
-      const invT = 1 - t;
-      const pulseX =
-        invT * invT * invT * p1.x +
-        3 * invT * invT * t * cp1.x +
-        3 * invT * t * t * cp2.x +
-        t * t * t * p2.x;
-      const pulseY =
-        invT * invT * invT * p1.y +
-        3 * invT * invT * t * cp1.y +
-        3 * invT * t * t * cp2.y +
-        t * t * t * p2.y;
-
-      // Outer ripple
-      ctx.beginPath();
-      ctx.arc(pulseX, pulseY, 14, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(45, 155, 240, 0.40)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Glowing pulse head
-      ctx.beginPath();
-      ctx.arc(pulseX, pulseY, 5, 0, Math.PI * 2);
-      ctx.fillStyle = "#2D9BF0";
-      ctx.shadowColor = "#38BDF8";
-      ctx.shadowBlur = 10;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // -----------------------------------------------------------
-      // 4. Cartographic Waypoints with Concentric Ripple Rings
+      // 3. Cartographic Waypoints with Concentric Ripple Rings
       // -----------------------------------------------------------
       NOTABLE_WAYPOINTS.forEach((wp, wIdx) => {
         const wx = width * wp.xPct;
@@ -277,7 +226,7 @@ export function HeroBackgroundPattern() {
       });
 
       // -----------------------------------------------------------
-      // 5. Prominent Navigational Compass Rose in Top-Right
+      // 4. Prominent Navigational Compass Rose in Top-Right
       // -----------------------------------------------------------
       if (width > 768) {
         const cx = width - 110;

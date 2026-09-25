@@ -8,7 +8,7 @@ import {
   normalizeMimeType,
   ALLOWED_IMAGE_TYPES,
   MAX_FILE_SIZE_BYTES,
-} from "@/lib/storage/supabase-storage";
+} from "@/lib/storage";
 
 /**
  * Server action to upload an image to Supabase Storage.
