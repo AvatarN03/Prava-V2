@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { ArrowRight, Menu, X } from "lucide-react";
 
+import ThemeChanger from "@/components/app-shell/theme-changer";
 import { Button } from "@/components/ui/button";
 
 import type { User } from "@supabase/supabase-js";
@@ -18,22 +19,24 @@ export function LandingHeader({ user }: LandingHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-[#FAFAF9]/90 dark:bg-zinc-950/90 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-50 w-full border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-md backdrop-saturate-150 transition-colors shadow-2xs">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-16">
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 font-bold tracking-tight text-zinc-950 dark:text-zinc-50 cursor-pointer text-lg"
+          className="group flex items-center gap-3 cursor-pointer"
         >
           <Image
             src="/logo.png"
             alt="Prava"
-            width={28}
-            height={28}
-            className="w-7 h-7 object-contain"
+            width={26}
+            height={26}
+            className="w-6.5 h-6.5 object-contain transition-transform duration-300 group-hover:scale-105"
             priority
           />
-          <span>Prava</span>
+          <span className="font-brand font-medium tracking-[0.26em] text-base sm:text-lg uppercase text-zinc-950 dark:text-zinc-50 transition-colors">
+            Prava
+          </span>
         </Link>
 
         {/* Center Editorial Links */}
@@ -45,27 +48,28 @@ export function LandingHeader({ user }: LandingHeaderProps) {
             Workspace
           </a>
           <a
+            href="#travel-tools"
+            className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            Travel Tools
+          </a>
+          <a
             href="#community"
             className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer"
           >
             Community
           </a>
           <a
-            href="#travel-tools"
-            className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer"
-          >
-            Travel Tools
-          </a>
-          <Link
-            href="/pricing"
+            href="#pricing"
             className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer"
           >
             Pricing
-          </Link>
+          </a>
         </nav>
 
         {/* Right CTA */}
         <div className="flex items-center gap-4">
+          <ThemeChanger />
           {user ? (
             <Link href="/dashboard" className="hidden sm:inline-flex">
               <Button
@@ -110,7 +114,7 @@ export function LandingHeader({ user }: LandingHeaderProps) {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-[#FAFAF9] dark:bg-zinc-950 px-6 py-5 space-y-4">
+        <div className="md:hidden border-t border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-lg px-6 py-5 space-y-4">
           <nav className="flex flex-col space-y-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
             <a
               href="#workspace"
@@ -120,6 +124,13 @@ export function LandingHeader({ user }: LandingHeaderProps) {
               Workspace
             </a>
             <a
+              href="#travel-tools"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-1 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
+            >
+              Travel Tools
+            </a>
+            <a
               href="#community"
               onClick={() => setMobileMenuOpen(false)}
               className="py-1 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
@@ -127,19 +138,12 @@ export function LandingHeader({ user }: LandingHeaderProps) {
               Community
             </a>
             <a
-              href="#travel-tools"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
-            >
-              Travel Tools
-            </a>
-            <Link
-              href="/pricing"
+              href="#pricing"
               onClick={() => setMobileMenuOpen(false)}
               className="py-1 hover:text-zinc-950 dark:hover:text-white cursor-pointer"
             >
               Pricing
-            </Link>
+            </a>
           </nav>
           <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2">
             {user ? (

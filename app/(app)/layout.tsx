@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { AppShell } from "@/components/app-shell/app-shell";
 
 import { WorkspaceAiProvider } from "@/features/trip-workspace/context/workspace-ai-context";
@@ -14,9 +16,13 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const res = await getCurrentProfile();
-  const userId = res.success && res.profile ? res.profile.id : "";
-  const offlineMode = res.success && res.profile ? res.profile.offlineMode : false;
-  const userAvatarUrl = res.success && res.profile ? res.profile.avatarUrl : null;
+  if (!res.success || !res.profile) {
+    redirect("/auth");
+  }
+
+  const userId = res.profile.id;
+  const offlineMode = res.profile.offlineMode ?? false;
+  const userAvatarUrl = res.profile.avatarUrl ?? null;
 
   const initialUserInfo: TopBarUserInfo | null = res.success && res.profile ? {
     name: res.profile.fullName || (res.profile.username ? `@${res.profile.username}` : "Traveler"),

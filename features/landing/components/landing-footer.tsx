@@ -10,7 +10,7 @@ export function LandingFooter() {
           
           {/* Brand & Tagline */}
           <div className="space-y-1">
-            <span className="font-bold text-base tracking-tight text-zinc-950 dark:text-zinc-50">
+            <span className="font-brand font-medium text-base tracking-[0.24em] uppercase text-zinc-950 dark:text-zinc-50">
               Prava
             </span>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -23,15 +23,15 @@ export function LandingFooter() {
             <a href="#workspace" className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
               Workspace
             </a>
-            <a href="#community" className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
-              Community
-            </a>
             <a href="#travel-tools" className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
               Travel Tools
             </a>
-            <Link href="/pricing" className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
+            <a href="#community" className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
+              Community
+            </a>
+            <a href="#pricing" className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
               Pricing
-            </Link>
+            </a>
             <Link href="/privacy" className="hover:text-zinc-950 dark:hover:text-white transition-colors cursor-pointer">
               Privacy
             </Link>

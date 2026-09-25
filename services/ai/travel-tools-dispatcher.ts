@@ -88,6 +88,16 @@ export async function executeCurrencyTool(
   }
 }
 
+export interface TravelToolIntent {
+  type: "weather" | "currency" | "guide" | "language" | "maps" | "none";
+  params: Record<string, string | number>;
+  navLink?: {
+    tab: "weather" | "currency" | "guide" | "language" | "maps";
+    label: string;
+    url: string;
+  };
+}
+
 /**
  * Heuristic detector to identify if a user prompt is requesting live travel essential utilities.
  */
@@ -95,10 +105,7 @@ export function detectTravelToolIntent(
   prompt: string,
   defaultDestination?: string | null,
   userCurrency: string = "INR"
-): {
-  type: "weather" | "currency" | "none";
-  params: Record<string, string | number>;
-} {
+): TravelToolIntent {
   const lower = prompt.toLowerCase();
 
   // 1. Weather Intent detection
@@ -127,11 +134,16 @@ export function detectTravelToolIntent(
     return {
       type: "weather",
       params: { city: city.trim() },
+      navLink: {
+        tab: "weather",
+        label: "🌦️ Open Weather in Travel Essentials",
+        url: "/travel-essentials?tab=weather",
+      },
     };
   }
 
   // 2. Currency Intent detection
-  const currencyKeywords = ["convert", "currency", "exchange rate", "how much is", "jpy to inr", "usd to inr", "yen to inr", "dollar to inr", "inr to"];
+  const currencyKeywords = ["convert", "currency", "exchange rate", "how much is", "jpy to inr", "usd to inr", "yen to inr", "dollar to inr", "inr to", "fx rate"];
   const hasCurrencyKeyword = currencyKeywords.some((c) => lower.includes(c));
 
   if (hasCurrencyKeyword) {
@@ -153,6 +165,53 @@ export function detectTravelToolIntent(
         amount,
         from,
         to: userCurrency || "INR",
+      },
+      navLink: {
+        tab: "currency",
+        label: "💱 Open Currency Converter in Travel Essentials",
+        url: "/travel-essentials?tab=currency",
+      },
+    };
+  }
+
+  // 3. Language & Phrasebook Intent detection
+  const languageKeywords = ["how do you say", "how to say", "phrasebook", "translate", "translation", "local language", "say thank you", "hello in", "phrases in"];
+  if (languageKeywords.some((k) => lower.includes(k))) {
+    return {
+      type: "language",
+      params: {},
+      navLink: {
+        tab: "language",
+        label: "🗣️ Open Language Phrasebook in Travel Essentials",
+        url: "/travel-essentials?tab=language",
+      },
+    };
+  }
+
+  // 4. Country Guide & Emergency Contacts Intent detection
+  const guideKeywords = ["emergency", "dialing code", "police number", "ambulance", "plug type", "power outlet", "country guide", "visa requirement", "embassy"];
+  if (guideKeywords.some((k) => lower.includes(k))) {
+    return {
+      type: "guide",
+      params: {},
+      navLink: {
+        tab: "guide",
+        label: "📖 Open Country Guide in Travel Essentials",
+        url: "/travel-essentials?tab=guide",
+      },
+    };
+  }
+
+  // 5. Maps & Navigation Intent detection
+  const mapKeywords = ["show on map", "open map", "interactive map", "where is", "locations on map", "coordinates"];
+  if (mapKeywords.some((k) => lower.includes(k))) {
+    return {
+      type: "maps",
+      params: {},
+      navLink: {
+        tab: "maps",
+        label: "🗺️ Open Interactive Map in Travel Essentials",
+        url: "/travel-essentials?tab=maps",
       },
     };
   }

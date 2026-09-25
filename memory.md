@@ -2074,3 +2074,145 @@
       - Bound value with sentinel fallback `linkedTripId || "none"`, updating state to `""` when `"none"` is selected to adhere to Radix UI constraints against empty string item values.
       - Styled `SelectTrigger` with `h-9 w-full text-xs cursor-pointer` matching the application's clean design system.
       - Rendered formatted `SelectItem` entries with trip title in bold and destination in muted secondary text, plus a default `— No linked trip —` option.
+
+- **Task 156 (Landing Page Revamp: Indian Travel Content, Dynamic Photo Sets, Dark Mode Travel Network, Brand Typography & Mobile Responsive Breaks)**:
+  - **Context & User Request**:
+    1. Reorient all landing page text content from Japan/Tokyo theme to rich, authentic Indian travel content.
+    2. Provide dynamic image and text sets for both the Hero Section and the Discovery/Community Stories Section (not just a static 1 or 2 sets).
+    3. Remove "V2" / "v2" references across the landing page.
+    4. In dark mode, replace flat/simple backgrounds with an animated travel-themed networking background (constellation of connecting dots, airport/city waypoints, and glowing flight transit paths).
+    5. Fix mobile typography layout issues with responsive break statements where typography switches (e.g. from sans to serif italic) and balance line wrapping.
+    6. Change the "Prava" brand font in the header to a spacious, refined, dedicated travel display typography instead of bold, tightly coupled text.
+  - **Solutions Implemented**:
+    - **Dedicated Travel Brand Typography (`Cinzel`)**:
+      - Configured Google font `Cinzel` in `app/layout.tsx` (`--font-brand`), mapped in `app/globals.css` `@theme inline`.
+      - Replaced tight bold header brand text with `font-brand font-medium tracking-[0.26em] text-base sm:text-lg uppercase text-zinc-950 dark:text-zinc-50`.
+      - Updated `landing-footer.tsx` brand similarly with `font-brand tracking-[0.24em]`.
+    - **Animated Dark-Mode Travel Network Background (`travel-network-background.tsx`)**:
+      - Built a high-performance Canvas-based travel network overlay active in dark mode (`hidden dark:block pointer-events-none fixed inset-0 z-0`).
+      - Renders drifting destination waypoint nodes (with airport codes like `DEL`, `BOM`, `IXL`, `JAI`, `COK`, `VNS`, `BLR`, `GOI`), proximity geodesic flight routes, and glowing traveling signal pulses traversing routes.
+      - Backed by deep midnight radial ambient gradients (`rgba(45,155,240,0.14)` and `rgba(14,165,233,0.08)`).
+    - **Dynamic Indian Hero Section (`hero-section.tsx`)**:
+      - Created 4 curated Indian journey sets: **Ladakh** (Trans-Himalayas), **Rajasthan** (Royal Heritage), **Kerala** (Coastal South), and **Varanasi** (Ancient Ghats).
+      - Added interactive destination pill selector, "Cycle Destination" action, and "Change Photo" action with multiple high-res Unsplash photos per destination.
+      - Dynamically updates coordinates, itinerary stops, INR budget meters, and checklist per selected destination.
+      - Removed "Prava Workspace V2" in favor of "Prava Travel Workspace".
+    - **Dynamic Indian Discovery Section (`community-stories-section.tsx`)**:
+      - Replaced static foreign trips with authentic Indian journeys across Ladakh, Rajasthan, Kerala, Varanasi, Hampi, and Meghalaya.
+      - Added category filtering (`All`, `Himalayas`, `Royal Heritage`, `Coastal & South`, `Ancient & East`) and a "Shuffle Stories" rotator.
+    - **Indian Context Across All Landing Sections**:
+      - `itinerary-section.tsx`: Jaipur & Amer Royal Day flow (Hawa Mahal chai, Amer Palace, Anokhi craft museum, Nahargarh sunset).
+      - `expenses-section.tsx`: INR (₹) multi-currency ledger with USD conversions (Samode Haveli, Vande Bharat Express, Amer pass, 1135 AD thali).
+      - `travel-essentials-section.tsx`: Jaipur weather, INR currency converter, and India Country Brief (UPI One World, Vande Bharat rail, 112/1363 emergency numbers).
+      - `ai-assistance-section.tsx`: Contextual itinerary resequencing avoiding Jaipur afternoon desert heat.
+      - `scattered-vs-unified.tsx`: Real Indian travel scenarios (IRCTC PNRs, UPI One World, Lake Pichola stays; removed "v2_final").
+      - `workspace-showcase.tsx`: Royal Rajasthan Circuit (`prava.app/rajasthan-heritage-2026`, removed `v2.4`).
+      - `landscape-banner.tsx`: Scenic Himalayan/Western Ghats pass photography with clean typography.
+      - `cta-banner.tsx`: Removed "Version 2 exploration", cleaned copy.
+    - **Responsive Typography & Mobile Line Breaks**:
+      - Added responsive break statements (`block sm:inline sm:ml-2`) and `[text-wrap:balance]` on all typography transitions from light sans to serif italic.
+      - Ensured fluid heading scales (`text-3xl sm:text-4xl lg:text-5xl` and `text-3xl sm:text-5xl lg:text-6xl`) with no horizontal overflow on mobile screens.
+
+- **Task 157 (Landing Page: MacBook Screen UI, Dedicated Home Pricing Section, Route Protection & Navigation Reordering)**:
+  - **Context & User Request**:
+    1. Upgrade the workspace mockup window in `workspace-showcase.tsx` to look like an authentic MacBook hardware screen with macOS traffic light buttons (Red, Yellow, Green) instead of skeleton grey dots.
+    2. Reorder the navigation bar logically and point the Pricing link directly to a dedicated on-page pricing section (`#pricing`) to avoid unnecessary multi-page navigation.
+    3. Build a dedicated Pricing Section directly on the home page (`app/page.tsx`).
+    4. Protect `/pricing` and `/subscription` routes so non-logged-in visitors are never exposed to the workspace App Shell layout or internal dashboard routes.
+  - **Solutions Implemented**:
+    - **MacBook Hardware Display Enclosure (`workspace-showcase.tsx`)**:
+      - Styled outer laptop aluminum chassis (`rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-zinc-900/95 dark:bg-zinc-950 p-2 sm:p-3 shadow-2xl`) with top centered camera dot.
+      - Implemented macOS traffic lights: Close (`#FF5F56`), Minimize (`#FFBD2E`), and Fullscreen (`#27C93F`) with authentic subtle borders and hover states.
+      - Added centered Safari URL capsule with lock icon and `prava.app / rajasthan-heritage-2026`.
+      - Added subtle bottom laptop hinge/chin detail.
+    - **Dedicated Home Pricing Section (`pricing-section.tsx`)**:
+      - Built a high-conversion, responsive pricing section at `#pricing` in `app/page.tsx`.
+      - Monthly vs Annual (Save 20%) billing frequency toggle.
+      - Free Explorer (₹0 forever, 10 trips, 30 AI credits) and Pro Wanderer (₹399/₹499/mo, 25 trips, 150 AI credits, heat-optimized resequencing, verified creator identity) tier cards.
+      - Trust badges ("Encrypted Payments", "Instant Activation", "Cancel Anytime").
+    - **Navigation Reordering & Anchor Links (`landing-header.tsx` & `landing-footer.tsx`)**:
+      - Organized navigation links in logical order: `Workspace` (#workspace) → `Travel Tools` (#travel-tools) → `Community` (#community) → `Pricing` (#pricing).
+      - Synced both desktop nav and mobile drawer menu to anchor smoothly to `#pricing`.
+    - **Route Protection & Auth Guard (`lib/supabase/middleware.ts` & `app/(app)/layout.tsx`)**:
+      - Added `/pricing` and `/subscription` to `isProtectedPath` in `middleware.ts`.
+      - Added server-side auth redirect in `app/(app)/layout.tsx` so any unauthorized visit to any route under `(app)` is redirected immediately to `/auth`.
+
+- **Task 158 (Landing Page Typography Standardization, Hero Pure Light Theme & Topographic Cartographic Pattern)**:
+  - **Context & User Request**:
+    1. Standardize fonts across the landing page to strictly 2-3 fonts: keep Cinzel (`font-brand`) for the "Prava" brand name, use Sora (`font-sans`) as the primary readable UI and body font, and Newsreader (`font-serif`) for editorial serif emphasis. Completely eradicate Consolas / `font-mono` / monospace fonts as Prava is a travel workspace and users need readable text.
+    2. Completely remove dark theme from the Hero Section (`hero-section.tsx`), styling it in a pure, luminous, high-contrast light theme with `#FAFAF9` baseline, clean borders, crisp zinc text, solid dark CTA, and white interactive journey chips.
+    3. Replace the canvas networking background UI (which was invisible in light theme) with a dedicated travel-themed Topographic & Cartographic Grid Pattern (`hero-background-pattern.tsx`) featuring 80px coordinate crosshair grid, multi-tiered Himalayan elevation contour waves with pass summits, navigational compass dial watermark, and light-theme calibrated ambient radiant light.
+  - **Solutions Implemented**:
+    - **Font System Mapping (`app/globals.css`)**:
+      - Configured `@theme inline` with `--font-sans: var(--font-sora), ...` and `--font-mono: var(--font-sora), ...`, ensuring any stray `font-mono` or `font-sans` maps to Sora and completely eliminates browser Consolas/Courier.
+      - Preserved `--font-brand: var(--font-brand)` (Cinzel) for the Prava brand name and `--font-serif: var(--font-newsreader)` for editorial accents.
+    - **Topographic & Cartographic Background Pattern & High-Contrast Light Mode Canvas (`hero-background-pattern.tsx`)**:
+      - Upgraded the background pattern to an animated, high-DPI HTML5 `<canvas>` calibrated for light theme.
+      - Implemented high-contrast 72px coordinate grid lines (`rgba(148, 163, 184, 0.28)`) with vivid Cerulean crosshairs (`rgba(45, 155, 240, 0.75)`).
+      - Added dynamic undulating mountain contour waves with elevation text callouts (`3,500M`, `2,400M`, `1,800M`, `1,200M`) in high-contrast cerulean and slate.
+      - Integrated sweeping flight route arc with moving particle pulse and concentric waypoint ripples for Indian destinations (Ladakh, Jaipur, Varanasi, Kerala).
+      - Added navigational compass rose and enhanced ambient light radiant glows (`rgba(45, 155, 240, 0.22)`).
+    - **Hero UI Refinements & Glassmorphism (`hero-section.tsx`, `hero-background-pattern.tsx`, `landing-header.tsx`)**:
+      - Softened ambient radial glow opacities (`0.08`, `0.04`, `0.05`) in `hero-background-pattern.tsx` so the background is subtle and not overpowering.
+      - Removed the "Cycle Destination" button from `HeroSection`.
+      - Reconfigured the 4 destination journey buttons into a 2x2 grid (`grid-cols-2 gap-2.5 max-w-md`), presenting 2 buttons per row.
+      - Forced a permanent line break on the headline so the Newsreader italic text ("in one place.") strictly sits on its own line across all desktop and mobile viewports.
+- **Task 159 (Thesis Section: Dual-Theme Support & Grounded Feature Validation)**:
+  - **Context & Solutions**:
+    - Retained the clean, grounded feature text content across the 3 architectural cards and 4 capability counters in `ThesisSection`.
+    - Restored **dual-theme support** (`dark:bg-[#070B12]`, `dark:border-zinc-800/80`, `dark:text-zinc-50`, `dark:bg-zinc-900/60`), dynamically responding to the user's light/dark mode switch.
+    - Preserved the explicit headline line break (`<br />` + `block`) between Sora and Newsreader font.
+
+- **Task 160 (The Architecture of Travel Section: Pure Light Theme & Real Workspace Tabs)**:
+  - **Context & User Request**:
+    - The user clarified that the section titled *"The Architecture of Travel"* (`ScatteredVsUnified`, right below Thesis) is the one that must be **only in light theme**.
+    - Enforce the explicit breaking line between Sora and Newsreader italic font.
+    - Validate what the project actually provides and remove extra coating/unsupported claims.
+  - **Solutions Implemented**:
+    - **Pure Light Theme ONLY (`scattered-vs-unified.tsx`)**:
+      - Stripped all `dark:...` classes so the section renders strictly in crisp light mode (`bg-[#FAFAF9]`, `text-zinc-950`, `border-t border-zinc-200/80`, white cards).
+    - **Explicit Headline Line Break**:
+      - Rendered `"Scattered across apps,"` on line 1 in Sora, followed by an explicit `<br />` and `"or unified in one workspace."` in Newsreader italic font (`block text-zinc-900 mt-1 sm:mt-2`).
+    - **Real Workspace Feature Validation (Zero Extra Coating)**:
+      - Aligned the 8 unified cards directly to the real Prava Workspace: *Itinerary Tab* (day stops), *Accommodations Tab* (stays & passes), *Expenses Tab* (multi-currency ledger), *Notes Tab* (markdown docs), *Checklist Tab* (packing items), *Links & Bookmarks* (saved places), *Travel Essentials* (weather, FX & emergency guide), and *Workspace AI* (contextual route proposals).
+      - Eradicated all `font-mono` / Consolas instances, replacing them with clean `font-sans` (Sora).
+- **Task 161 (Workspace Showcase: Dual Theme & Substantially Increased Window Height)**:
+  - **Context & User Request**:
+    - The user confirmed that the *The Workspace* section (`WorkspaceShowcase`) can support both light and dark themes.
+    - The user requested to significantly increase the vertical height of the simulated "inside window" UI (the MacBook retina screen canvas) so it has more presence, space, and vertical breathing room.
+  - **Solutions Implemented**:
+    - **Substantially Increased Window Height (`workspace-showcase.tsx`)**:
+      - Increased the interior window grid from `min-h-[500px]` to `min-h-[660px] md:min-h-[700px] lg:min-h-[740px]`, elevating the vertical presence of the simulated workspace by ~45-50%.
+      - Updated the right canvas padding to `p-5 sm:p-7 lg:p-8` with `flex flex-col justify-between`.
+    - **Dual Theme Support (Light & Dark Theme)**:
+      - Cleanly styled both the light theme (`bg-[#FAFAF9]`, `bg-white`, `border-zinc-200/90`, `bg-zinc-50/70`, `text-zinc-950`) and dark theme (`dark:bg-zinc-950`, `dark:bg-zinc-900`, `dark:border-zinc-800`, `dark:text-zinc-50`), dynamically adjusting to the theme changer.
+    - **Rich Workspace Density & Content Expansion Across All 7 Tabs**:
+      - *Overview*: Enhanced the 4 cards (Today's Route with timeline stop lines and offline status; Current Stay with suite details, concierge contact, and confirmation pill; Expense Ledger with 4-segment category progress bar and USD conversions; Immediate Tasks with interactive badges and priority status).
+      - *Itinerary, Accommodation, Expenses, Notes, Checklist, Links*: Enriched all 6 additional tabs with detailed realistic travel data, responsive heights, and navigation links.
+    - **Address Bar Shift & Rectangular Input Styling (`workspace-showcase.tsx`)**:
+      - Shifted address bar to the left beside the macOS traffic light buttons.
+      - Removed rounded pill corners (`rounded-none`), implementing a crisp rectangular input box look with `border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950`.
+      - Updated URL format to include protocol and workspace domain: `https://prava-workspace/rajasthan-heritage-2026`.
+      - Switched address bar text from bold to `font-normal` with wider letter spacing (`tracking-wider`).
+      - Neutralized dark backgrounds in light mode: converted outer MacBook chassis to light aluminum (`bg-zinc-100 dark:bg-zinc-950 border-zinc-300 dark:border-zinc-800`), converted active tab from pitch black (`bg-zinc-900 text-white`) to clean elevated white (`bg-white text-zinc-950 shadow-xs border-zinc-200/90 dark:bg-zinc-800 dark:text-zinc-100`), and lightened camera/hinge accents.
+
+- **Task 162 (Temporal Structure Itinerary Section: Pure White Theme ONLY)**:
+  - **Context & User Request**:
+    - The user instructed that the *Temporal Structure* section (`ItinerarySection`), which immediately follows the Workspace Showcase, must have **only white theme**.
+  - **Solutions Implemented**:
+    - Converted `ItinerarySection` (`features/landing/components/itinerary-section.tsx`) to pure white/light theme only by stripping all `dark:` classes.
+    - Set section background to pure white (`bg-white`), borders to light zinc (`border-zinc-200/80` and `border-zinc-200/90`), and timeline card background to `bg-[#FAFAF9]/80` with `hover:bg-white`.
+    - Enforced the explicit headline break between Sora ("Plan the days.") and Newsreader serif italic ("Not the chaos.") on its own line (`block mt-1 sm:mt-2`).
+    - Eradicated all `font-mono` usages, replacing them with `font-sans` and tabular numerals.
+
+- **Task 163 (Financial Clarity Expenses Section: Typography Line Break & Verified Project Scope)**:
+  - **Context & User Request**:
+    - Fix the line break (`<br />` / `block`) between Sora and Newsreader italic text in the headline of the *Financial Clarity* section (`ExpensesSection`).
+    - Verify and align the text copy strictly with the real project scope of Prava's Expense Tracker module.
+  - **Solutions Implemented**:
+    - **Headline Line Break (`expenses-section.tsx`)**:
+      - Structured the headline so `"Know where the"` renders in Sora font, followed by `"budget goes."` in Newsreader serif italics strictly on its own line (`block mt-1 sm:mt-2`).
+    - **Scope-Verified Copy & Real Workspace Entities**:
+      - Verified text against the actual database schema and `ExpenseTracker` features: multi-currency spot conversions (ECB / Frankfurter API), real categories (`Accommodation`, `Transport`, `Activities`, `Food & Dining`), budget allocation & headroom meters, split attribution (`paidBy`), IndexedDB offline logging, and CSV export.
+    - **Typography & Font Cleanliness**:
+      - Eradicated all `font-mono` / Consolas instances, replacing them with `font-sans` (Sora) and `tabular-nums`.

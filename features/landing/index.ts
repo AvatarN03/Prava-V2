@@ -10,5 +10,8 @@ export { AiAssistanceSection } from "./components/ai-assistance-section";
 export { CommunityStoriesSection } from "./components/community-stories-section";
 export { LandscapeBanner } from "./components/landscape-banner";
 export { CorePhilosophySection } from "./components/core-philosophy-section";
+export { PricingSection } from "./components/pricing-section";
 export { CtaBanner } from "./components/cta-banner";
 export { LandingFooter } from "./components/landing-footer";
+export { TravelNetworkBackground } from "./components/travel-network-background";
+export { HeroBackgroundPattern } from "./components/hero-background-pattern";

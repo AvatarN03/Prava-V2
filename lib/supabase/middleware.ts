@@ -83,6 +83,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/templates") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/settings") ||
+    pathname.startsWith("/pricing") ||
+    pathname.startsWith("/subscription") ||
     pathname.startsWith("/stories/new") ||
     pathname.startsWith("/stories/manage") ||
     pathname.includes("/edit");

@@ -1,102 +1,113 @@
 "use client";
 
-import { MapPin, Navigation } from "lucide-react";
+import { Clock, MapPin, Navigation } from "lucide-react";
 
 export function ItinerarySection() {
   const scheduleItems = [
     {
-      time: "09:00",
+      time: "07:15",
       duration: "45m · Morning Ritual",
-      title: "Espresso & Norwegian Waffles",
-      location: "Fuglen Tokyo · Tomigaya",
+      title: "Sunrise Chai at Hawa Mahal",
+      location: "Badi Chaupar · Pink City Old Quarters",
       description:
-        "Quiet morning neighborhood roaster opposite Yoyogi Park. Sit outside along the cedar siding.",
-      transit: "7 min walk through Yoyogi-Koen residential lanes",
+        "Quiet dawn light hitting the 953 honeycomb sandstone windows. Sip spiced cardamom kulhad chai before morning street vendors arrive.",
+      transit: "12 min e-rickshaw through historic Johari Bazaar",
     },
     {
-      time: "10:30",
-      duration: "2h · Urban Walk",
-      title: "Architectural Exploration: Cat Street & Aoyama",
-      location: "Shibuya to Minamiaoyama",
+      time: "09:30",
+      duration: "2h 30m · Heritage Exploration",
+      title: "Amer Fort & Sheesh Mahal (Mirror Palace)",
+      location: "Amber Ridge · Overlooking Maota Lake",
       description:
-        "Observe small independent boutiques, concrete facades by Tadao Ando, and discreet alleys away from main thoroughfares.",
-      transit: "Tokyo Metro Ginza line from Omotesando to Gaienmae (3 min)",
+        "Wander through Rajput courtyards, marble pillar arcades, and concave Belgian glass mosaics illuminated by morning sun rays.",
+      transit: "Private AC transit via scenic Aravalli bypass road (20 min)",
     },
     {
       time: "13:00",
-      duration: "1h 15m · Culinary",
-      title: "Seasonal Handcrafted Lunch",
-      location: "Toriyoshi Roppongi",
+      duration: "1h 30m · Artisan & Culinary",
+      title: "Royal Thali Tasting & Hand-Block Ateliers",
+      location: "1135 AD & Anokhi Museum of Printing",
       description:
-        "Quiet counter seating. Known for hand-pulled soba and seasonal vegetable tempura.",
-      transit: "10 min stroll toward Roppongi Hills terrace",
+        "Traditional hand-ground spices and slow-cooked dal baati churma, followed by demonstrations of heritage indigo block printing.",
+      transit: "15 min gentle drive toward Nahargarh scenic ridge",
+    },
+    {
+      time: "17:15",
+      duration: "1h 15m · Golden Hour",
+      title: "Sunset over Nahargarh Stepwell",
+      location: "Nahargarh Fort · Aravalli Crest",
+      description:
+        "Watch the setting sun cast warm amber hues across the entire Pink City basin from the carved ramparts.",
+      transit: "Evening descent back to Samode Haveli (25 min)",
     },
   ];
 
   return (
-    <section className="py-20 sm:py-28 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 transition-colors">
-      <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 space-y-12">
-        
-        {/* Editorial Split Header */}
+    <section className="py-16 sm:py-24 lg:py-28 border-t border-zinc-200/80 bg-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-10 lg:px-16 space-y-10 sm:space-y-12">
+        {/* Editorial Split Header with Responsive Typography */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-end">
           <div className="lg:col-span-6 space-y-3">
-            <span className="font-mono text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">
+            <span className="text-[11px] font-semibold tracking-widest text-[#2D9BF0] uppercase">
               Temporal Structure
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.15]">
-              Plan the days.{" "}
-              <span className="font-serif italic font-normal text-zinc-900 dark:text-zinc-100">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight text-zinc-950 leading-[1.15] break-words [text-wrap:balance]">
+              Plan the days.
+              <span className="block font-serif italic font-normal text-zinc-800 mt-1 sm:mt-2">
                 Not the chaos.
               </span>
             </h2>
           </div>
 
           <div className="lg:col-span-6">
-            <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 font-normal leading-relaxed">
+            <p className="text-sm sm:text-base text-zinc-600 font-normal leading-relaxed break-words [text-wrap:balance]">
               An itinerary should breathe. Prava organizes your hours with natural transit
-              buffers, contextual addresses, and unhurried pacing so your travel feels like
-              discovery, not a sprint.
+              buffers, contextual coordinates, and unhurried pacing so your travel feels like
+              discovery, not a frantic checklist.
             </p>
           </div>
         </div>
 
-        {/* Timeline Items */}
-        <div className="border border-zinc-200 dark:border-zinc-800 rounded-sm divide-y divide-zinc-200/80 dark:divide-zinc-800/80 bg-[#FAFAF9] dark:bg-zinc-900/60 overflow-hidden">
+        {/* Timeline Items in Pure Crisp Light Theme */}
+        <div className="border border-zinc-200/90 rounded-sm divide-y divide-zinc-200/80 bg-[#FAFAF9]/80 overflow-hidden shadow-xs">
           {scheduleItems.map((item, index) => (
             <div
               key={index}
-              className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-start hover:bg-white dark:hover:bg-zinc-900 transition-colors"
+              className="p-5 sm:p-7 lg:p-8 grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-start hover:bg-white transition-colors"
             >
               {/* Time Column */}
-              <div className="md:col-span-3 space-y-1 font-mono">
-                <span className="text-2xl sm:text-3xl font-light text-zinc-950 dark:text-zinc-50 tracking-tight">
-                  {item.time}
-                </span>
+              <div className="md:col-span-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-[#2D9BF0] md:hidden" />
+                  <span className="text-2xl sm:text-3xl font-light text-zinc-950 tracking-tight tabular-nums">
+                    {item.time}
+                  </span>
+                </div>
                 <p className="text-xs text-zinc-500 tracking-normal">{item.duration}</p>
               </div>
 
               {/* Main Detail Column */}
               <div className="md:col-span-6 space-y-2">
-                <h3 className="text-base sm:text-lg font-semibold text-[#2D9BF0] dark:text-[#3BA8FC] hover:underline cursor-pointer">
+                <h3 className="text-base sm:text-lg font-semibold text-[#2D9BF0] break-words">
                   {item.title}
                 </h3>
                 <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                  <MapPin className="h-3 w-3 text-zinc-400 shrink-0" />
-                  <span>{item.location}</span>
+                  <MapPin className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                  <span className="truncate">{item.location}</span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed pt-1">
+                <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed pt-1 break-words">
                   {item.description}
                 </p>
               </div>
 
               {/* Transit Note Column */}
               <div className="md:col-span-3 md:pl-4">
-                <div className="rounded-xs border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 space-y-1 text-xs">
-                  <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400">
-                    <Navigation className="h-3 w-3 text-zinc-500" />
-                    <span>Transit Note</span>
+                <div className="rounded-xs border border-zinc-200/90 bg-white p-3.5 space-y-1 text-xs shadow-2xs">
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                    <Navigation className="h-3 w-3 text-[#2D9BF0]" />
+                    <span>Transit Buffer</span>
                   </div>
-                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-snug">
+                  <p className="text-[11px] text-zinc-600 leading-snug">
                     {item.transit}
                   </p>
                 </div>
@@ -104,7 +115,6 @@ export function ItinerarySection() {
             </div>
           ))}
         </div>
-
       </div>
     </section>
   );

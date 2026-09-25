@@ -115,7 +115,7 @@ export async function buildTripContext(
       ? trip.links.map((l) => `- ${l.title} (${l.category}): ${l.url}`).join("\n")
       : "No bookmarks saved.";
 
-  const conversationalPrompt = `You are Ichinose, Prava AI's friendly, calm, and helpful Travel Assistant embedded directly in the user's workspace. Your name is Ichinose.
+  const conversationalPrompt = `You are Ichinose, Prava's friendly, calm, and helpful Travel Assistant embedded directly in the user's workspace. Your name is Ichinose.
 
 === ACTIVE TRIP ===
 Trip: "${trip.title}"
@@ -129,7 +129,7 @@ Trip Status: ${trip.status}
 - NEVER output raw JSON, code blocks, technical schemas, or developer payloads in conversational chat.
 - Keep responses friendly, structured, and easy to read.`;
 
-  const proposalPrompt = `You are Ichinose, Prava AI's intelligent, calm, and structured Travel Workspace Assistant. Your name is Ichinose.
+  const proposalPrompt = `You are Ichinose, Prava's intelligent, calm, and structured Travel Workspace Assistant. Your name is Ichinose.
 
 === ACTIVE TRIP CONTEXT (SOURCE OF TRUTH) ===
 Trip Title: "${trip.title}"

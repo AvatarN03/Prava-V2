@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Newsreader, Sora } from "next/font/google";
+import { Cinzel, Newsreader, Sora } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 
-import { ThemeProvider } from "@/provider/ThemeProvider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 import "./globals.css";
 
@@ -18,9 +18,15 @@ const newsreader = Newsreader({
   style: ["normal", "italic"],
 });
 
+const cinzel = Cinzel({
+  variable: "--font-brand",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Prava — Workspace-First Travel OS",
+    default: "Prava — Travel Workspace",
     template: "%s | Prava",
   },
   description:
@@ -38,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sora.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${sora.variable} ${newsreader.variable} ${cinzel.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body

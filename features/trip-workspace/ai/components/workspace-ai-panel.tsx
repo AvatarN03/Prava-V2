@@ -57,9 +57,11 @@ const MAX_MESSAGES_LIMIT = 15;
 
 function formatModelName(model?: string): string | null {
   if (!model) return null;
+  if (model.includes("3.8")) return "Gemini 3.8 Flash";
+  if (model.includes("3.7")) return "Gemini 3.7 Flash";
   if (model.includes("3.6")) return "Gemini 3.6 Flash";
   if (model.includes("3.1-flash-lite") || model.includes("flash-lite")) return "Gemini 3.1 Flash Lite";
-  if (model.includes("2.5-flash")) return "Gemini 2.5 Flash";
+  if (model.includes("nex-n2.5")) return "Nex N2.5 Pro (Free)";
   if (model.includes("nemotron")) return "Nemotron 3.5 (Free)";
   if (model.includes("openrouter/free")) return "OpenRouter Free";
   if (model.includes("gemini")) return "Gemini Flash";
@@ -74,9 +76,10 @@ function renderInlineSpans(text: string): React.ReactNode {
   while (remaining.length > 0) {
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
     const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
+    const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/);
 
     let earliestIdx = Infinity;
-    let type: "bold" | "italic" | null = null;
+    let type: "bold" | "italic" | "link" | null = null;
     let match: RegExpMatchArray | null = null;
 
     if (boldMatch && boldMatch.index !== undefined && boldMatch.index < earliestIdx) {
@@ -88,6 +91,11 @@ function renderInlineSpans(text: string): React.ReactNode {
       earliestIdx = italicMatch.index;
       type = "italic";
       match = italicMatch;
+    }
+    if (linkMatch && linkMatch.index !== undefined && linkMatch.index < earliestIdx) {
+      earliestIdx = linkMatch.index;
+      type = "link";
+      match = linkMatch;
     }
 
     if (!type || !match || earliestIdx === Infinity) {
@@ -111,6 +119,37 @@ function renderInlineSpans(text: string): React.ReactNode {
           {match[1]}
         </em>
       );
+    } else if (type === "link") {
+      const label = match[1];
+      const url = match[2];
+      const isInternalTool = url.startsWith("/travel-essentials");
+
+      if (isInternalTool) {
+        parts.push(
+          <a
+            key={`tool-btn-${key++}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1 my-1.5 text-xs font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer no-underline shadow-xs"
+          >
+            {label}
+            <span aria-hidden="true">&rarr;</span>
+          </a>
+        );
+      } else {
+        parts.push(
+          <a
+            key={`a-${key++}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:text-primary/80 font-medium cursor-pointer"
+          >
+            {label}
+          </a>
+        );
+      }
     }
 
     remaining = remaining.substring(earliestIdx + match[0].length);
@@ -517,10 +556,10 @@ export function WorkspaceAiPanel({
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div
                   className="relative h-8 w-8 shrink-0 rounded-full overflow-hidden ring-1.5 ring-[#2D9BF0]/60 shadow-xs select-none bg-[#0E1729]"
-                  title="Ichinose (Prava AI Assistant)"
+                  title="Ichinose (Prava Travel Assistant)"
                 >
                   <Image
-                    src="/ichinose-avatar.jpg"
+                    src="/avatars/ichinose.png"
                     alt="Ichinose"
                     width={32}
                     height={32}
@@ -928,7 +967,7 @@ export function WorkspaceAiPanel({
                 <div className="space-y-4 py-6 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full overflow-hidden ring-2 ring-[#2D9BF0]/60 shadow-md bg-[#0E1729]">
                     <Image
-                      src="/ichinose-avatar.jpg"
+                      src="/avatars/ichinose.png"
                       alt="Ichinose"
                       width={56}
                       height={56}
@@ -944,7 +983,7 @@ export function WorkspaceAiPanel({
                         variant="outline"
                         className="text-[10px] px-2 py-0.5 font-semibold text-[#2D9BF0] border-[#2D9BF0]/30 bg-[#2D9BF0]/15 rounded-xs"
                       >
-                        Prava AI Assistant
+                        Prava Assistant
                       </Badge>
                     </div>
                     <p className="text-xs text-slate-400 dark:text-slate-600 max-w-xs mx-auto leading-relaxed">
@@ -981,10 +1020,10 @@ export function WorkspaceAiPanel({
                       {msg.role !== "user" && (
                         <div
                           className="flex h-6 w-6 shrink-0 select-none items-center justify-center rounded-full overflow-hidden ring-1 ring-[#2D9BF0]/50 mt-0.5 shadow-xs bg-[#0E1729]"
-                          title="Ichinose (Prava AI Assistant)"
+                          title="Ichinose (Prava Travel Assistant)"
                         >
                           <Image
-                            src="/ichinose-avatar.jpg"
+                            src="/avatars/ichinose.png"
                             alt="Ichinose"
                             width={24}
                             height={24}
@@ -1034,13 +1073,13 @@ export function WorkspaceAiPanel({
                           title="You"
                         >
                           <Image
-                            src={userAvatarUrl || "/default-avatar.jpg"}
+                            src={userAvatarUrl || "/avatars/default-avatar.jpg"}
                             alt="You"
                             width={24}
                             height={24}
                             className="h-full w-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/default-avatar.jpg";
+                              (e.target as HTMLImageElement).src = "/avatars/default-avatar.jpg";
                             }}
                           />
                         </div>
@@ -1065,7 +1104,7 @@ export function WorkspaceAiPanel({
                 <div className="flex gap-2 items-center text-xs text-slate-400 dark:text-slate-600 py-1.5">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full overflow-hidden ring-1 ring-[#2D9BF0]/40">
                     <Image
-                      src="/ichinose-avatar.jpg"
+                      src="/avatars/ichinose.png"
                       alt="Ichinose"
                       width={24}
                       height={24}

@@ -1,4 +1,9 @@
 import { db, getDb } from "@/lib/db";
+import { TIER_CONFIG } from "./constants";
+import type { UserSubscriptionDetails, UserTierAndQuotas } from "./types";
+
+export * from "./constants";
+export * from "./types";
 
 function getClient(): any {
   let client = db as any;
@@ -8,27 +13,17 @@ function getClient(): any {
   return client;
 }
 
-export interface UserSubscriptionDetails {
-  id: string;
-  userId: string;
-  polarSubscriptionId: string;
-  polarCustomerId: string;
-  polarProductId: string;
-  status: string;
-  currentPeriodStart: Date | null;
-  currentPeriodEnd: Date | null;
-  cancelAtPeriodEnd: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface UserTierAndQuotas {
-  isPro: boolean;
-  tier: "free" | "pro";
-  tierName: "Free Explorer" | "Pro Wanderer";
-  tripsQuota: number;
-  aiCreditsQuota: number;
-  subscription: UserSubscriptionDetails | null;
+/**
+ * Checks whether a given subscription record represents an active Pro entitlement.
+ */
+export function isSubscriptionActive(subscription: UserSubscriptionDetails | null): boolean {
+  if (!subscription) return false;
+  const isActive = ["active", "trialing"].includes(subscription.status.toLowerCase());
+  if (!isActive) return false;
+  if (subscription.currentPeriodEnd) {
+    return new Date(subscription.currentPeriodEnd) > new Date();
+  }
+  return true;
 }
 
 /**
@@ -144,16 +139,7 @@ export async function hasActiveProSubscription(userId: string): Promise<boolean>
 
   try {
     const subscription = await getUserSubscription(userId);
-    if (!subscription) return false;
-
-    const isActive = ["active", "trialing"].includes(subscription.status.toLowerCase());
-    if (!isActive) return false;
-
-    if (subscription.currentPeriodEnd) {
-      return new Date(subscription.currentPeriodEnd) > new Date();
-    }
-
-    return true;
+    return isSubscriptionActive(subscription);
   } catch (error) {
     console.error("Error checking active pro subscription:", error);
     return false;
@@ -162,17 +148,16 @@ export async function hasActiveProSubscription(userId: string): Promise<boolean>
 
 /**
  * Returns tier metadata and quota allowances for an authenticated user.
+ * Queries the database exactly once and derives entitlement in-memory.
  */
 export async function getUserTierAndQuotas(userId: string): Promise<UserTierAndQuotas> {
-  const isPro = await hasActiveProSubscription(userId);
   const subscription = await getUserSubscription(userId);
+  const isPro = isSubscriptionActive(subscription);
+  const config = isPro ? TIER_CONFIG.pro : TIER_CONFIG.free;
 
   return {
     isPro,
-    tier: isPro ? "pro" : "free",
-    tierName: isPro ? "Pro Wanderer" : "Free Explorer",
-    tripsQuota: isPro ? 25 : 10,
-    aiCreditsQuota: isPro ? 150 : 30,
+    ...config,
     subscription,
   };
 }

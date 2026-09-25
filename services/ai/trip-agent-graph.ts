@@ -225,8 +225,8 @@ export async function runTripAgentGraph(
           contents: geminiContents,
           config: {
             systemInstruction: aiAutoPropose
-              ? (context?.proposalPrompt || "You are Prava AI travel assistant.")
-              : (context?.conversationalPrompt || "You are Prava AI travel assistant."),
+              ? (context?.proposalPrompt || "You are Prava travel assistant.")
+              : (context?.conversationalPrompt || "You are Prava travel assistant."),
             temperature: 0.5,
             maxOutputTokens: 8192,
             thinkingConfig: {
@@ -280,11 +280,18 @@ export async function runTripAgentGraph(
   // Build lightweight conversational instruction
   let conversationalInstruction =
     context?.conversationalPrompt ||
-    "You are Prava AI, a friendly travel assistant. Speak in warm, conversational markdown. Never output raw JSON.";
+    "You are Prava, a friendly travel assistant. Speak in warm, conversational markdown. Never output raw JSON.";
 
   if (toolResult) {
     conversationalInstruction += `\n\n[CURRENT LIVE DATA]:\n${toolResult.summary}\n\nINSTRUCTIONS: Answer the traveler's question directly using this live information in friendly, warm markdown prose. State the numbers and conditions naturally. Do NOT output internal reasoning, chain-of-thought steps, or raw JSON.`;
   }
+
+  const appendNavLink = (text: string): string => {
+    if (toolIntent.navLink && !text.includes(toolIntent.navLink.url)) {
+      return `${text}\n\n[${toolIntent.navLink.label}](${toolIntent.navLink.url})`;
+    }
+    return text;
+  };
 
   // 1. Primary: Gemini 3.1 Flash Lite (High quota, 500–1,500 RPD) - Skipped if credits depleted
   const gemini = getGeminiClient();
@@ -316,7 +323,7 @@ export async function runTripAgentGraph(
         const { cleanedText } = extractProposalBlock(rawText);
 
         return {
-          responseText: cleanedText,
+          responseText: appendNavLink(cleanedText),
           modelUsed: model,
           toolBadge: toolResult ? toolResult.summary : null,
           proposalPayload: null,
@@ -356,7 +363,7 @@ export async function runTripAgentGraph(
         : freeBadge;
 
       return {
-        responseText: cleanedText,
+        responseText: appendNavLink(cleanedText),
         modelUsed: openRouterRes.modelUsed,
         toolBadge: combinedBadge,
         proposalPayload: null,
@@ -366,8 +373,9 @@ export async function runTripAgentGraph(
 
   // 3. Fallback if no models responded
   return {
-    responseText:
-      "⚠️ **AI Service Unavailable**\nPlease configure a valid `GEMINI_API_KEY` or `OPENROUTER_API_KEY` in your `.env`, or try again shortly.",
+    responseText: appendNavLink(
+      "⚠️ **AI Service Unavailable**\nPlease configure a valid `GEMINI_API_KEY` or `OPENROUTER_API_KEY` in your `.env`, or try again shortly."
+    ),
     modelUsed: "none",
     toolBadge: toolResult ? toolResult.summary : null,
     proposalPayload: null,

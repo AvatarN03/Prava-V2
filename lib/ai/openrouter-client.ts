@@ -7,6 +7,7 @@
 
 export const OPENROUTER_FREE_MODELS = [
   "nvidia/nemotron-3.5-lightning:free",
+  "nex-agi/nex-n2.5-pro:free",
   "openrouter/free",
 ] as const;
 

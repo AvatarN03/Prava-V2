@@ -67,17 +67,17 @@ export function InteractiveMockup() {
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Kyoto & Tokyo Cultural Expedition
+                  Royal Rajasthan Cultural Expedition
                 </h3>
                 <Badge
                   variant="secondary"
                   className="text-xs bg-sky-50 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800"
                 >
-                  7 Days
+                  8 Days
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 text-[#2D9BF0]" /> Japan • Oct 14 – Oct 21, 2026
+                <MapPin className="h-3.5 w-3.5 text-[#2D9BF0]" /> India • Nov 14 – Nov 22, 2026
               </p>
             </div>
 
@@ -326,7 +326,7 @@ export function InteractiveMockup() {
                 <div className="text-base font-bold text-slate-900 dark:text-white mt-1">
                   2 Bookings
                 </div>
-                <div className="text-[10px] text-slate-400 mt-0.5">Kyoto & Tokyo</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Jaipur & Udaipur</div>
               </div>
             </div>
           )}
@@ -337,34 +337,34 @@ export function InteractiveMockup() {
               <div className="p-3.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-bold text-slate-900 dark:text-white">
-                    Sora Ryokan Arashiyama
+                    Samode Haveli
                   </div>
                   <span className="text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded">
                     Confirmed
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Check-in: Oct 14, 2026 • 3 Nights • Traditional Tatami Suite
+                  Check-in: Nov 14, 2026 • 4 Nights • Heritage Deluxe Haveli Suite
                 </div>
                 <div className="text-[10px] font-mono text-muted-foreground">
-                  Conf: #SR-9418 • +81 75-861-1234
+                  Conf: #SMD-88102 • +91 141-263-2407
                 </div>
               </div>
 
               <div className="p-3.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-bold text-slate-900 dark:text-white">
-                    Hoshinoya Tokyo
+                    The Oberoi Udaivilas
                   </div>
                   <span className="text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded">
                     Confirmed
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Check-in: Oct 17, 2026 • 4 Nights • Deluxe King Tower View
+                  Check-in: Nov 18, 2026 • 4 Nights • Lake View Luxury Pavilion
                 </div>
                 <div className="text-[10px] font-mono text-muted-foreground">
-                  Conf: #HT-8820 • +81 50-3786-1144
+                  Conf: #OBR-4901 • +91 294-243-3300
                 </div>
               </div>
             </div>
@@ -414,10 +414,10 @@ export function InteractiveMockup() {
                   <RefreshCw className="h-3.5 w-3.5 text-[#2D9BF0]" /> Live FX Rate
                 </div>
                 <div className="text-lg font-bold text-slate-900 dark:text-white">
-                  1 USD = 154.20 JPY
+                  1 USD = 83.20 INR
                 </div>
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  +0.4% (ECB Frankfurter Rate)
+                  Interbank Spot Rate
                 </div>
               </div>
 
@@ -426,9 +426,9 @@ export function InteractiveMockup() {
                   <MapPin className="h-3.5 w-3.5 text-red-500" /> Emergency
                 </div>
                 <div className="text-xs text-slate-800 dark:text-slate-200 font-mono">
-                  Police: 110 • Medical: 119
+                  Emergency: 112 • Helpline: 1363
                 </div>
-                <div className="text-[11px] text-slate-500">Japan Tourist Hotline 24/7</div>
+                <div className="text-[11px] text-slate-500">Tourist Support 24/7</div>
               </div>
             </div>
           )}

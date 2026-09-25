@@ -242,12 +242,12 @@ export function WorkspaceHeader({ trip }: WorkspaceHeaderProps) {
                   : "border-primary/30 hover:border-primary hover:bg-primary/5 text-primary"
               }`}
               onClick={toggleAi}
-              title="Ichinose — Prava AI Assistant"
-              aria-label="Ichinose — Prava AI Assistant"
+              title="Ichinose — Prava Travel Assistant"
+              aria-label="Ichinose — Prava Travel Assistant"
             >
               <div className="relative h-4 w-4 shrink-0 rounded-full overflow-hidden ring-1 ring-primary/40 shadow-2xs">
                 <Image
-                  src="/ichinose-avatar.jpg"
+                  src="/avatars/ichinose.png"
                   alt="Ichinose"
                   width={16}
                   height={16}
