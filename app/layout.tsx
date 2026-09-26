@@ -25,6 +25,9 @@ const cinzel = Cinzel({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://prava.app"
+  ),
   title: {
     default: "Prava — Travel Workspace",
     template: "%s | Prava",

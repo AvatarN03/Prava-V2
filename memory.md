@@ -22,9 +22,10 @@
 - **Phase 18: Richer Trip & Community Imagery (Roadmap 2)** (Complete)
 - **Phase 19: Security, Integration & Production Verification (Roadmap 2)** (Complete)
 - **Phase 20: Polar Sandbox Subscription Billing** (Complete)
+- **Phase 21: Authentication Page Minimalist Redesign** (Complete)
 
 ## Current Task
-- **Phase 20 Complete**: Polar Sandbox subscription billing is fully implemented. Database `Subscription` and idempotent `WebhookEvent` models are configured. `@polar-sh/sdk` handles server-side checkout creation and customer billing portal sessions. Cryptographically verified webhook endpoint (`/api/webhooks/polar`) processes all subscription lifecycle events with deduplication. Single server entitlement service (`hasActiveProSubscription`) replaces client metadata checks across all modules. Bulletproof Prisma 7 initialization and build scripts (`postinstall: prisma generate`, `build: prisma generate && next build`) resolve Vercel deployment crashes.
+- **Phase 21 Complete**: Authentication page (`/auth`) redesigned to match the minimalist, editorial aesthetic of the landing page. Added `AuthBackgroundPattern` (`app/auth/auth-background-pattern.tsx`) rendering fluent harmonic sine waves, radiant cerulean & sky ambient radial glow, cartographic coordinate crosshairs, and floating waypoint particles matching the Hero and CTA sections. Created `app/auth/layout.tsx` providing comprehensive SEO, OpenGraph, Twitter, and canonical metadata tags. Configured `metadataBase` in root layout (`app/layout.tsx`). Verified with clean `npm run build` (Next.js 16 + Turbopack).
 
 ## Completed Work
 - Inspected repository state and validated Next.js 16.3.0, React 19.2.8, Tailwind CSS v4, and ESLint 9 configuration.
