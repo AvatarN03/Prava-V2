@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
-import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { syncUserProfile } from "@/lib/auth";
 
 export async function verifyTripOwnership(tripId: string) {
   if (!tripId || typeof tripId !== "string") {

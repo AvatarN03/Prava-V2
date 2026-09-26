@@ -1,40 +1,22 @@
-/**
- * OpenRouter client with automated 3-tier cascade across active free models:
- * 1. google/gemma-4-31b-it:free (Google's latest reasoning model, 262k context)
- * 2. nvidia/nemotron-3.5-lightning:free (NVIDIA reasoning model, 1,000,000 context)
- * 3. openrouter/free (OpenRouter dynamic auto-router across all available free models)
- */
+import {
+  callOpenAiCompatible,
+  stripReasoning,
+  type GatewayMessage,
+  type GatewayOptions,
+  type GatewayResult,
+} from "./gateway";
 
-export const OPENROUTER_FREE_MODELS = [
-  "nvidia/nemotron-3.5-lightning:free",
-  "nex-agi/nex-n2.5-pro:free",
-  "openrouter/free",
-] as const;
+import { OPENROUTER_FREE_MODELS } from "./models";
+export { OPENROUTER_FREE_MODELS };
 
-export interface OpenRouterMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
+export type OpenRouterMessage = GatewayMessage;
+export type OpenRouterOptions = GatewayOptions;
+export type OpenRouterResult = GatewayResult;
 
-export interface OpenRouterOptions {
-  messages: OpenRouterMessage[];
-  systemInstruction?: string;
-  temperature?: number;
-  maxTokens?: number;
-  responseFormat?: { type: "json_object" };
-  models?: readonly string[] | string[];
-}
-
-export interface OpenRouterResult {
-  success: boolean;
-  text: string;
-  modelUsed: string;
-  error?: string;
-}
+export { stripReasoning };
 
 export function hasOpenRouterKey(): boolean {
-  const key = process.env.OPENROUTER_API_KEY;
-  return Boolean(key && key.trim().length > 0);
+  return Boolean(process.env.OPENROUTER_API_KEY?.trim());
 }
 
 /**
@@ -43,92 +25,19 @@ export function hasOpenRouterKey(): boolean {
 export async function callOpenRouterFree(
   options: OpenRouterOptions
 ): Promise<OpenRouterResult | null> {
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!apiKey) {
-    return null;
-  }
-
-  const payloadMessages: OpenRouterMessage[] = [];
-
-  if (options.systemInstruction) {
-    payloadMessages.push({
-      role: "system",
-      content: options.systemInstruction,
-    });
-  }
-
-  payloadMessages.push(...options.messages);
-
-  let lastError = "";
-  const modelsToTry = options.models && options.models.length > 0 ? options.models : OPENROUTER_FREE_MODELS;
-
-  // Iterate sequentially through the free models cascade
-  for (const model of modelsToTry) {
-    try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://prava.app",
-          "X-Title": "Prava AI Travel Workspace",
-        },
-        body: JSON.stringify({
-          model,
-          messages: payloadMessages,
-          temperature: options.temperature ?? 0.6,
-          max_tokens: options.maxTokens ?? 1500,
-          response_format: options.responseFormat,
-          include_reasoning: false,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.warn(`OpenRouter free model [${model}] returned status ${response.status}:`, errorText);
-        lastError = `Model ${model} error (${response.status})`;
-        // If rate-limited (429) or overloaded (503/504), cascade to next free model
-        continue;
-      }
-
-      const json = await response.json();
-      const content = json.choices?.[0]?.message?.content;
-
-      if (content && typeof content === "string" && content.trim().length > 0) {
-        return {
-          success: true,
-          text: stripReasoning(content.trim()),
-          modelUsed: model,
-        };
-      }
-    } catch (err) {
-      console.warn(`OpenRouter request failed for model [${model}]:`, err);
-      lastError = err instanceof Error ? err.message : "Network error";
-    }
-  }
-
-  return {
-    success: false,
-    text: "",
-    modelUsed: "none",
-    error: lastError || "All free models in cascade were busy or unavailable.",
-  };
-}
-
-/**
- * Strips reasoning tokens, <think> blocks, or "Here's a thinking process:" dumps
- * that reasoning models (like Nemotron, DeepSeek, Gemma) might emit in content.
- */
-export function stripReasoning(text: string): string {
-  if (!text) return "";
-  let cleaned = text
-    .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .replace(/<thought>[\s\S]*?<\/thought>/gi, "")
-    // Remove "Here's a thinking process:" or "Thinking Process:" blocks
-    .replace(/(?:^|\n)(?:Here's a thinking process:?|Thinking Process:?|Thinking:?)\s*[\s\S]*?(?=(?:\n\s*\n(?:[A-Z#*]|Hey|Hello|Hi|Current|The))|$)/gi, "")
-    // Remove lines like "1. Analyze User Input: ... 2. Check Available Data: ... "
-    .replace(/(?:^|\n)\d+\.\s+(?:Analyze User Input|Check Available Data|Identify Constraints|Gap Identification):[\s\S]*?(?=(?:\n\s*\n(?:[A-Z#*]|Hey|Hello|Hi|Current|The))|$)/gi, "")
-    .trim();
-
-  return cleaned || text.trim();
+  return callOpenAiCompatible(
+    {
+      name: "OpenRouter",
+      endpoint: "https://openrouter.ai/api/v1/chat/completions",
+      apiKey: process.env.OPENROUTER_API_KEY,
+      defaultModels: OPENROUTER_FREE_MODELS,
+      defaultTemperature: 0.6,
+      extraHeaders: {
+        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://prava.app",
+        "X-Title": "Prava AI Travel Workspace",
+      },
+      extraBody: { include_reasoning: false },
+    },
+    options
+  );
 }

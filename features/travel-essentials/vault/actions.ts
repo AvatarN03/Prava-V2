@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { syncUserProfile } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 

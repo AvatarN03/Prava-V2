@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-
 import {
   ArrowRight,
   BedDouble,
@@ -18,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+
 import { formatDateRange } from "@/lib/utils";
 
 import type { UpcomingTripDetails } from "../queries";
@@ -27,7 +27,6 @@ interface UpcomingTripCardProps {
 }
 
 export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "ACTIVE":
@@ -56,14 +55,16 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
   return (
     <div className="space-y-2">
       {/* Tracker label & Trip Code */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
-        <span className="font-semibold tracking-wider uppercase text-[11px] text-muted-foreground/90">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="font-sans font-semibold tracking-[0.16em] uppercase text-[10px] text-slate-400 dark:text-slate-500 select-none">
           Upcoming Trip
         </span>
-        <span className="tracking-wide font-medium">{tripCode}</span>
+        <span className="font-sans text-xs font-semibold tabular-nums tracking-wider text-muted-foreground">
+          {tripCode}
+        </span>
       </div>
 
-      <Card className="border-border bg-card overflow-hidden shadow-xs">
+      <Card className="border-border bg-card overflow-hidden shadow-xs rounded-md">
         <CardContent className="p-0">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
             {/* Left Column: Details & Logistics (7 cols on desktop) */}
@@ -73,7 +74,7 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge
                     variant={statusConfig.variant}
-                    className="text-xs font-semibold px-2.5 py-0.5"
+                    className="font-sans text-[10px] font-semibold tracking-wide uppercase px-2.5 py-0.5"
                   >
                     {statusConfig.label}
                   </Badge>
@@ -81,7 +82,7 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
                   {trip.countdownDays !== null && (
                     <Badge
                       variant="outline"
-                      className="text-xs font-medium gap-1.5 px-2.5 py-0.5 border-sky-200/90 bg-sky-50/90 text-sky-700 dark:border-sky-800/80 dark:bg-sky-950/70 dark:text-sky-300 shadow-2xs"
+                      className="font-sans text-[10px] font-semibold tabular-nums gap-1.5 px-2.5 py-0.5 border-sky-200/90 bg-sky-50/90 text-sky-700 dark:border-sky-800/80 dark:bg-sky-950/70 dark:text-sky-300 shadow-2xs"
                     >
                       <Clock className="w-3 h-3 text-primary shrink-0" />
                       {trip.countdownDays > 0
@@ -95,7 +96,7 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
 
                 {/* Main Destination Title & Route */}
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                  <h2 className="font-sans text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
                     <Link
                       href={`/trips/${trip.id}`}
                       className="hover:text-primary transition-colors inline-flex items-center gap-2"
@@ -105,17 +106,19 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
                   </h2>
 
                   {trip.destination && (
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground mt-1">
-                      <MapPin className="w-4 h-4 text-primary shrink-0" />
-                      <span>{trip.destination}</span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="font-serif italic text-sm text-foreground/80">
+                        {trip.destination}
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {/* Dates & duration metadata */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-sans text-xs text-muted-foreground tabular-nums">
                   <span className="inline-flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-muted-foreground/80" />
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0" />
                     {formatDateRange(trip.startDate, trip.endDate)}
                   </span>
                   {trip.durationDays && (
@@ -125,16 +128,18 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
                     </>
                   )}
                   <span>·</span>
-                  <span>Active Workspace</span>
+                  <span className="font-sans font-medium text-foreground/70">
+                    Active Workspace
+                  </span>
                 </div>
 
                 {/* Progress / Logistics readiness gauge */}
                 <div className="pt-2 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between font-sans text-xs">
                     <span className="font-medium text-foreground">
                       Itinerary &amp; logistics {trip.readiness.percentage}% planned
                     </span>
-                    <span className="text-muted-foreground font-mono">
+                    <span className="text-muted-foreground tabular-nums">
                       {trip.readiness.completedItems} / {trip.readiness.totalItems} items ready
                     </span>
                   </div>
@@ -145,22 +150,22 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
                   />
 
                   {/* Readiness indicators */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-sm bg-muted/60 text-foreground/90 font-medium">
+                  <div className="flex flex-wrap items-center gap-2 pt-1 font-sans text-[11px]">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xs bg-muted/60 text-foreground/90 font-medium border border-border/40">
                       <Plane className="w-3 h-3 text-primary" />
                       {trip.readiness.transitCount > 0
                         ? `${trip.readiness.transitCount} Transit items`
                         : "Transit ready"}
                     </span>
 
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-sm bg-muted/60 text-foreground/90 font-medium">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xs bg-muted/60 text-foreground/90 font-medium border border-border/40">
                       <BedDouble className="w-3 h-3 text-primary" />
                       {trip.readiness.staysCount > 0
                         ? `${trip.readiness.staysCount} Stays booked`
                         : "Stays flexible"}
                     </span>
 
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-sm bg-muted/60 text-foreground/90 font-medium">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xs bg-muted/60 text-foreground/90 font-medium border border-border/40">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       {trip.readiness.tasksRemaining === 0
                         ? "Checklist complete"
@@ -172,14 +177,14 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
 
               {/* Bottom Actions Bar */}
               <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <Button asChild className="gap-2 cursor-pointer w-full sm:w-auto">
+                <Button asChild className="gap-2 cursor-pointer w-full sm:w-auto font-sans text-xs font-semibold rounded-xs shadow-xs bg-[#2D9BF0] hover:bg-[#2587D3] text-white">
                   <Link href={`/trips/${trip.id}`}>
                     Open trip workspace
                     <ArrowRight className="w-4 h-4 ml-0.5" />
                   </Link>
                 </Button>
 
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 font-sans text-xs text-muted-foreground">
                   <Database className="w-3.5 h-3.5 text-primary/80" />
                   <span>Synced with PostgreSQL</span>
                 </div>
@@ -202,13 +207,13 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
 
                 {trip.featuredStop && (
                   <div className="absolute bottom-3 left-3 right-3 text-white space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-blue-300">
+                    <span className="font-sans text-[10px] uppercase font-bold tracking-wider text-sky-300">
                       Featured Stop
                     </span>
-                    <div className="text-sm font-semibold truncate">
+                    <div className="font-sans text-sm font-semibold truncate">
                       {trip.featuredStop.title}
                     </div>
-                    <div className="text-xs text-white/80 truncate">
+                    <div className="font-serif italic text-xs text-white/80 truncate">
                       {trip.featuredStop.subtitle}
                     </div>
                   </div>
@@ -223,17 +228,17 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
                       <Flag className="w-3.5 h-3.5" />
                     </div>
                     <div className="space-y-0.5 min-w-0">
-                      <span className="text-[11px] font-semibold text-foreground">
+                      <span className="font-sans text-[11px] font-semibold text-foreground">
                         Next checkpoint
                       </span>
-                      <p className="text-muted-foreground truncate font-medium">
+                      <p className="font-sans text-muted-foreground truncate font-medium">
                         {trip.nextCheckpoint.title}
                       </p>
                     </div>
                   </div>
 
                   {trip.nextCheckpoint.daysRemaining !== null && (
-                    <Badge variant="outline" className="text-[11px] shrink-0 font-mono">
+                    <Badge variant="outline" className="font-sans text-[11px] shrink-0 tabular-nums">
                       {trip.nextCheckpoint.daysRemaining > 0
                         ? `In ${trip.nextCheckpoint.daysRemaining}d`
                         : trip.nextCheckpoint.daysRemaining === 0
@@ -243,7 +248,7 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
                   )}
                 </div>
               ) : (
-                <div className="p-3.5 rounded-md border border-border bg-card flex items-center justify-between text-xs text-muted-foreground">
+                <div className="p-3.5 rounded-md border border-border bg-card flex items-center justify-between font-sans text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <Compass className="w-3.5 h-3.5 text-primary" />
                     All trip checkpoints in order
@@ -263,3 +268,5 @@ export function UpcomingTripCard({ trip }: UpcomingTripCardProps) {
     </div>
   );
 }
+
+export default UpcomingTripCard;

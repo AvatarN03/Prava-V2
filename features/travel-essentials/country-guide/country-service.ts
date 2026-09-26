@@ -1,8 +1,12 @@
 "use server";
 
-import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
-import { callOpenCodeZenFree, hasOpenCodeKey } from "@/lib/ai/opencode-client";
-import { callGroqChat, hasGroqKey } from "@/lib/ai/groq-client";
+import {
+  callOpenRouterFree,
+  callOpenCodeZenFree,
+  hasOpenCodeKey,
+  callGroqChat,
+  hasGroqKey,
+} from "@/lib/ai";
 
 import { EMERGENCY_DIRECTORY } from "../emergency/emergency-data";
 import type { CountryInfo, EmergencyContacts } from "../types";

@@ -1,32 +1,47 @@
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function AiAssistantCard() {
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-card to-background shadow-xs">
+    <Card className="border-border/90 bg-card shadow-xs rounded-md">
       <CardContent className="p-4 space-y-3">
-        <div className="flex items-center gap-2 text-foreground font-semibold text-xs">
-          <div className="p-1 rounded-sm bg-primary/10 text-primary">
-            <Sparkles className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2">
+          <div className="relative h-5 w-5 shrink-0 rounded-full overflow-hidden ring-1 ring-primary/40 shadow-2xs">
+            <Image
+              src="/avatars/ichinose.png"
+              alt="Ichinose"
+              width={20}
+              height={20}
+              className="h-full w-full object-cover"
+            />
           </div>
-          <span>Need help planning?</span>
+          <span className="font-sans text-xs font-semibold text-foreground">
+            Ichinose — Prava Travel Assistant
+          </span>
         </div>
 
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Ask Prava AI to suggest efficient transit routes, audit your daily itinerary pacing, or balance your category budget.
+        <p className="font-sans text-xs text-muted-foreground leading-relaxed">
+          Ask Ichinose to organize efficient transit, balance multi-currency expenses, or audit pacing for your upcoming stops.
         </p>
 
         <Button
           size="sm"
           variant="outline"
-          className="w-full gap-1.5 border-primary/30 hover:border-primary/60 text-xs font-medium cursor-pointer"
+          asChild
+          className="w-full gap-1.5 border-primary/30 hover:border-primary/60 font-sans text-xs font-medium cursor-pointer rounded-xs text-primary hover:bg-primary/5"
         >
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span>Open AI Assistant</span>
+          <Link href="/trips">
+            <span>Open in Trip Workspace</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
         </Button>
       </CardContent>
     </Card>
   );
 }
+
+export default AiAssistantCard;

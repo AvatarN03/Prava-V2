@@ -129,7 +129,7 @@ All database operations run through **Prisma 7** against Supabase PostgreSQL:
 - **Relational Integrity**: Use `onDelete: Cascade` where child records (itinerary, expenses, checklist, notes) belong to a `Trip` or `Profile`.
 - **Safe Profile Sync (`syncUserProfile`)**:
   When authenticating users, **NEVER** perform a raw `db.profile.upsert({ where: { id: user.id } })`. If a user switches auth providers or re-registers, Supabase changes the UUID while the email remains the same, throwing a `profiles_email_key` unique constraint violation.
-  **Always use `syncUserProfile(user)`** from `@/lib/auth/sync-profile.ts`, which safely checks by ID, resolves stale email collisions, relinks foreign keys, and generates an immutable `@username`.
+  **Always use `syncUserProfile(user)`** from `@/lib/auth`, which safely checks by ID, resolves stale email collisions, relinks foreign keys, and generates an immutable `@username`.
 
 ### Running Prisma Commands
 - Schema pushes: `npx prisma db push`

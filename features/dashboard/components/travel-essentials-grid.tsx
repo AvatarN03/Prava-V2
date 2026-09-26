@@ -1,5 +1,4 @@
 import Link from "next/link";
-
 import {
   ArrowUpRight,
   BookOpen,
@@ -46,20 +45,20 @@ export function TravelEssentialsGrid() {
   ];
 
   return (
-    <Card className="border-border bg-card shadow-xs">
+    <Card className="border-border bg-card shadow-xs rounded-md">
       <CardHeader className="p-4 pb-3 border-b border-border/60 flex flex-row items-center justify-between">
         <div className="space-y-0.5">
-          <CardTitle className="text-sm font-semibold tracking-tight text-foreground">
+          <CardTitle className="font-sans text-sm font-semibold tracking-tight text-foreground">
             Travel Essentials
           </CardTitle>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="font-sans text-[11px] text-muted-foreground">
             Contextual live utilities for active &amp; foreign travel
           </p>
         </div>
 
         <Link
           href="/travel-essentials"
-          className="text-xs text-primary font-medium hover:underline inline-flex items-center"
+          className="font-sans text-xs text-primary font-medium hover:underline inline-flex items-center"
         >
           Open all <ArrowUpRight className="w-3 h-3 ml-0.5" />
         </Link>
@@ -69,29 +68,28 @@ export function TravelEssentialsGrid() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           {essentialsTools.map((tool, index) => {
             const Icon = tool.icon;
-            // Span last item across full row if odd number on 2-col or just natural layout
             const isLastOnTwoCol = index === 4;
 
             return (
               <Link
                 key={tool.title}
                 href={tool.href}
-                className={`p-3 rounded-md border border-border/80 bg-background hover:border-primary/50 hover:bg-accent/40 transition-colors text-left group flex flex-col justify-between space-y-2.5 cursor-pointer shadow-2xs ${
+                className={`p-3 rounded-xs border border-border/80 bg-background hover:border-primary/50 hover:bg-accent/40 transition-colors text-left group flex flex-col justify-between space-y-2.5 cursor-pointer shadow-2xs ${
                   isLastOnTwoCol ? "col-span-2 sm:col-span-1" : ""
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-1.5 rounded-sm bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                  <div className="p-1.5 rounded-xs bg-primary/10 text-primary group-hover:scale-110 transition-transform">
                     <Icon className="w-4 h-4" />
                   </div>
                   <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                  <div className="font-sans text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                     {tool.title}
                   </div>
-                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                  <div className="font-sans text-[10px] text-muted-foreground truncate mt-0.5">
                     {tool.subtitle}
                   </div>
                 </div>
@@ -103,3 +101,5 @@ export function TravelEssentialsGrid() {
     </Card>
   );
 }
+
+export default TravelEssentialsGrid;

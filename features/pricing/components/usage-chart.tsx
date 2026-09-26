@@ -6,7 +6,7 @@ import { BarChart3, Info } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 
-import { MonthlyHistoryItem } from "../actions";
+import type { MonthlyHistoryItem } from "../actions";
 
 interface UsageChartProps {
   history: MonthlyHistoryItem[];
@@ -33,7 +33,7 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
   }, [chronologicalData]);
 
   return (
-    <div className="rounded-sm border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
+    <div className="rounded-md border border-border/80 bg-card p-4 sm:p-5 shadow-xs space-y-4 font-sans">
       {/* ── Header & KPI Summaries ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div>
@@ -41,26 +41,26 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
             <span className="flex h-6 w-6 items-center justify-center rounded-xs bg-primary/10 text-primary">
               <BarChart3 className="h-3.5 w-3.5" />
             </span>
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="font-sans text-sm sm:text-base font-semibold tracking-tight text-foreground">
               AI Credit Expense (6 Months)
             </h3>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="font-sans text-[11px] text-muted-foreground mt-0.5">
             Credit consumption and quota utilization across your recent 6 billing cycles
           </p>
         </div>
 
         {/* Aggregate KPI Badges */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xs bg-muted/60 border border-border text-muted-foreground">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground">6-Mo Total:</span>
-            <span className="font-mono font-bold text-foreground">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xs bg-muted/60 border border-border/80 text-muted-foreground">
+            <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">6-Mo Total:</span>
+            <span className="font-sans font-semibold tabular-nums text-foreground">
               {stats.totalCredits} Credits
             </span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xs bg-muted/60 border border-border text-muted-foreground">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground">Monthly Avg:</span>
-            <span className="font-mono font-bold text-foreground">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xs bg-muted/60 border border-border/80 text-muted-foreground">
+            <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Monthly Avg:</span>
+            <span className="font-sans font-semibold tabular-nums text-foreground">
               {stats.avgCredits} / mo
             </span>
           </div>
@@ -94,17 +94,17 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
                 {/* Value Label above Bar */}
                 <div className="mb-1.5 text-center">
                   <span
-                    className={`font-mono text-xs transition-colors ${
+                    className={`font-sans text-xs tabular-nums transition-colors ${
                       isHovered
                         ? "font-bold text-primary"
                         : isCurrentCycle
-                          ? "font-bold text-foreground"
+                          ? "font-semibold text-foreground"
                           : "font-medium text-muted-foreground"
                     }`}
                   >
                     {used}
                   </span>
-                  <span className="hidden sm:inline text-[10px] text-muted-foreground/60 block -mt-0.5">
+                  <span className="hidden sm:inline text-[10px] text-muted-foreground/60 block -mt-0.5 tabular-nums">
                     / {cycleQuota}
                   </span>
                 </div>
@@ -120,7 +120,7 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
                   }`}
                 >
                   {/* Quota Reference Line (at 100% capacity) */}
-                  <div className="absolute top-0 inset-x-0 h-px bg-border/80 border-t border-dashed border-border" />
+                  <div className="absolute top-0 inset-x-0 h-px bg-border/80 border-t border-dashed border-border/80" />
 
                   {/* Dynamic Progress Bar Fill */}
                   <div
@@ -132,8 +132,8 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
                           : pct > 75
                             ? "bg-amber-500"
                             : isCurrentCycle
-                              ? "bg-primary"
-                              : "bg-primary/80 dark:bg-primary/70"
+                              ? "bg-[#2D9BF0]"
+                              : "bg-[#2D9BF0]/80 dark:bg-[#2D9BF0]/70"
                     } ${isHovered ? "brightness-110" : ""}`}
                     style={{ height: used === 0 ? "3px" : `${fillHeightPct}%` }}
                   />
@@ -144,7 +144,7 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
                   <span
                     className={`text-[11px] transition-colors ${
                       isCurrentCycle
-                        ? "font-bold text-foreground"
+                        ? "font-semibold text-foreground"
                         : isHovered
                           ? "font-semibold text-foreground"
                           : "text-muted-foreground"
@@ -153,7 +153,7 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
                     {shortMonth}
                   </span>
                   {isCurrentCycle ? (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-primary uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary uppercase tracking-wider">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                       Active
                     </span>
@@ -166,17 +166,17 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
 
                 {/* Floating Tooltip on Hover */}
                 {isHovered && (
-                  <div className="absolute -top-16 z-30 pointer-events-none rounded-xs border border-border bg-popover/98 p-2 text-xs text-popover-foreground shadow-lg backdrop-blur-xs whitespace-nowrap min-w-[140px] text-left animate-in fade-in-50 zoom-in-95">
+                  <div className="absolute -top-16 z-30 pointer-events-none rounded-sm border border-border/80 bg-popover/98 p-2.5 text-xs text-popover-foreground shadow-lg backdrop-blur-xs whitespace-nowrap min-w-[140px] text-left animate-in fade-in-50 zoom-in-95 font-sans">
                     <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-1 mb-1">
-                      <span className="font-bold text-[11px] text-foreground">
+                      <span className="font-semibold text-[11px] text-foreground">
                         {item.month}
                       </span>
                       <Badge
                         variant="outline"
-                        className={`text-[9px] px-1 py-0 h-4 ${
+                        className={`text-[9px] px-1 py-0 h-4 rounded-xs ${
                           isProCycle
                             ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 font-semibold"
-                            : "border-border text-muted-foreground"
+                            : "border-border/80 text-muted-foreground font-normal"
                         }`}
                       >
                         {isProCycle ? "Pro" : "Free"}
@@ -185,17 +185,17 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
                     <div className="space-y-0.5 text-[10px]">
                       <div className="flex justify-between text-muted-foreground">
                         <span>Period:</span>
-                        <span className="font-medium text-foreground">{item.period}</span>
+                        <span className="font-medium text-foreground tabular-nums">{item.period}</span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
                         <span>Credits Used:</span>
-                        <span className="font-mono font-bold text-foreground">
+                        <span className="font-semibold tabular-nums text-foreground">
                           {used} / {cycleQuota} ({pct}%)
                         </span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
                         <span>Remaining:</span>
-                        <span className="font-mono font-medium text-foreground">
+                        <span className="font-medium tabular-nums text-foreground">
                           {item.aiCreditsRemaining}
                         </span>
                       </div>
@@ -209,23 +209,23 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
       </div>
 
       {/* ── Footer Insight & Legend ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xs bg-muted/40 p-2.5 text-[11px] text-muted-foreground border border-border/50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-sm bg-muted/40 p-2.5 text-[11px] text-muted-foreground border border-border/60">
         <div className="flex items-center gap-1.5">
           <Info className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>
             Discrete AI credit expenses across recent 6 monthly cycles. Current tier:{" "}
-            <strong className="text-foreground">{tierName}</strong> ({quota} credits/mo).
+            <strong className="text-foreground font-semibold">{tierName}</strong> ({quota} credits/mo).
           </span>
         </div>
 
         {/* Legend */}
         <div className="flex items-center gap-3 self-end sm:self-auto shrink-0 select-none text-[10px]">
           <div className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-2xs bg-primary" />
+            <span className="h-2 w-2 rounded-2xs bg-[#2D9BF0]" />
             <span>Used</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-2xs bg-muted-foreground/30 border border-border" />
+            <span className="h-2 w-2 rounded-2xs bg-muted-foreground/30 border border-border/80" />
             <span>Capacity</span>
           </div>
         </div>
@@ -233,3 +233,4 @@ export function UsageChart({ history, quota, tierName }: UsageChartProps) {
     </div>
   );
 }
+

@@ -1,8 +1,8 @@
-import { CommunityForumView } from "@/features/community/components/community-forum-view";
 import {
+  CommunityForumView,
   getForumDiscussions,
   getUserTripsForDiscussion,
-} from "@/features/community/forum-actions";
+} from "@/features/community";
 
 export const metadata = {
   title: "Traveler Forum",

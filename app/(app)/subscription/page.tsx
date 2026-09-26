@@ -1,6 +1,8 @@
 import { Suspense } from "react";
-import { getAccountUsage, getUserPricingCurrency } from "@/features/pricing/actions";
+
 import { AccountUsageView } from "@/features/pricing/components/account-usage-view";
+
+import { getAccountUsage, getUserPricingCurrency } from "@/features/pricing/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,8 +40,9 @@ export default async function SubscriptionPage() {
   const usageData = usageRes.success && usageRes.data ? usageRes.data : fallbackUsage;
 
   return (
-    <Suspense fallback={<div className="p-8 text-xs text-muted-foreground">Loading workspace subscriptions...</div>}>
+    <Suspense fallback={<div className="p-8 font-sans text-xs text-muted-foreground">Loading workspace subscriptions...</div>}>
       <AccountUsageView initialUsage={usageData} initialPricing={pricingRes} />
     </Suspense>
   );
 }
+

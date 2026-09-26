@@ -13,7 +13,7 @@ import {
 } from "./schema";
 import { ActionResult, Trip } from "./types";
 
-import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { syncUserProfile } from "@/lib/auth";
 import { hasActiveProSubscription } from "@/services/subscription/subscription-service";
 
 /**

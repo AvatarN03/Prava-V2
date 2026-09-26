@@ -29,25 +29,12 @@ import {
 } from "@/components/ui/card";
 
 import { deleteBlogPost, toggleStoryPublishStatus } from "../actions";
+import { DEFAULT_STORY_COVER } from "../constants";
+import type { StoryItem } from "../types";
 
 interface MyStoriesListProps {
-  posts: Array<{
-    id: string;
-    slug: string;
-    title: string;
-    excerpt: string | null;
-    content?: string;
-    coverImageUrl?: string | null;
-    status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
-    publishedAt: Date | string | null;
-    updatedAt: Date | string;
-    tags: string[];
-    linkedTrip?: { id: string; title: string; destination: string | null } | null;
-  }>;
+  posts: Array<StoryItem & { status: "DRAFT" | "PUBLISHED" | "ARCHIVED"; updatedAt: Date | string }>;
 }
-
-const DEFAULT_STORY_COVER =
-  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80";
 
 export function MyStoriesList({ posts: initialPosts }: MyStoriesListProps) {
   const [posts, setPosts] = useState(initialPosts);

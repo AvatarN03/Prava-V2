@@ -179,7 +179,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
 
   return (
     <TooltipProvider>
-      <header className="sticky top-0 z-30 shrink-0 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-md px-2 sm:px-4 md:px-6 rounded-none md:rounded-tl-[24px] transition-colors">
+      <header className="sticky top-0 z-30 shrink-0 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-transparent backdrop-blur-[2px] dark:bg-[#0A0F1D]/95 backdrop-blur-md px-2 sm:px-4 md:px-6 rounded-none md:rounded-tl-[24px] transition-colors">
         {/* Left: Mobile Trigger & Page Title */}
         <div className="flex items-center gap-1.5 sm:gap-4 min-w-0">
           <Button
@@ -196,7 +196,7 @@ export function TopBar({ onMobileMenuOpen, initialUserInfo }: TopBarProps) {
             <div className="hidden sm:flex h-7 w-7 items-center justify-center rounded-xs bg-sky-50 dark:bg-sky-950/40 text-[#2D9BF0] border border-sky-200/60 dark:border-sky-800/40 shadow-2xs shrink-0">
               <PageIcon className="h-4 w-4" />
             </div>
-            <h1 className="text-sm sm:text-base font-light sm:font-bold text-slate-900 dark:text-white tracking-tight truncate">
+            <h1 className="text-sm sm:text-base font-light sm:font-normal tracking-wider text-slate-900 dark:text-white tracking-tight truncate">
               {pageInfo.title}
             </h1>
           </div>

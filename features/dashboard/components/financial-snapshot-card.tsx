@@ -1,10 +1,11 @@
 import Link from "next/link";
-
-import { ArrowUpRight, DollarSign, PieChart, TrendingUp } from "lucide-react";
+import { ArrowUpRight, TrendingUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+
+import { getCurrencyConfig } from "@/lib/utils/currency";
 
 import type { UpcomingTripDetails } from "../queries";
 
@@ -22,31 +23,6 @@ const CATEGORY_COLORS: Record<string, { bg: string; dot: string; label: string }
   OTHER: { bg: "bg-slate-400", dot: "text-slate-400", label: "Other" },
 };
 
-const getCurrencyConfig = (currency: string = "INR") => {
-  const code = currency.toUpperCase();
-  switch (code) {
-    case "INR":
-      return { symbol: "₹", locale: "en-IN" };
-    case "EUR":
-      return { symbol: "€", locale: "de-DE" };
-    case "GBP":
-      return { symbol: "£", locale: "en-GB" };
-    case "JPY":
-      return { symbol: "¥", locale: "ja-JP" };
-    case "AED":
-      return { symbol: "AED ", locale: "en-AE" };
-    case "SGD":
-      return { symbol: "S$", locale: "en-SG" };
-    case "CAD":
-      return { symbol: "C$", locale: "en-CA" };
-    case "AUD":
-      return { symbol: "A$", locale: "en-AU" };
-    case "USD":
-    default:
-      return { symbol: "$", locale: "en-US" };
-  }
-};
-
 export function FinancialSnapshotCard({ trip }: FinancialSnapshotCardProps) {
   const { financials } = trip;
   const { symbol: currencySymbol, locale } = getCurrencyConfig(financials.currency);
@@ -59,25 +35,25 @@ export function FinancialSnapshotCard({ trip }: FinancialSnapshotCardProps) {
   };
 
   return (
-    <Card className="border-border bg-card shadow-xs">
+    <Card className="border-border bg-card shadow-xs rounded-md">
       <CardHeader className="p-5 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500 block select-none">
               Financial Snapshot
             </span>
-            <h3 className="text-base font-semibold tracking-tight text-foreground flex items-center gap-1.5">
+            <h3 className="font-sans text-sm sm:text-base font-semibold tracking-tight text-foreground flex items-center gap-1.5">
               Trip expenses — {trip.title}
             </h3>
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs font-mono">
+            <Badge variant="outline" className="font-sans text-xs font-semibold tabular-nums rounded-xs">
               {financials.currency} ({currencySymbol})
             </Badge>
             <Link
               href={`/trips/${trip.id}/expenses`}
-              className="text-xs text-primary font-medium hover:underline inline-flex items-center"
+              className="font-sans text-xs text-primary font-medium hover:underline inline-flex items-center"
             >
               View ledger <ArrowUpRight className="w-3 h-3 ml-0.5" />
             </Link>
@@ -87,25 +63,25 @@ export function FinancialSnapshotCard({ trip }: FinancialSnapshotCardProps) {
 
       <CardContent className="p-5 pt-1 space-y-5">
         {/* 3-Column Metrics: Total Spent | Allocated Budget | Remaining */}
-        <div className="grid grid-cols-3 gap-3 p-3.5 rounded-md border border-border/70 bg-muted/20">
+        <div className="grid grid-cols-3 gap-3 p-3.5 rounded-sm border border-border/70 bg-muted/20">
           <div>
-            <div className="text-[11px] font-medium text-muted-foreground">Total Spent</div>
-            <div className="text-lg sm:text-xl font-bold font-mono text-foreground mt-0.5">
+            <div className="font-sans text-[11px] font-medium text-muted-foreground">Total Spent</div>
+            <div className="font-sans text-lg sm:text-xl font-semibold tabular-nums text-foreground mt-0.5">
               {formatAmount(financials.totalSpent)}
             </div>
           </div>
 
           <div>
-            <div className="text-[11px] font-medium text-muted-foreground">Allocated Budget</div>
-            <div className="text-lg sm:text-xl font-bold font-mono text-muted-foreground mt-0.5">
+            <div className="font-sans text-[11px] font-medium text-muted-foreground">Allocated Budget</div>
+            <div className="font-sans text-lg sm:text-xl font-semibold tabular-nums text-muted-foreground mt-0.5">
               {formatAmount(financials.allocatedBudget)}
             </div>
           </div>
 
           <div>
-            <div className="text-[11px] font-medium text-muted-foreground">Remaining</div>
+            <div className="font-sans text-[11px] font-medium text-muted-foreground">Remaining</div>
             <div
-              className={`text-lg sm:text-xl font-bold font-mono mt-0.5 ${
+              className={`font-sans text-lg sm:text-xl font-semibold tabular-nums mt-0.5 ${
                 financials.remainingBudget > 0
                   ? "text-primary"
                   : "text-amber-600 dark:text-amber-400"
@@ -118,9 +94,9 @@ export function FinancialSnapshotCard({ trip }: FinancialSnapshotCardProps) {
 
         {/* Budget Usage Bar */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between font-sans text-xs">
             <span className="font-medium text-foreground">Budget usage</span>
-            <span className="text-muted-foreground font-mono">
+            <span className="text-muted-foreground tabular-nums">
               {financials.percentUtilized}% utilized
             </span>
           </div>
@@ -147,17 +123,17 @@ export function FinancialSnapshotCard({ trip }: FinancialSnapshotCardProps) {
 
           {/* Category Legend Pills */}
           {financials.categoryBreakdown.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-xs">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 font-sans text-xs">
               {financials.categoryBreakdown.slice(0, 4).map((cat) => {
                 const config =
                   CATEGORY_COLORS[cat.category.toUpperCase()] || CATEGORY_COLORS.OTHER;
                 return (
                   <div key={cat.category} className="flex items-center gap-1.5 text-muted-foreground">
                     <span className={`w-2 h-2 rounded-full ${config.bg}`} />
-                    <span className="font-medium text-foreground">
+                    <span className="font-medium text-foreground tabular-nums">
                       {formatAmount(cat.amount)}
                     </span>
-                    <span>
+                    <span className="tabular-nums">
                       {config.label} ({cat.percentage}%)
                     </span>
                   </div>
@@ -165,7 +141,7 @@ export function FinancialSnapshotCard({ trip }: FinancialSnapshotCardProps) {
               })}
             </div>
           ) : (
-            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-0.5">
+            <div className="font-sans text-[11px] text-muted-foreground flex items-center gap-1.5 pt-0.5">
               <TrendingUp className="w-3 h-3 text-primary" />
               <span>No logged expenses yet. Add expenses in the trip workspace.</span>
             </div>
@@ -175,3 +151,5 @@ export function FinancialSnapshotCard({ trip }: FinancialSnapshotCardProps) {
     </Card>
   );
 }
+
+export default FinancialSnapshotCard;

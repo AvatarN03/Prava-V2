@@ -66,10 +66,10 @@ export function DashboardQuickActions() {
     <div className="space-y-3 pt-2">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h3 className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 select-none">
             Quick Actions &amp; Travel Utilities
           </h3>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="font-sans text-[11px] text-muted-foreground mt-0.5">
             Combined travel essentials, destination intelligence, and curated community shortcuts
           </p>
         </div>
@@ -81,7 +81,7 @@ export function DashboardQuickActions() {
           return (
             <Card
               key={group.id}
-              className="border-border bg-card shadow-xs rounded-sm hover:border-[#2D9BF0]/40 transition-colors flex flex-col justify-between p-4 space-y-3.5"
+              className="border-border bg-card shadow-xs rounded-md hover:border-[#2D9BF0]/40 transition-colors flex flex-col justify-between p-4 space-y-3.5"
             >
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
@@ -89,7 +89,7 @@ export function DashboardQuickActions() {
                     <span className={`p-1.5 rounded-xs ${group.iconColor}`}>
                       <GroupIcon className="w-4 h-4" />
                     </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="font-sans text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {group.category}
                     </span>
                   </div>
@@ -106,11 +106,11 @@ export function DashboardQuickActions() {
                 <div>
                   <Link
                     href={group.mainHref}
-                    className="text-sm font-bold text-foreground hover:text-primary transition-colors block"
+                    className="font-sans text-sm font-semibold text-foreground hover:text-primary transition-colors block"
                   >
                     {group.title}
                   </Link>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+                  <p className="font-sans text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">
                     {group.description}
                   </p>
                 </div>
@@ -125,7 +125,7 @@ export function DashboardQuickActions() {
                       <Link
                         key={tool.label}
                         href={tool.href}
-                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xs text-[11px] font-medium bg-muted/60 hover:bg-muted text-slate-700 dark:text-slate-300 hover:text-foreground transition-colors cursor-pointer border border-border/50"
+                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xs font-sans text-[11px] font-medium bg-muted/60 hover:bg-muted text-slate-700 dark:text-slate-300 hover:text-foreground transition-colors cursor-pointer border border-border/50"
                       >
                         <ToolIcon className="w-3 h-3 text-primary shrink-0" />
                         <span>{tool.label}</span>
@@ -141,3 +141,5 @@ export function DashboardQuickActions() {
     </div>
   );
 }
+
+export default DashboardQuickActions;

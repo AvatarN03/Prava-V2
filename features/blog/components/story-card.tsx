@@ -12,30 +12,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export interface StoryCardItem {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string | null;
-  content?: string;
-  coverImageUrl: string | null;
-  tags: string[];
-  publishedAt: Date | string | null;
-  profile?: {
-    fullName: string | null;
-    username: string | null;
-    avatarUrl: string | null;
-    isPublic: boolean;
-  } | null;
-  linkedTrip?: {
-    id: string;
-    title: string;
-    destination: string | null;
-  } | null;
-}
+import { DEFAULT_STORY_COVER } from "../constants";
+import type { StoryCardItem } from "../types";
 
-const DEFAULT_STORY_COVER =
-  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80";
+export type { StoryCardItem };
 
 export function StoryCard({ story }: { story: StoryCardItem }) {
   const publishedDate = story.publishedAt

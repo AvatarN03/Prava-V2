@@ -2350,20 +2350,36 @@
       - Converted the primary `Accept Stops` action button to `w-full sm:w-auto` for high mobile touch affordance.
       - Changed prompt suggestion buttons to responsive flex with word-wrapping (`break-words`) instead of overflowing horizontal bounds.
     - **Clean Production Verification**:
-      - Ran `npm run build` with zero TypeScript errors and successful static route generation across all endpoints.- **Task 56 (Subsystem Streamlining: Standardization of `lib/polar`, `lib/storage`, and Bloat Removal in `lib/offline`)**:
+      - Ran `npm run build` with zero TypeScript errors and successful static route generation across all endpoints.- **Task 56 (Subsystem Streamlining: Standardization of `lib/polar`, `lib/storage`, `lib/auth`, and Bloat Removal in `lib/offline`)**:
   - **`lib/polar`**:
     - Shifted the Polar SDK singleton client directly into `lib/polar/index.ts` and deleted redundant `polar-client.ts`.
     - Updated callers in `features/pricing/actions.ts` to import cleanly from `@/lib/polar`.
   - **`lib/storage`**:
     - Consolidated all Supabase storage operations (MIME normalization, bucket verification, upload, and deletion) directly into `lib/storage/index.ts`.
     - Deleted redundant `supabase-storage.ts`.
+  - **`lib/auth`**:
+    - Consolidated `syncUserProfile` directly into `lib/auth/index.ts` and deleted `sync-profile.ts`.
+    - Standardized callers across all features (`trips/actions`, `expenses/actions`, `vault/actions`, `templates/actions`, `dashboard/queries`, `auth/callback`, `trip-workspace/common/auth-check`) to import from `@/lib/auth`.
   - **`lib/offline` (Bloat Removal & 8-to-2 File Architecture)**:
     - Reduced 8 fragmented files (~800 lines of boilerplate) down to 2 lean, cohesive files:
       - `lib/offline/actions.ts` (`"use server"`): Targeted Server Action fetching only user-owned `PLANNING` and `ACTIVE` trips. Eliminated unneeded server-side joins across 5 unused database tables.
       - `lib/offline/index.tsx` (`"use client"`): Consolidated IndexedDB persistence engine (`prava-offline-db`), `useOnlineStatus` hook, `OfflineSyncProvider`, `useOfflineSyncContext`, and `OfflineBanner`.
     - Deleted obsolete files: `offline-banner.tsx`, `offline-db.ts`, `offline-sync-action.ts`, `offline-sync-provider.tsx`, `offline-sync.ts`, `use-offline-sync.ts`, `use-online-status.ts`.
     - 100% backwards-compatible: preserved all public APIs (`useOfflineSyncContext`, `OfflineSyncProvider`, `getOfflineTrips`, `OfflineBanner`, `clearOfflineDb`).
-
+  - **`lib/ai` (Bloat Removal, Minification & OpenCode Zen Model Upgrade)**:
+    - Extracted a single shared, high-performance OpenAI-compatible dispatcher (`lib/ai/gateway.ts`) handling headers, payload serialization, model iteration, error classification, and `<think>` reasoning-block stripping (`stripReasoning`).
+    - Minified `openrouter-client.ts`, `groq-client.ts`, and `opencode-client.ts` from ~380 lines of duplicate fetch and parse logic down to concise, declarative configs, removing 250+ lines of duplicate boilerplate.
+    - Upgraded OpenCode Zen free models (`OPENCODE_ZEN_FREE_MODELS`) to the latest rotating catalog: `minimax-m2.5-free`, `minimax-m3-free`, `mimo-v2.6-flash-free`, `mimo-v2.5-free`, `qwen3.6-plus-free`, `deepseek-v4-flash-free`, `nemotron-3.5-lightning-free`, `nemotron-3-super-free`, `big-pickle`.
+    - Created unified public barrel export `lib/ai/index.ts` consolidating Google Gemini, OpenRouter, Groq, and OpenCode Zen clients, model constants, and types.
+  - **`features/blog` (Bloat Removal, Deduplication & Clean Barrel Export)**:
+    - Extracted shared internal helpers `getAuthUser()` and `resolveUniqueSlug(baseSlug, excludeId?)` in `actions.ts`, eliminating ~75 lines of repeated auth checks and duplicate `while (true)` slug increment loops.
+    - Centralized `DEFAULT_STORY_COVER` into `features/blog/constants.ts`, removing duplicate Unsplash URLs across components.
+    - Created canonical `features/blog/types.ts` (`StoryItem`, `StoryCardItem`, `StoryLinkedTrip`, `StoryAuthorProfile`), deduplicating manual inline type definitions in `my-stories-list.tsx` and `story-card.tsx`.
+  - **`features/community` (Dead Code Elimination, Pool Leak Prevention & Barrel Export)**:
+    - Permanently deleted obsolete dead code stub files (`components/community-creator-card.tsx`, `components/forum-thread-dialog.tsx`).
+    - Fixed PostgreSQL `Pool` connection leak in `forum-actions.ts` by caching the pool on `globalThis` to prevent connection exhaustion during development hot-reloads and server action runs.
+    - Standardized module structure with `features/community/actions.ts`, `constants.ts`, and `types.ts`.
+    - Created unified public barrel `features/community/index.ts` and updated forum page routes (`/forum`, `/forum/[slug]`) to import cleanly from `@/features/community`.
 - **Task 171 (Hero Canvas Projectile Removal & SSR-Safe Full-Screen Landing Intro Loader)**:
   - **Context & User Request**:
     1. In the Hero section background canvas (`features/landing/components/hero-background-pattern.tsx`), remove the animated projectile motion/flight arc while preserving all other canvas patterns (coordinate grid, crosshairs, mountain contour waves, waypoints with concentric rings, compass rose).
@@ -2387,3 +2403,57 @@
     - **Verification**:
       - Ran `npm run build` with Turbopack (Next.js 16.3.3) and verified clean build with exit code 0 and zero TypeScript or hydration regressions.
 
+- **Task 172 (Typography & Font Standardization for Workspace Sidebar & Workspace Header)**:
+  - **Context & User Request**:
+    1. Update the sidebar (`components/app-shell/sidebar.tsx`) and the main workspace component header (`features/trip-workspace/common/workspace-header.tsx`) strictly according to Prava's typography system.
+    2. Ensure proper application of brand typography (`font-brand` / Cinzel), UI structure typography (`font-sans` / Sora), and editorial accents (`font-serif` / Newsreader).
+    3. Ensure no code bloat, clean minified code, and zero TypeScript regressions.
+  - **Solutions Implemented**:
+    - **Sidebar Typography (`components/app-shell/sidebar.tsx`)**:
+      - Updated brand logo text to `font-brand font-medium tracking-[0.24em] text-base uppercase text-white dark:text-slate-900 group-hover:text-[#2D9BF0] transition-colors`.
+      - Refined navigation section headers (`Workspace`, `Explore`, `Account`) to `font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500`.
+      - Standardized nav link labels to `font-sans text-xs font-medium tracking-normal` with `font-semibold` on active states.
+      - Styled item numeric badges with `font-sans text-[10px] font-semibold tabular-nums`.
+      - Enforced strict 6-tier import hierarchy.
+    - **Workspace Header Typography (`features/trip-workspace/common/workspace-header.tsx`)**:
+      - Standardized back button navigation to `font-sans text-xs font-medium text-muted-foreground hover:text-foreground`.
+      - Refined status dropdown triggers and items to `font-sans text-xs font-medium`.
+      - Updated the AI Assistant button ("Ichinose") with `font-sans text-xs font-medium` and credit meter badges to `font-sans text-[10px] font-semibold tabular-nums`.
+      - Enhanced metadata tags (Destination, Dates, Countdown) with `font-sans text-xs font-medium` and `tabular-nums`.
+      - Upgraded trip title to `font-sans text-2xl sm:text-3xl font-semibold tracking-tight text-foreground` and editorial notes/description to `font-serif italic text-sm sm:text-base text-muted-foreground leading-relaxed pt-0.5 max-w-3xl line-clamp-2`.
+      - Enforced strict 6-tier import hierarchy.
+    - **Next.js Turbopack Font Resolution Optimization (`app/layout.tsx`)**:
+      - Optimized the `Cinzel` Google Font definition from a discrete weight array (`["400", "500", "600", "700"]`) to a variable font instance (`Cinzel({ variable: "--font-brand", subsets: ["latin"] })`), eliminating Turbopack's multiple font query import map collision (`Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'`).
+    - **Verification**:
+      - Tested TypeScript (`npx tsc --noEmit`) — exit code 0.
+      - Tested Next.js production build (`npx next build`) — exit code 0, all routes generated and optimized.
+
+- **Task 173 (Dashboard UI & Typography Harmonization and Design System Documentation Update)**:
+  - **Context & User Request**:
+    1. Match the UI of the main Dashboard page (`/dashboard`) and all its subcomponents with the typography, fonts, and aesthetics established in the landing and authentication pages.
+    2. Update the canonical design documentation (`docs/02-design-system.md`) so future AI agents and engineers have a single source of truth for typography classes, color tokens, and implementation guidelines without needing to re-analyze landing page code.
+    3. Ensure clean, minified, proper code with zero bloat and zero regressions.
+  - **Solutions Implemented**:
+    - **Dashboard Page (`app/(app)/dashboard/page.tsx`)**:
+      - Upgraded page header with section kicker (`font-sans text-[11px] font-semibold tracking-widest text-[#2D9BF0] uppercase`).
+      - Refined time-aware greeting with Sora display and Newsreader italic user name flourish: `{greeting}, <span className="font-serif italic font-normal text-foreground">{firstName}</span>`.
+      - Styled primary "Create trip" button with refined padding and shadow affordance.
+    - **Dashboard Cards & Subcomponents (`features/dashboard/components/`)**:
+      - `UpcomingTripCard`: Sora headings, Newsreader destination callout, tabular-num badges and duration metadata.
+      - `RecentTripsList`: Scannable list with Sora titles, Newsreader destination highlights, and tabular-nums date ranges.
+      - `ActiveTripWorkspaceCard`: Clean Sora section labels, tabular-num task and note counters, and refined bookmark pills.
+      - `FinancialSnapshotCard`: 3-column metric cards with tabular-nums currency figures, category legend pills, and budget progress.
+      - `TravelEssentialsGrid`: Scannable tool cards with Sora titles, micro subtitles, and smooth hover translations.
+      - `AiAssistantCard`: Replaced generic card with **Ichinose — Prava Travel Assistant** companion card featuring `/avatars/ichinose.png` and direct workspace navigation.
+      - `UrgentChecklist`: Preparation tasks list with Sora titles, Newsreader trip title tags, and tabular-num due dates.
+      - `DashboardMetrics`: 4-column overview grid with large tabular-num values, currency formatting, and modal ledger trigger.
+      - `DashboardQuickActions`: 3-card travel utility showcase with category kickers, Sora titles, and sub-tool pill shortcuts.
+      - `DashboardEmptyState`: Full-width empty state card with Sora typography, Newsreader journey accent, and vector travel illustration.
+    - **Canonical Design System Master (`docs/02-design-system.md`)**:
+      - Completely updated from obsolete v1.0 draft to v2.0 Canonical Production Master.
+      - Fully documented the three-tier typography hierarchy (Cinzel brand, Sora UI sans, Newsreader editorial serif).
+      - Documented light & dark mode color palettes, opposite-theme sidebar architecture, and shadcn component standards.
+      - Added an explicit **AI Agent Implementation Cheat Sheet** with copy-pasteable code examples for page headers, kickers, metrics, and labels so future agents can directly reference `docs/02-design-system.md`.
+    - **Verification**:
+      - TypeScript check (`npx tsc --noEmit`) — exit code 0.
+      - Production build (`npx next build`) — exit code 0, all routes static and dynamic optimized.

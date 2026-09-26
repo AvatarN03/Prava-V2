@@ -3,13 +3,11 @@ import {
   getGeminiClient,
   GEMINI_TRIPS_MODELS,
   GEMINI_CONVERSATIONAL_MODELS,
-} from "@/lib/ai/gemini-client";
-import {
   callOpenRouterFree,
   hasOpenRouterKey,
-  OpenRouterMessage,
   stripReasoning,
-} from "@/lib/ai/openrouter-client";
+  type OpenRouterMessage,
+} from "@/lib/ai";
 import {
   detectTravelToolIntent,
   executeCurrencyTool,

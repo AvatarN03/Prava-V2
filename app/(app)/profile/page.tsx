@@ -1,7 +1,10 @@
 import { Suspense } from "react";
-import { getCurrentProfile } from "@/features/profile/actions";
-import { ProfileEditor } from "@/features/profile/components/profile-editor";
+
 import { AlertCircle } from "lucide-react";
+
+import { ProfileEditor } from "@/features/profile/components/profile-editor";
+
+import { getCurrentProfile } from "@/features/profile/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,17 +19,18 @@ export default async function ProfilePage() {
 
   if (!res.success || !res.profile) {
     return (
-      <div className="rounded-sm border border-destructive/20 bg-destructive/10 p-4 text-xs text-destructive flex items-center gap-2">
-        <AlertCircle className="h-4 w-4 shrink-0" />
-        <span>Failed to load account details. Please make sure you are signed in.</span>
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="rounded-sm border border-destructive/20 bg-destructive/10 p-4 font-sans text-xs text-destructive flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>Failed to load account details. Please make sure you are signed in.</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <Suspense fallback={<div className="h-64 flex items-center justify-center text-xs text-muted-foreground">Loading account details...</div>}>
+    <Suspense fallback={<div className="h-64 flex items-center justify-center font-sans text-xs text-muted-foreground">Loading account details...</div>}>
       <ProfileEditor initialProfile={res.profile} />
     </Suspense>
   );
 }
-

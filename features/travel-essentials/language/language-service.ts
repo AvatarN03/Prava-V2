@@ -1,6 +1,6 @@
 "use server";
 
-import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
+import { callOpenRouterFree } from "@/lib/ai";
 
 import type { AiTranslatedPhrase, LanguagePhrase } from "../types";
 

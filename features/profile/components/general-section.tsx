@@ -87,12 +87,12 @@ export function GeneralSection({
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary">
+            <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-[#2D9BF0]/10 border border-[#2D9BF0]/20 text-[#2D9BF0]">
               <Globe className="h-3.5 w-3.5" />
             </div>
             <div>
-              <CardTitle className="text-sm font-semibold text-foreground">Region & Currency Defaults</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
+              <CardTitle className="font-sans text-sm font-semibold text-foreground">Region & Currency Defaults</CardTitle>
+              <CardDescription className="font-sans text-xs text-muted-foreground">
                 Configure your preferred currency across trips, expense tracking, and budget calculations.
               </CardDescription>
             </div>
@@ -102,8 +102,8 @@ export function GeneralSection({
         <CardContent className="p-4 pt-0 space-y-4 text-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
             <div>
-              <p className="font-semibold text-foreground">Default Currency</p>
-              <p className="text-muted-foreground text-[11px]">Primary currency for new trips, live exchange rates, and expense allocations</p>
+              <p className="font-sans font-semibold text-foreground">Default Currency</p>
+              <p className="font-sans text-muted-foreground text-[11px]">Primary currency for new trips, live exchange rates, and expense allocations</p>
             </div>
             <div className="w-full sm:w-64">
               <Select
@@ -111,10 +111,10 @@ export function GeneralSection({
                 onValueChange={onUpdateCurrency}
                 disabled={isUpdatingCurrency}
               >
-                <SelectTrigger className="h-8 rounded-sm cursor-pointer text-xs">
+                <SelectTrigger className="h-8 rounded-sm cursor-pointer font-sans text-xs">
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
-                <SelectContent className="rounded-sm text-xs max-h-64">
+                <SelectContent className="rounded-sm font-sans text-xs max-h-64">
                   <SelectItem value="USD" className="cursor-pointer text-xs">USD ($) — US Dollar</SelectItem>
                   <SelectItem value="EUR" className="cursor-pointer text-xs">EUR (€) — Euro</SelectItem>
                   <SelectItem value="GBP" className="cursor-pointer text-xs">GBP (£) — British Pound</SelectItem>
@@ -150,12 +150,12 @@ export function GeneralSection({
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary">
+            <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-[#2D9BF0]/10 border border-[#2D9BF0]/20 text-[#2D9BF0]">
               <Sparkles className="h-3.5 w-3.5" />
             </div>
             <div>
-              <CardTitle className="text-sm font-semibold text-foreground">AI Assistant & Travel Persona</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
+              <CardTitle className="font-sans text-sm font-semibold text-foreground">AI Assistant & Travel Persona</CardTitle>
+              <CardDescription className="font-sans text-xs text-muted-foreground">
                 Customize smart itinerary planning, autonomous trip proposals, and travel preferences.
               </CardDescription>
             </div>
@@ -165,8 +165,8 @@ export function GeneralSection({
         <CardContent className="p-4 pt-0 space-y-4 text-xs">
           <div className="flex items-center justify-between py-1">
             <div className="space-y-0.5 pr-4">
-              <p className="font-semibold text-foreground">Structured AI Proposal Cards</p>
-              <p className="text-muted-foreground text-[11px]">
+              <p className="font-sans font-semibold text-foreground">Structured AI Proposal Cards</p>
+              <p className="font-sans text-muted-foreground text-[11px]">
                 Allow Prava AI to generate interactive action cards for 1-click workspace additions
               </p>
             </div>
@@ -183,8 +183,8 @@ export function GeneralSection({
           <div className="space-y-2 py-1">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5 pr-4">
-                <p className="font-semibold text-foreground">Offline Travel Cache</p>
-                <p className="text-muted-foreground text-[11px]">
+                <p className="font-sans font-semibold text-foreground">Offline Travel Cache</p>
+                <p className="font-sans text-muted-foreground text-[11px]">
                   Pre-fetch trip essentials, emergency contacts, and maps for zero-connectivity access
                 </p>
               </div>
@@ -197,17 +197,17 @@ export function GeneralSection({
             </div>
 
             {offlineMode && (
-              <div className="flex items-center justify-between rounded-xs border border-border/80 bg-muted/40 px-3 py-2 text-[11px]">
+              <div className="flex items-center justify-between rounded-sm border border-border/80 bg-muted/40 px-3 py-2 text-[11px]">
                 <div className="flex items-center gap-2">
                   {isSyncing ? (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
-                      <span className="text-foreground font-medium">Syncing active & planning trips to device...</span>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#2D9BF0] shrink-0" />
+                      <span className="font-sans text-foreground font-medium">Syncing active & planning trips to device...</span>
                     </>
                   ) : (
                     <>
-                      <HardDrive className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="text-muted-foreground">
+                      <HardDrive className="h-3.5 w-3.5 text-[#2D9BF0] shrink-0" />
+                      <span className="font-sans text-muted-foreground">
                         Status: <strong className="text-foreground">{lastSyncLabel}</strong>
                       </span>
                     </>
@@ -220,7 +220,7 @@ export function GeneralSection({
                     variant="ghost"
                     size="sm"
                     onClick={() => triggerSync()}
-                    className="h-6 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10 cursor-pointer"
+                    className="h-6 px-2 font-sans text-[11px] gap-1 text-[#2D9BF0] hover:text-[#2D9BF0] hover:bg-[#2D9BF0]/10 cursor-pointer"
                   >
                     <RefreshCw className="h-3 w-3" />
                     Sync Now
@@ -234,17 +234,17 @@ export function GeneralSection({
 
           <div className="space-y-1.5 py-1">
             <div className="flex items-center gap-1.5">
-              <Compass className="h-3.5 w-3.5 text-primary" />
-              <p className="font-semibold text-foreground">AI Travel Style & Dietary Guidance</p>
+              <Compass className="h-3.5 w-3.5 text-[#2D9BF0]" />
+              <p className="font-sans font-semibold text-foreground">AI Travel Style & Dietary Guidance</p>
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="font-sans text-muted-foreground text-[11px]">
               Prava AI uses these preferences (dietary restrictions, relaxed vs fast pacing, preferred hotel vibes) when drafting your itineraries.
             </p>
             <Textarea
               value={travelPreferences}
               onChange={(e) => setTravelPreferences(e.target.value)}
               placeholder="e.g. Vegetarian, love historic architecture and coffee shops, prefer moderate pace with max 3-4 activities per day."
-              className="h-20 text-xs rounded-sm resize-none"
+              className="h-20 font-sans text-xs rounded-sm resize-none"
               maxLength={1000}
               disabled={isSavingAiPreferences}
             />
@@ -254,11 +254,11 @@ export function GeneralSection({
         <CardFooter className="p-4 pt-3 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
             {hasPersonaChanges ? (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+              <p className="font-sans text-[11px] text-amber-600 dark:text-amber-400 font-medium">
                 You have unsaved changes. Click Save AI Travel Preferences to update.
               </p>
             ) : (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="font-sans text-[11px] text-muted-foreground">
                 AI persona & offline settings are up to date.
               </p>
             )}
@@ -278,7 +278,7 @@ export function GeneralSection({
               }
             }}
             disabled={isSavingAiPreferences || !hasPersonaChanges}
-            className={`h-8 rounded-sm text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 ${
+            className={`h-9 px-4 rounded-sm font-sans text-xs font-semibold gap-1.5 shadow-xs hover:shadow transition-all active:scale-[0.99] bg-[#2D9BF0] hover:bg-[#2587D3] text-white border border-[#2D9BF0]/30 ${
               isSavingAiPreferences || !hasPersonaChanges
                 ? "cursor-not-allowed opacity-60"
                 : "cursor-pointer"
@@ -298,12 +298,12 @@ export function GeneralSection({
       <Card className="rounded-sm border border-border bg-card shadow-xs">
         <CardHeader className="p-4 pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xs bg-primary/10 border border-primary/20 text-primary">
+            <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-[#2D9BF0]/10 border border-[#2D9BF0]/20 text-[#2D9BF0]">
               <Bell className="h-3.5 w-3.5" />
             </div>
             <div>
-              <CardTitle className="text-sm font-semibold text-foreground">Notifications & Alerts</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
+              <CardTitle className="font-sans text-sm font-semibold text-foreground">Notifications & Alerts</CardTitle>
+              <CardDescription className="font-sans text-xs text-muted-foreground">
                 Manage notifications for upcoming travel departures and task checklists.
               </CardDescription>
             </div>
@@ -313,8 +313,8 @@ export function GeneralSection({
         <CardContent className="p-4 pt-0 space-y-4 text-xs">
           <div className="flex items-center justify-between py-1">
             <div className="space-y-0.5 pr-4">
-              <p className="font-semibold text-foreground">Trip Departure & Milestone Reminders</p>
-              <p className="text-muted-foreground text-[11px]">
+              <p className="font-sans font-semibold text-foreground">Trip Departure & Milestone Reminders</p>
+              <p className="font-sans text-muted-foreground text-[11px]">
                 Receive checklist alerts and countdown notices before your scheduled departure
               </p>
             </div>
@@ -330,5 +330,3 @@ export function GeneralSection({
     </div>
   );
 }
-
-

@@ -69,7 +69,7 @@ export function ThemeToggle({ className, iconSize = 19 }: ThemeToggleProps) {
             onClick={toggleTheme}
             disabled={isTransitioning}
             className={cn(
-              "h-8 w-8 sm:h-9 sm:w-9 text-zinc-600 dark:text-zinc-300 hover:text-[#2D9BF0] dark:hover:text-[#2D9BF0] hover:bg-zinc-100 dark:bg-zinc-600/80 dark:hover:bg-zinc-800/80 cursor-pointer transition-colors rounded-sm",
+              "h-8 w-8 sm:h-9 sm:w-9 text-zinc-600 dark:text-zinc-300 hover:text-[#2D9BF0] dark:hover:text-[#2D9BF0] hover:bg-zinc-100 dark:bg-slate-800/40 dark:hover:bg-zinc-800/80 cursor-pointer transition-colors rounded-sm",
               className
             )}
             aria-label="Toggle theme"

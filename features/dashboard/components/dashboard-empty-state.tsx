@@ -1,54 +1,59 @@
 "use client";
 
 import { Compass, Hotel, MapPin, Plus, Sparkles, Wallet } from "lucide-react";
-import { CreateTripDialog } from "@/features/trips/components/create-trip-dialog";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
+import { CreateTripDialog } from "@/features/trips/components/create-trip-dialog";
+
 export function DashboardEmptyState() {
   return (
-    <Card className="border-border bg-card shadow-xs rounded-sm sm:rounded-md overflow-hidden relative">
+    <Card className="border-border bg-card shadow-xs rounded-md overflow-hidden relative">
       {/* Subtle blueprint grid ambient overlay */}
       <div className="absolute inset-0 bg-prava-pattern opacity-40 pointer-events-none" />
 
       <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center p-6 sm:p-10 lg:p-12">
         {/* Left Content Column */}
         <div className="lg:col-span-7 space-y-5 text-left">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xs font-sans text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
             <Compass className="w-3.5 h-3.5" />
             <span>Travel Workspace Ready</span>
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-              Start Planning Your Next Journey
+            <h2 className="font-sans text-xl sm:text-2xl lg:text-3xl font-light tracking-tight text-foreground">
+              Start Planning Your{" "}
+              <span className="font-serif italic font-normal text-zinc-700 dark:text-zinc-300">
+                Next Journey
+              </span>
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl">
+            <p className="font-sans text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl font-normal">
               Create your first trip to organize smart daily schedules, track stays &amp; bookings, manage multi-currency expenses in INR, and pack with essential checklists.
             </p>
           </div>
 
           {/* Feature Highlights Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-1">
-            <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2 font-sans text-xs text-slate-700 dark:text-slate-300">
               <span className="flex h-5 w-5 items-center justify-center rounded-xs bg-[#2D9BF0]/15 text-[#2D9BF0] shrink-0">
                 <Sparkles className="w-3 h-3" />
               </span>
               <span>Daily Itinerary &amp; Timeline</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2 font-sans text-xs text-slate-700 dark:text-slate-300">
               <span className="flex h-5 w-5 items-center justify-center rounded-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
                 <Hotel className="w-3 h-3" />
               </span>
               <span>Stays &amp; Confirmation Codes</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2 font-sans text-xs text-slate-700 dark:text-slate-300">
               <span className="flex h-5 w-5 items-center justify-center rounded-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
                 <Wallet className="w-3 h-3" />
               </span>
               <span>Multi-Currency Budget in INR</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2 font-sans text-xs text-slate-700 dark:text-slate-300">
               <span className="flex h-5 w-5 items-center justify-center rounded-xs bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 shrink-0">
                 <MapPin className="w-3 h-3" />
               </span>
@@ -56,12 +61,12 @@ export function DashboardEmptyState() {
             </div>
           </div>
 
-          {/* Action Button: Small padding on desktop with subtle rounding, generous padding on mobile shifted to the right */}
+          {/* Action Button */}
           <div className="pt-2 flex justify-end sm:justify-start">
             <CreateTripDialog
               trigger={
                 <Button
-                  className="h-11 sm:h-9 px-6 sm:px-4 py-2.5 sm:py-1.5 rounded-md sm:rounded-sm text-sm sm:text-xs font-semibold gap-2 cursor-pointer shadow-sm hover:shadow transition-all active:scale-[0.98] bg-[#2D9BF0] hover:bg-[#2587D3] text-white border border-[#2D9BF0]/30"
+                  className="h-10 sm:h-9 px-5 sm:px-4 py-2.5 sm:py-1.5 rounded-sm font-sans text-xs font-semibold gap-2 cursor-pointer shadow-xs hover:shadow transition-all active:scale-[0.98] bg-[#2D9BF0] hover:bg-[#2587D3] text-white border border-[#2D9BF0]/30"
                 >
                   <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   <span>Create Your First Trip</span>
@@ -196,3 +201,5 @@ export function DashboardEmptyState() {
     </Card>
   );
 }
+
+export default DashboardEmptyState;

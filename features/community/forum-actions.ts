@@ -18,10 +18,17 @@ import {
   UserTripOption,
 } from "@/features/community/forum-types";
 
-// Shared connection pool for forum SQL queries
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.DIRECT_URL,
-});
+// Shared connection pool singleton for forum SQL queries to prevent connection exhaustion
+const globalForPg = globalThis as unknown as { pgPool?: Pool };
+const pool =
+  globalForPg.pgPool ||
+  new Pool({
+    connectionString: process.env.DATABASE_URL || process.env.DIRECT_URL,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPg.pgPool = pool;
+}
 
 /**
  * Format category identifier to human-readable label

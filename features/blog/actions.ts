@@ -6,19 +6,46 @@ import { createClient } from "@/lib/supabase/server";
 import { blogPostSchema, BlogPostInput, generateSlug } from "./schema";
 
 /**
+ * Internal helper to authenticate the current user.
+ */
+async function getAuthUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
+}
+
+/**
+ * Internal helper to resolve unique, collision-free URL slugs.
+ */
+async function resolveUniqueSlug(baseSlug: string, excludeId?: string): Promise<string> {
+  let slug = baseSlug;
+  let attempt = 0;
+  while (true) {
+    const existing = await db.blogPost.findFirst({
+      where: {
+        slug,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (!existing) break;
+    attempt++;
+    slug = `${baseSlug}-${attempt}`;
+  }
+  return slug;
+}
+
+/**
  * Create a new blog post (draft by default).
  */
 export async function createBlogPost(input: BlogPostInput) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return { success: false, error: "Unauthorized" };
-    }
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
 
     const parsed = blogPostSchema.safeParse(input);
     if (!parsed.success) {
@@ -30,19 +57,8 @@ export async function createBlogPost(input: BlogPostInput) {
     }
 
     const { title, excerpt, content, coverImageUrl, tags, status, linkedTripId } = parsed.data;
-
-    // Generate unique slug
     const baseSlug = parsed.data.slug || generateSlug(title);
-    let slug = baseSlug;
-    let attempt = 0;
-
-    while (true) {
-      const existing = await db.blogPost.findUnique({ where: { slug }, select: { id: true } });
-      if (!existing) break;
-      attempt++;
-      slug = `${baseSlug}-${attempt}`;
-    }
-
+    const slug = await resolveUniqueSlug(baseSlug);
     const isPublishing = status === "PUBLISHED";
 
     const post = await db.blogPost.create({
@@ -75,15 +91,8 @@ export async function createBlogPost(input: BlogPostInput) {
  */
 export async function updateBlogPost(postId: string, input: BlogPostInput) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return { success: false, error: "Unauthorized" };
-    }
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
 
     const existing = await db.blogPost.findFirst({
       where: { id: postId, profileId: user.id },
@@ -100,21 +109,9 @@ export async function updateBlogPost(postId: string, input: BlogPostInput) {
 
     const { title, excerpt, content, coverImageUrl, tags, status, linkedTripId } = parsed.data;
 
-    // Handle slug changes
     let slug = existing.slug;
     if (parsed.data.slug && parsed.data.slug !== existing.slug) {
-      const baseSlug = parsed.data.slug;
-      slug = baseSlug;
-      let attempt = 0;
-      while (true) {
-        const dup = await db.blogPost.findFirst({
-          where: { slug, id: { not: postId } },
-          select: { id: true },
-        });
-        if (!dup) break;
-        attempt++;
-        slug = `${baseSlug}-${attempt}`;
-      }
+      slug = await resolveUniqueSlug(parsed.data.slug, postId);
     }
 
     const wasPublished = existing.status === "PUBLISHED";
@@ -151,15 +148,8 @@ export async function updateBlogPost(postId: string, input: BlogPostInput) {
  */
 export async function deleteBlogPost(postId: string) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return { success: false, error: "Unauthorized" };
-    }
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
 
     const post = await db.blogPost.findFirst({
       where: { id: postId, profileId: user.id },
@@ -186,15 +176,8 @@ export async function deleteBlogPost(postId: string) {
  */
 export async function getMyBlogPosts() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return { success: false, error: "Unauthorized", posts: [] };
-    }
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized", posts: [] };
 
     const posts = await db.blogPost.findMany({
       where: { profileId: user.id },
@@ -216,15 +199,8 @@ export async function getMyBlogPosts() {
  */
 export async function getBlogPostForEdit(slugOrId: string) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return { success: false, error: "Unauthorized" };
-    }
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
 
     const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
 
@@ -265,15 +241,7 @@ export async function getPublishedStory(slugOrId: string) {
       return { success: false, error: "Invalid story identifier" };
     }
 
-    let user = null;
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getUser();
-      user = data.user;
-    } catch {
-      user = null;
-    }
-
+    const user = await getAuthUser();
     const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
 
     const post = await db.blogPost.findFirst({
@@ -364,15 +332,8 @@ export async function getAllPublishedStories() {
  */
 export async function toggleStoryPublishStatus(postId: string) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return { success: false, error: "Unauthorized" };
-    }
+    const user = await getAuthUser();
+    if (!user) return { success: false, error: "Unauthorized" };
 
     const existing = await db.blogPost.findFirst({
       where: { id: postId, profileId: user.id },
@@ -402,4 +363,3 @@ export async function toggleStoryPublishStatus(postId: string) {
     return { success: false, error: "Failed to update story status" };
   }
 }
-

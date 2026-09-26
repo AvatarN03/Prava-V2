@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { syncUserProfile } from "@/lib/auth";
 import { type EmailOtpType } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {

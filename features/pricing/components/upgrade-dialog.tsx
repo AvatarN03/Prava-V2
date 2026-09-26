@@ -79,32 +79,32 @@ export function UpgradeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-border bg-card rounded-md shadow-xl gap-0">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-border/80 bg-card rounded-md shadow-xl gap-0 font-sans">
         {/* Sleek Top Header */}
-        <div className="bg-muted/30 border-b border-border p-5 space-y-3">
+        <div className="bg-muted/30 border-b border-border/80 p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-primary/10 border border-primary/20 text-[10px] font-bold uppercase tracking-wider text-primary">
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-primary/10 border border-primary/20 text-[10px] font-semibold uppercase tracking-wider text-primary">
               <Sparkles className="h-3 w-3" />
               <span>Pro Wanderer</span>
             </div>
 
-            <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border bg-card px-2 py-0.5">
+            <Badge variant="outline" className="text-[10px] font-medium tabular-nums text-muted-foreground border-border/80 bg-card px-2 py-0.5 rounded-xs">
               {pricing ? `${pricing.currencyCode} (${pricing.currencySymbol}) Pricing` : "INR (₹) Pricing"}
             </Badge>
           </div>
 
           <div className="space-y-1">
-            <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
+            <DialogTitle className="font-sans text-base sm:text-lg font-semibold tracking-tight text-foreground">
               {title}
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+            <DialogDescription className="font-sans text-xs text-muted-foreground leading-relaxed">
               {description}
             </DialogDescription>
           </div>
 
           {/* Stable Segmented Billing Switcher (No layout shift or glitch) */}
           <div className="pt-1">
-            <div className="grid grid-cols-2 p-1 bg-muted rounded-xs border border-border text-xs select-none">
+            <div className="grid grid-cols-2 p-1 bg-muted/60 rounded-xs border border-border/80 text-xs select-none">
               <button
                 type="button"
                 onClick={() => setBillingCycle("annual")}
@@ -115,7 +115,7 @@ export function UpgradeDialog({
                 }`}
               >
                 <span>Yearly</span>
-                <span className="text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded-xs">
+                <span className="font-sans text-[9px] font-semibold tabular-nums bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded-xs">
                   {savingsBadge}
                 </span>
               </button>
@@ -139,34 +139,34 @@ export function UpgradeDialog({
         <div className="px-5 py-4 border-b border-border/60 bg-muted/15 flex items-baseline justify-between min-h-[72px]">
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-extrabold text-foreground tracking-tight">
+              <span className="font-sans text-2xl font-light tracking-tight tabular-nums text-foreground">
                 {isAnnual ? annualMonthlyEquivalentDisplay : monthlyRateDisplay}
               </span>
-              <span className="text-xs text-muted-foreground font-medium">
+              <span className="font-sans text-xs text-muted-foreground font-medium">
                 / month
               </span>
               {isAnnual && (
-                <Badge variant="secondary" className="text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.2 rounded-xs ml-1">
+                <Badge variant="secondary" className="font-sans text-[10px] font-semibold tabular-nums bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.2 rounded-xs ml-1">
                   Billed Annually
                 </Badge>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="font-sans text-[11px] text-muted-foreground mt-0.5 tabular-nums">
               {isAnnual
                 ? `Total ${annualTotalDisplay} / year • Save ₹400 discount • Billed annually`
                 : `Total ${monthlyRateDisplay} / month • Renews on 1st of month • Cancel anytime`}
             </p>
           </div>
 
-          <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded-xs border border-border shrink-0">
+          <span className="text-[10px] font-medium tabular-nums text-muted-foreground bg-muted px-1.5 py-0.5 rounded-xs border border-border/80 shrink-0">
             {isAnnual ? `${annualMonthlyEquivalentDisplay}/mo` : `${monthlyRateDisplay}/mo`}
           </span>
         </div>
 
         {/* Feature List */}
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 font-sans">
           <div className="space-y-2">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               What you unlock with Pro:
             </h4>
             <div className="grid grid-cols-1 gap-2.5 text-xs text-foreground/90">
@@ -208,12 +208,12 @@ export function UpgradeDialog({
             </div>
           </div>
 
-          <Separator />
+          <Separator className="border-border/60" />
 
           {/* Action Button: Routes directly to subscription page */}
           <div className="pt-0.5 flex flex-col gap-2.5">
             <Button
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 rounded-xs gap-1.5 shadow-xs cursor-pointer"
+              className="w-full bg-[#2D9BF0] hover:bg-[#2587D3] text-white font-semibold text-xs h-9 rounded-sm gap-1.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
               onClick={handleProceedToSubscription}
             >
               <CreditCard className="h-3.5 w-3.5" />
@@ -236,3 +236,4 @@ export function UpgradeDialog({
     </Dialog>
   );
 }
+

@@ -1,2 +1,1 @@
-// Dead action module pruned during codebase audit.
-export {};
+export * from "./forum-actions";

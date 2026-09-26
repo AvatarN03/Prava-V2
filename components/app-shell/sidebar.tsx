@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,26 +38,26 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             href={item.href}
             onClick={onMobileClose}
             className={cn(
-              "group flex items-center gap-3 md:gap-2.5 rounded-l-none rounded-r-md pl-4 pr-3 py-2.5 md:py-2 text-sm md:text-xs font-medium md:font-normal transition-all duration-200 ease-in-out relative cursor-pointer",
+              "group flex items-center gap-2.5 rounded-l-none rounded-r-md pl-4 pr-3 py-2 font-sans text-xs font-medium transition-all duration-200 ease-in-out relative cursor-pointer",
               // Opposite-theme styling: In light mode, sidebar is dark; in dark mode, sidebar is light
               isActive
-                ? "bg-[#2D9BF0] text-white/90 shadow-xs"
-                : "text-slate-300 hover:text-white hover:bg-slate-100/15 hover:translate-x-0.5 dark:text-slate-600 dark:hover:text-slate-950 dark:hover:bg-slate-200 dark:hover:translate-x-0.5"
+                ? "bg-[#2D9BF0] text-white shadow-xs font-semibold"
+                : "text-slate-300 hover:text-white hover:bg-slate-100/10 hover:translate-x-0.5 dark:text-slate-600 dark:hover:text-slate-950 dark:hover:bg-slate-200 dark:hover:translate-x-0.5"
             )}
           >
             <Icon
               className={cn(
-                "h-4.5 w-4.5 md:h-4 md:w-4 transition-transform duration-200 shrink-0",
+                "h-4 w-4 transition-transform duration-200 shrink-0",
                 isActive
                   ? "text-white scale-105"
                   : "text-slate-400 group-hover:text-white group-hover:scale-110 dark:text-slate-500 dark:group-hover:text-slate-900"
               )}
             />
-            <span className="truncate flex-1">{item.title}</span>
+            <span className="truncate flex-1 tracking-normal">{item.title}</span>
             {item.badge && (
               <span
                 className={cn(
-                  "ml-auto rounded-full px-2 md:px-1.5 py-0.5 text-[10px] md:text-[9px] font-medium shadow-2xs",
+                  "ml-auto rounded-full px-1.5 py-0.5 font-sans text-[10px] font-semibold tabular-nums shadow-2xs",
                   isActive
                     ? "bg-white/20 text-white"
                     : "bg-white/10 text-slate-300 dark:bg-slate-300 dark:text-slate-800"
@@ -98,23 +97,22 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-[#152033] dark:border-slate-300 px-4">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 font-bold group cursor-pointer"
+            className="flex items-center gap-2 group cursor-pointer"
           >
-            <div className="relative flex h-8 w-8 items-end justify-center rounded-lg p-1 transition-transform duration-300 group-hover:scale-105">
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-105">
               <Image
                 src="/logo.png"
                 alt="Prava AI Logo"
                 width={26}
                 height={26}
-                className="h-full w-full object-contain filter drop-shadow-xs"
+                className="h-6 w-6 object-contain filter drop-shadow-xs"
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-md font-light text-white dark:text-slate-900">
+              <span className="font-brand font-medium tracking-[0.24em] text-base uppercase text-white dark:text-slate-900 group-hover:text-[#2D9BF0] transition-colors">
                 Prava
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-[#2D9BF0] animate-pulse shadow-xs" />
-
             </div>
           </Link>
 
@@ -122,7 +120,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden h-8 w-8 text-slate-400 hover:text-white dark:text-slate-600 dark:hover:text-slate-900"
+              className="md:hidden h-8 w-8 text-slate-400 hover:text-white dark:text-slate-600 dark:hover:text-slate-900 cursor-pointer"
               onClick={onMobileClose}
             >
               <X className="h-4 w-4" />
@@ -135,7 +133,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         <div className="flex-1 overflow-y-auto py-4 space-y-6 scrollbar-none">
           {/* Group 1: Workspace */}
           <div>
-            <div className="px-4 pb-2 text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300/90 dark:text-slate-600 select-none">
+            <div className="px-4 pb-2 font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 select-none">
               Workspace
             </div>
             {renderNavGroup(workspaceNavItems)}
@@ -143,17 +141,17 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
 
           {/* Group 2: Explore */}
           <div>
-            <div className="px-4 pb-2 text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300/90 dark:text-slate-600 select-none">
+            <div className="px-4 pb-2 font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 select-none">
               Explore
             </div>
             {renderNavGroup(otherNavItems)}
           </div>
         </div>
 
-        {/* Bottom Area: Account Section (No border, with generous bottom padding) */}
+        {/* Bottom Area: Account Section */}
         <div className="shrink-0 pt-2 pb-8 md:pb-10">
           <div>
-            <div className="px-4 pb-2 text-[11px] md:text-[10px] font-bold uppercase tracking-widest text-slate-300/90 dark:text-slate-600 select-none">
+            <div className="px-4 pb-2 font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 select-none">
               Account
             </div>
             {renderNavGroup(accountNavItems)}
@@ -164,4 +162,4 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   );
 }
 
-
+export default Sidebar;

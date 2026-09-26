@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 
-import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { syncUserProfile } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
 import { TemplateTripItem } from "./types";
 
-import { callOpenRouterFree } from "@/lib/ai/openrouter-client";
+import { callOpenRouterFree } from "@/lib/ai";
 
 /**
  * Fetch all authentic public trips and templates from PostgreSQL.
